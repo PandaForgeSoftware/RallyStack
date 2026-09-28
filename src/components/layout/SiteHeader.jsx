@@ -27,6 +27,7 @@ function SiteHeader() {
             <div className="text-xl font-black tracking-tight text-white">
               RALLY<span className="text-amber-500">STACK</span>
             </div>
+
             <div className="mt-1 text-[9px] font-bold tracking-[0.3em] text-stone-500">
               WARDOGS COMMUNITY
             </div>
@@ -50,6 +51,7 @@ function SiteHeader() {
               {({ isActive }) => (
                 <>
                   {item.label}
+
                   {isActive && (
                     <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-amber-500" />
                   )}
@@ -68,10 +70,20 @@ function SiteHeader() {
             <Bell size={18} />
           </button>
 
-          <button className="hidden h-10 items-center gap-3 border border-white/8 px-4 text-sm font-semibold text-stone-300 transition hover:border-white/15 hover:text-white sm:flex">
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              [
+                'hidden h-10 items-center gap-3 border px-4 text-sm font-semibold transition sm:flex',
+                isActive
+                  ? 'border-amber-500/50 bg-amber-500/10 text-white'
+                  : 'border-white/8 text-stone-300 hover:border-white/15 hover:text-white',
+              ].join(' ')
+            }
+          >
             <UserRound size={17} />
-            Sign in
-          </button>
+            MY PROFILE
+          </NavLink>
 
           <button className="flex h-10 w-10 items-center justify-center border border-white/8 text-stone-300 lg:hidden">
             <Menu size={20} />

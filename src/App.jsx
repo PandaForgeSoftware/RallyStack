@@ -2,6 +2,7 @@
 import SiteHeader from './components/layout/SiteHeader'
 import HomePage from './pages/HomePage'
 import PlaceholderPage from './pages/PlaceholderPage'
+import ProfilePage from './pages/ProfilePage'
 
 function App() {
   return (
@@ -50,6 +51,8 @@ function App() {
             />
           }
         />
+
+        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
 
       <footer className="border-t border-white/8 bg-[#090b0c]">
