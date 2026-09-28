@@ -32,10 +32,12 @@ function SiteHeader() {
           to="/"
           className="mr-10 flex items-center gap-3"
         >
-          <div className="flex h-10 w-10 items-center justify-center border border-amber-500/40 bg-amber-500/10">
-            <span className="text-lg font-black text-amber-500">
-              R
-            </span>
+          <div className="flex h-11 w-11 items-center justify-center overflow-hidden border border-amber-500/40 bg-amber-500/10">
+            <img
+              src="/rallystack-mark.svg"
+              alt="RallyStack logo"
+              className="h-full w-full object-cover"
+            />
           </div>
 
           <div className="leading-none">
