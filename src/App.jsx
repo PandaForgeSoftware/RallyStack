@@ -1,4 +1,4 @@
-﻿import {
+import {
   Navigate,
   Route,
   Routes,
@@ -7,10 +7,12 @@
 import { useAuth } from './contexts/AuthContext'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import SiteHeader from './components/layout/SiteHeader'
+import SiteFooter from './components/layout/SiteFooter'
 import AuthCallbackPage from './pages/AuthCallbackPage'
 import FindPlayersPage from './pages/FindPlayersPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
+import LegalPage from './pages/LegalPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 import ProfilePage from './pages/ProfilePage'
 import RegistrationPage from './pages/RegistrationPage'
@@ -114,6 +116,11 @@ function App() {
             }
           />
 
+
+          <Route
+            path="/legal"
+            element={<LegalPage />}
+          />
           <Route
             path="/register"
             element={<RegistrationPage />}
@@ -148,25 +155,7 @@ function App() {
           />
         </Routes>
 
-        <footer className="border-t border-white/8 bg-[#090b0c]">
-          <div className="mx-auto flex max-w-[1500px] flex-col gap-3 px-5 py-8 text-xs text-stone-600 md:flex-row md:items-center md:justify-between lg:px-8">
-            <div>
-              <span className="font-black text-stone-400">
-                RALLYSTACK
-              </span>
-
-              <span className="mx-2">
-                •
-              </span>
-
-              Community companion for WARDOGS
-            </div>
-
-            <div>
-              Not affiliated with BULKHEAD or Team17.
-            </div>
-          </div>
-        </footer>
+        <SiteFooter />
       </div>
     </SetupEnforcer>
   )

@@ -1,6 +1,46 @@
 ﻿<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="256" height="256" rx="28" fill="#080A0B"/>
-  <rect x="18" y="18" width="220" height="220" rx="22" fill="#0B0D0E" stroke="#F2A100" stroke-width="8"/>
-  <path d="M82 58H136C171 58 194 77 194 109C194 133 179 149 156 155L198 198H160L124 160H112V198H82V58ZM112 84V135H133C154 135 164 126 164 109C164 92 154 84 133 84H112Z" fill="#F2A100"/>
-  <rect x="82" y="198" width="52" height="10" fill="#F2A100"/>
+
+  <defs>
+    <linearGradient id="amber" x1="64" y1="42" x2="194" y2="214" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFB000"/>
+      <stop offset="1" stop-color="#E88900"/>
+    </linearGradient>
+
+    <linearGradient id="plate2" x1="75" y1="96" x2="181" y2="157" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F59E0B"/>
+      <stop offset="1" stop-color="#A95D00"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="38" fill="#090B0C"/>
+
+  <path
+    d="M128 22L218 70V166C218 194 191 218 128 236C65 218 38 194 38 166V70L128 22Z"
+    fill="#0D1011"
+    stroke="#F59E0B"
+    stroke-width="7"
+  />
+
+  <path
+    d="M128 52L188 84L128 116L68 84L128 52Z"
+    fill="url(#amber)"
+  />
+
+  <path
+    d="M68 111L128 143L188 111V134L128 166L68 134V111Z"
+    fill="url(#plate2)"
+  />
+
+  <path
+    d="M68 153L128 185L188 153V176L128 208L68 176V153Z"
+    fill="#6D4200"
+    stroke="#F59E0B"
+    stroke-width="2"
+  />
+
+  <path
+    d="M128 73L150 84L128 95L106 84L128 73Z"
+    fill="#090B0C"
+  />
+
 </svg>

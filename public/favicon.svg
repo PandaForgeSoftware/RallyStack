@@ -1,5 +1,32 @@
 ﻿<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="64" height="64" rx="10" fill="#0B0D0E"/>
-  <rect x="4" y="4" width="56" height="56" rx="8" stroke="#F2A100" stroke-width="2"/>
-  <path d="M18 14H34C42.8 14 48 18.9 48 26.6C48 32.5 44.8 36.3 39.5 37.9L48.5 50H39.1L31.1 39H27V50H18V14ZM27 21.2V32.4H33.2C37.7 32.4 39.7 30.4 39.7 26.8C39.7 23.1 37.7 21.2 33.2 21.2H27Z" fill="#F2A100"/>
+
+  <rect width="64" height="64" rx="10" fill="#090B0C"/>
+
+  <path
+    d="M32 6L55 18V42C55 49 48 55 32 60C16 55 9 49 9 42V18L32 6Z"
+    fill="#0D1011"
+    stroke="#F59E0B"
+    stroke-width="2"
+  />
+
+  <path
+    d="M32 14L47 22L32 30L17 22L32 14Z"
+    fill="#F59E0B"
+  />
+
+  <path
+    d="M17 29L32 37L47 29V35L32 43L17 35V29Z"
+    fill="#B96A00"
+  />
+
+  <path
+    d="M17 40L32 48L47 40V46L32 54L17 46V40Z"
+    fill="#744500"
+  />
+
+  <path
+    d="M32 19L37 22L32 25L27 22L32 19Z"
+    fill="#090B0C"
+  />
+
 </svg>
