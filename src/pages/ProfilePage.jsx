@@ -9,17 +9,16 @@ import {
   Headphones,
   HeartPulse,
   MapPin,
-  MessageCircleMore,
   Plane,
-  Radio,
   Save,
   Search,
   Shield,
   Star,
   Users,
-  Wifi,
   Wrench,
 } from 'lucide-react'
+import ConnectedAccountsCard from '../features/profiles/components/ConnectedAccountsCard'
+import CurrentSessionCard from '../features/profiles/components/CurrentSessionCard'
 import RolePreferenceCard from '../features/profiles/components/RolePreferenceCard'
 
 const roles = [
@@ -46,7 +45,7 @@ const roles = [
   {
     name: 'DRIVER',
     icon: Car,
-    description: 'Transport, ground vehicles and getting the squad where it needs to be.',
+    description: 'Transport, ground vehicles and moving the squad around.',
   },
   {
     name: 'PILOT',
@@ -62,9 +61,14 @@ const defaultProfile = {
   usualTimes: '19:00 - 23:00',
   mic: true,
   lookingForGroup: false,
-  currentServer: '',
   primaryRoles: [],
   secondaryRoles: [],
+  discordConnected: false,
+  steamConnected: false,
+  session: {
+    active: false,
+    serverCode: '',
+  },
 }
 
 function loadSavedProfile() {
@@ -78,6 +82,10 @@ function loadSavedProfile() {
     return {
       ...defaultProfile,
       ...JSON.parse(saved),
+      session: {
+        ...defaultProfile.session,
+        ...(JSON.parse(saved).session || {}),
+      },
     }
   } catch {
     return defaultProfile
@@ -96,23 +104,15 @@ function ProfilePage() {
   }
 
   const getRoleState = (role) => {
-    if (profile.primaryRoles.includes(role)) {
-      return 'primary'
-    }
-
-    if (profile.secondaryRoles.includes(role)) {
-      return 'secondary'
-    }
-
+    if (profile.primaryRoles.includes(role)) return 'primary'
+    if (profile.secondaryRoles.includes(role)) return 'secondary'
     return null
   }
 
   const setPrimaryRole = (role) => {
     setMessage('')
 
-    if (profile.primaryRoles.includes(role)) {
-      return
-    }
+    if (profile.primaryRoles.includes(role)) return
 
     if (profile.primaryRoles.length >= 2) {
       setMessage('You can select up to 2 primary roles.')
@@ -129,9 +129,7 @@ function ProfilePage() {
   const setSecondaryRole = (role) => {
     setMessage('')
 
-    if (profile.secondaryRoles.includes(role)) {
-      return
-    }
+    if (profile.secondaryRoles.includes(role)) return
 
     if (profile.secondaryRoles.length >= 3) {
       setMessage('You can select up to 3 secondary roles.')
@@ -151,6 +149,41 @@ function ProfilePage() {
       primaryRoles: current.primaryRoles.filter((item) => item !== role),
       secondaryRoles: current.secondaryRoles.filter((item) => item !== role),
     }))
+  }
+
+  const setSession = (serverCode) => {
+    setProfile((current) => ({
+      ...current,
+      lookingForGroup: true,
+      session: {
+        active: true,
+        serverCode,
+      },
+    }))
+
+    setMessage('Current WARDOGS session updated.')
+  }
+
+  const clearSession = () => {
+    setProfile((current) => ({
+      ...current,
+      session: {
+        active: false,
+        serverCode: '',
+      },
+    }))
+
+    setMessage('Current session cleared.')
+  }
+
+  const connectDiscord = () => {
+    updateField('discordConnected', true)
+    setMessage('Discord connected in preview mode.')
+  }
+
+  const connectSteam = () => {
+    updateField('steamConnected', true)
+    setMessage('Steam connected in preview mode.')
   }
 
   const saveProfile = () => {
@@ -175,8 +208,8 @@ function ProfilePage() {
           </h1>
 
           <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-500">
-            Set how you play, what roles you prefer and when you're available.
-            These preferences will power RallyStack's LFG and squad matching.
+            Your RallyStack identity, role preferences, connected accounts and
+            current WARDOGS session.
           </p>
         </div>
 
@@ -196,8 +229,9 @@ function ProfilePage() {
         </div>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
+      <div className="grid gap-6 xl:grid-cols-[1fr_370px]">
         <div className="space-y-6">
+
           <section className="border border-white/8 bg-[#0e1011]">
             <div className="border-b border-white/8 px-5 py-4">
               <div className="text-[10px] font-black tracking-[0.25em] text-stone-500">
@@ -206,7 +240,7 @@ function ProfilePage() {
             </div>
 
             <div className="grid gap-5 p-5 md:grid-cols-2">
-              <label className="block">
+              <label>
                 <span className="mb-2 block text-[10px] font-black tracking-wider text-stone-500">
                   CALLSIGN / DISPLAY NAME
                 </span>
@@ -215,11 +249,11 @@ function ProfilePage() {
                   value={profile.callsign}
                   onChange={(event) => updateField('callsign', event.target.value)}
                   placeholder="Your callsign"
-                  className="h-12 w-full border border-white/10 bg-[#0b0d0e] px-4 text-sm text-white outline-none transition placeholder:text-stone-700 focus:border-amber-500/50"
+                  className="h-12 w-full border border-white/10 bg-[#0b0d0e] px-4 text-sm text-white outline-none placeholder:text-stone-700 focus:border-amber-500/50"
                 />
               </label>
 
-              <label className="block">
+              <label>
                 <span className="mb-2 block text-[10px] font-black tracking-wider text-stone-500">
                   REGION
                 </span>
@@ -238,7 +272,7 @@ function ProfilePage() {
                 </select>
               </label>
 
-              <label className="block">
+              <label>
                 <span className="mb-2 block text-[10px] font-black tracking-wider text-stone-500">
                   PLAY STYLE
                 </span>
@@ -256,7 +290,7 @@ function ProfilePage() {
                 </select>
               </label>
 
-              <label className="block">
+              <label>
                 <span className="mb-2 block text-[10px] font-black tracking-wider text-stone-500">
                   USUAL PLAY TIMES
                 </span>
@@ -270,8 +304,7 @@ function ProfilePage() {
                   <input
                     value={profile.usualTimes}
                     onChange={(event) => updateField('usualTimes', event.target.value)}
-                    placeholder="e.g. 19:00 - 23:00"
-                    className="h-12 w-full border border-white/10 bg-[#0b0d0e] pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-stone-700 focus:border-amber-500/50"
+                    className="h-12 w-full border border-white/10 bg-[#0b0d0e] pl-11 pr-4 text-sm text-white outline-none focus:border-amber-500/50"
                   />
                 </div>
               </label>
@@ -310,6 +343,13 @@ function ProfilePage() {
               ))}
             </div>
           </section>
+
+          <CurrentSessionCard
+            session={profile.session}
+            discordConnected={profile.discordConnected}
+            onSetSession={setSession}
+            onClearSession={clearSession}
+          />
 
           <section className="border border-white/8 bg-[#0e1011]">
             <div className="border-b border-white/8 px-5 py-4">
@@ -351,7 +391,7 @@ function ProfilePage() {
                     </div>
 
                     <div className="mt-1 text-xs text-stone-500">
-                      Make your profile visible on the Find Players board.
+                      Show yourself on the Find Players board.
                     </div>
                   </div>
                 </div>
@@ -372,40 +412,12 @@ function ProfilePage() {
                   />
                 </div>
               </button>
-
-              <div className="mt-5">
-                <label className="block">
-                  <span className="mb-2 block text-[10px] font-black tracking-wider text-stone-500">
-                    CURRENT WARDOGS SERVER
-                  </span>
-
-                  <div className="relative">
-                    <Radio
-                      size={17}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-600"
-                    />
-
-                    <input
-                      value={profile.currentServer}
-                      onChange={(event) =>
-                        updateField('currentServer', event.target.value)
-                      }
-                      placeholder="e.g. Official EU #12"
-                      className="h-12 w-full border border-white/10 bg-[#0b0d0e] pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-stone-700 focus:border-amber-500/50"
-                    />
-                  </div>
-
-                  <span className="mt-2 block text-[10px] leading-5 text-stone-600">
-                    Manual for now. Later RallyStack can match this against live
-                    official server information where available.
-                  </span>
-                </label>
-              </div>
             </div>
           </section>
         </div>
 
         <aside className="space-y-5">
+
           <section className="border border-white/8 bg-[#111416]">
             <div className="border-b border-white/8 p-5">
               <div className="flex items-center gap-4">
@@ -502,45 +514,12 @@ function ProfilePage() {
             </div>
           </section>
 
-          <section className="border border-[#5865F2]/30 bg-[#5865F2]/[0.05] p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center border border-[#5865F2]/30 bg-[#5865F2]/10 text-[#8d96ff]">
-                  <MessageCircleMore size={22} />
-                </div>
-
-                <div>
-                  <div className="text-sm font-black text-white">
-                    DISCORD
-                  </div>
-
-                  <div className="mt-1 text-xs text-stone-500">
-                    Not connected
-                  </div>
-                </div>
-              </div>
-
-              <Wifi size={16} className="text-stone-700" />
-            </div>
-
-            <p className="mt-4 text-xs leading-5 text-stone-500">
-              Connect Discord to show your community identity, squad membership
-              and supported presence information.
-            </p>
-
-            <button
-              type="button"
-              onClick={() =>
-                setMessage(
-                  'Discord OAuth will be connected when RallyStack authentication is added.',
-                )
-              }
-              className="mt-5 flex h-11 w-full items-center justify-center gap-2 bg-[#5865F2] text-[10px] font-black tracking-wider text-white transition hover:bg-[#6872f5]"
-            >
-              <MessageCircleMore size={16} />
-              CONNECT DISCORD
-            </button>
-          </section>
+          <ConnectedAccountsCard
+            discordConnected={profile.discordConnected}
+            steamConnected={profile.steamConnected}
+            onDiscord={connectDiscord}
+            onSteam={connectSteam}
+          />
 
           <section className="border border-amber-500/20 bg-amber-500/[0.04] p-5">
             <div className="flex items-start gap-3">
