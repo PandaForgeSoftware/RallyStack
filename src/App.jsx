@@ -2,8 +2,11 @@
 import SiteHeader from './components/layout/SiteHeader'
 import FindPlayersPage from './pages/FindPlayersPage'
 import HomePage from './pages/HomePage'
+import LoginPage from './pages/LoginPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 import ProfilePage from './pages/ProfilePage'
+import RegistrationPage from './pages/RegistrationPage'
+import SetupPage from './pages/SetupPage'
 
 function App() {
   return (
@@ -48,14 +51,21 @@ function App() {
           }
         />
 
+        <Route path="/register" element={<RegistrationPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/setup" element={<SetupPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Routes>
 
       <footer className="border-t border-white/8 bg-[#090b0c]">
         <div className="mx-auto flex max-w-[1500px] flex-col gap-3 px-5 py-8 text-xs text-stone-600 md:flex-row md:items-center md:justify-between lg:px-8">
           <div>
-            <span className="font-black text-stone-400">RALLYSTACK</span>
+            <span className="font-black text-stone-400">
+              RALLYSTACK
+            </span>
+
             <span className="mx-2">•</span>
+
             Community companion for WARDOGS
           </div>
 

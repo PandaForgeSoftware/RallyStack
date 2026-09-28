@@ -3,6 +3,7 @@ import {
   Bell,
   Menu,
   Search,
+  UserPlus,
   UserRound,
 } from 'lucide-react'
 
@@ -15,12 +16,18 @@ const navItems = [
 ]
 
 function SiteHeader() {
+  const hasAccount = Boolean(
+    localStorage.getItem('rallystack-preview-account'),
+  )
+
   return (
     <header className="sticky top-0 z-50 border-b border-white/8 bg-[#0b0d0e]/95 backdrop-blur-xl">
       <div className="mx-auto flex h-20 max-w-[1500px] items-center px-5 lg:px-8">
         <NavLink to="/" className="mr-10 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center border border-amber-500/40 bg-amber-500/10">
-            <span className="text-lg font-black text-amber-500">R</span>
+            <span className="text-lg font-black text-amber-500">
+              R
+            </span>
           </div>
 
           <div className="leading-none">
@@ -62,28 +69,40 @@ function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <button className="hidden h-10 w-10 items-center justify-center border border-white/8 text-stone-400 transition hover:border-white/15 hover:text-white sm:flex">
+          <button className="hidden h-10 w-10 items-center justify-center border border-white/8 text-stone-400 sm:flex">
             <Search size={18} />
           </button>
 
-          <button className="hidden h-10 w-10 items-center justify-center border border-white/8 text-stone-400 transition hover:border-white/15 hover:text-white sm:flex">
+          <button className="hidden h-10 w-10 items-center justify-center border border-white/8 text-stone-400 sm:flex">
             <Bell size={18} />
           </button>
 
-          <NavLink
-            to="/profile"
-            className={({ isActive }) =>
-              [
-                'hidden h-10 items-center gap-3 border px-4 text-sm font-semibold transition sm:flex',
-                isActive
-                  ? 'border-amber-500/50 bg-amber-500/10 text-white'
-                  : 'border-white/8 text-stone-300 hover:border-white/15 hover:text-white',
-              ].join(' ')
-            }
-          >
-            <UserRound size={17} />
-            MY PROFILE
-          </NavLink>
+          {hasAccount ? (
+            <NavLink
+              to="/profile"
+              className="hidden h-10 items-center gap-3 border border-white/8 px-4 text-sm font-semibold text-stone-300 transition hover:border-white/15 hover:text-white sm:flex"
+            >
+              <UserRound size={17} />
+              MY PROFILE
+            </NavLink>
+          ) : (
+            <>
+              <NavLink
+                to="/login"
+                className="hidden h-10 items-center px-4 text-xs font-black tracking-wider text-stone-400 hover:text-white sm:flex"
+              >
+                SIGN IN
+              </NavLink>
+
+              <NavLink
+                to="/register"
+                className="hidden h-10 items-center gap-2 bg-amber-500 px-4 text-xs font-black tracking-wider text-black sm:flex"
+              >
+                <UserPlus size={15} />
+                REGISTER
+              </NavLink>
+            </>
+          )}
 
           <button className="flex h-10 w-10 items-center justify-center border border-white/8 text-stone-300 lg:hidden">
             <Menu size={20} />
