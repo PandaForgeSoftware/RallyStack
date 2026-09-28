@@ -1,26 +1,71 @@
+﻿import { Route, Routes } from 'react-router-dom'
+import SiteHeader from './components/layout/SiteHeader'
+import HomePage from './pages/HomePage'
+import PlaceholderPage from './pages/PlaceholderPage'
+
 function App() {
   return (
-    <main className="min-h-screen bg-[#0b0d0e] text-stone-100">
-      <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-6">
-        <div className="text-center">
-          <p className="mb-3 text-sm font-semibold tracking-[0.35em] text-amber-500">
-            WARDOGS COMMUNITY
-          </p>
+    <div className="min-h-screen bg-[#0b0d0e] text-stone-100">
+      <SiteHeader />
 
-          <h1 className="text-6xl font-black tracking-tight">
-            RALLYSTACK
-          </h1>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
 
-          <p className="mt-4 text-xl text-stone-400">
-            BUILD. SQUAD UP. DEPLOY.
-          </p>
+        <Route
+          path="/loadouts"
+          element={
+            <PlaceholderPage
+              title="Loadouts"
+              description="Build, save, share and discover complete WARDOGS kits with weapons, attachments, armour, backpacks and equipment."
+            />
+          }
+        />
 
-          <div className="mt-10 inline-flex rounded-md border border-stone-800 bg-stone-900 px-5 py-3 text-sm text-stone-400">
-            Project foundation ready.
+        <Route
+          path="/find-players"
+          element={
+            <PlaceholderPage
+              title="Find Players"
+              description="Find players by region, role, availability and play style, or create a temporary group with open squad roles."
+            />
+          }
+        />
+
+        <Route
+          path="/squads"
+          element={
+            <PlaceholderPage
+              title="Squads"
+              description="Discover squads, manage rosters, recruit players and organise permanent groups including LAST ORDERS [LAST]."
+            />
+          }
+        />
+
+        <Route
+          path="/armory"
+          element={
+            <PlaceholderPage
+              title="Armory"
+              description="Browse the WARDOGS equipment database, weapon attachments, backpacks, armour and other gear."
+            />
+          }
+        />
+      </Routes>
+
+      <footer className="border-t border-white/8 bg-[#090b0c]">
+        <div className="mx-auto flex max-w-[1500px] flex-col gap-3 px-5 py-8 text-xs text-stone-600 md:flex-row md:items-center md:justify-between lg:px-8">
+          <div>
+            <span className="font-black text-stone-400">RALLYSTACK</span>
+            <span className="mx-2">•</span>
+            Community companion for WARDOGS
+          </div>
+
+          <div>
+            Not affiliated with BULKHEAD or Team17.
           </div>
         </div>
-      </div>
-    </main>
+      </footer>
+    </div>
   )
 }
 
