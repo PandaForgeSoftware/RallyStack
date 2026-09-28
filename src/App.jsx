@@ -1,4 +1,4 @@
-import {
+﻿import {
   Navigate,
   Route,
   Routes,
@@ -6,13 +6,14 @@ import {
 } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import ProtectedRoute from './components/auth/ProtectedRoute'
-import SiteHeader from './components/layout/SiteHeader'
 import SiteFooter from './components/layout/SiteFooter'
+import SiteHeader from './components/layout/SiteHeader'
 import AuthCallbackPage from './pages/AuthCallbackPage'
+import DealsPage from './pages/DealsPage'
 import FindPlayersPage from './pages/FindPlayersPage'
 import HomePage from './pages/HomePage'
-import LoginPage from './pages/LoginPage'
 import LegalPage from './pages/LegalPage'
+import LoginPage from './pages/LoginPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 import ProfilePage from './pages/ProfilePage'
 import RegistrationPage from './pages/RegistrationPage'
@@ -72,10 +73,13 @@ function SetupEnforcer({ children }) {
 function App() {
   return (
     <SetupEnforcer>
+
       <div className="min-h-screen bg-[#0b0d0e] text-stone-100">
+
         <SiteHeader />
 
         <Routes>
+
           <Route
             path="/"
             element={<HomePage />}
@@ -116,11 +120,16 @@ function App() {
             }
           />
 
+          <Route
+            path="/deals"
+            element={<DealsPage />}
+          />
 
           <Route
             path="/legal"
             element={<LegalPage />}
           />
+
           <Route
             path="/register"
             element={<RegistrationPage />}
@@ -153,10 +162,13 @@ function App() {
               </ProtectedRoute>
             }
           />
+
         </Routes>
 
         <SiteFooter />
+
       </div>
+
     </SetupEnforcer>
   )
 }
