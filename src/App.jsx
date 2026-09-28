@@ -1,5 +1,6 @@
 ﻿import { Route, Routes } from 'react-router-dom'
 import SiteHeader from './components/layout/SiteHeader'
+import FindPlayersPage from './pages/FindPlayersPage'
 import HomePage from './pages/HomePage'
 import PlaceholderPage from './pages/PlaceholderPage'
 import ProfilePage from './pages/ProfilePage'
@@ -24,12 +25,7 @@ function App() {
 
         <Route
           path="/find-players"
-          element={
-            <PlaceholderPage
-              title="Find Players"
-              description="Find players by region, role, availability and play style, or create a temporary group with open squad roles."
-            />
-          }
+          element={<FindPlayersPage />}
         />
 
         <Route
