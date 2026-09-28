@@ -1,6 +1,12 @@
 ﻿import { useState } from 'react'
-import { ArrowRight, Lock, Mail, ShieldCheck, UserRound } from 'lucide-react'
+import {
+  ArrowRight,
+  Lock,
+  Mail,
+  ShieldCheck,
+} from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 
 function RegistrationPage() {
   const navigate = useNavigate()
@@ -12,6 +18,8 @@ function RegistrationPage() {
   })
 
   const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const updateField = (field, value) => {
     setForm((current) => ({
@@ -22,8 +30,11 @@ function RegistrationPage() {
     setError('')
   }
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault()
+
+    setError('')
+    setMessage('')
 
     if (!form.email.trim()) {
       setError('Enter your email address.')
@@ -40,24 +51,33 @@ function RegistrationPage() {
       return
     }
 
-    // Preview only.
-    // We deliberately DO NOT store the password.
-    localStorage.setItem(
-      'rallystack-preview-account',
-      JSON.stringify({
-        email: form.email.trim(),
-        registeredAt: new Date().toISOString(),
-      }),
-    )
+    setSubmitting(true)
 
-    navigate('/setup')
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: form.email.trim(),
+      password: form.password,
+    })
+
+    setSubmitting(false)
+
+    if (signUpError) {
+      setError(signUpError.message)
+      return
+    }
+
+    if (data.session) {
+      navigate('/setup')
+      return
+    }
+
+    setMessage(
+      'Account created. Check your email and confirm your address, then RallyStack will continue your setup.',
+    )
   }
 
   return (
     <main className="relative min-h-[calc(100vh-80px)] overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(245,158,11,0.10),transparent_35%)]" />
-
-      <div className="absolute inset-0 opacity-[0.03] [background-image:linear-gradient(rgba(255,255,255,0.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.8)_1px,transparent_1px)] [background-size:52px_52px]" />
 
       <div className="relative mx-auto grid min-h-[calc(100vh-80px)] max-w-[1400px] items-center gap-16 px-5 py-12 lg:grid-cols-[1fr_520px] lg:px-8">
         <div className="hidden lg:block">
@@ -76,8 +96,8 @@ function RegistrationPage() {
           </h1>
 
           <p className="mt-6 max-w-xl text-base leading-7 text-stone-500">
-            Create your RallyStack identity, save loadouts, find players,
-            join squads and connect Discord and Steam.
+            One account for your loadouts, LFG profile, squads, Discord
+            connection and WARDOGS community.
           </p>
 
           <div className="mt-10 grid max-w-xl gap-3 sm:grid-cols-2">
@@ -109,7 +129,7 @@ function RegistrationPage() {
             </h2>
 
             <p className="mt-2 text-sm text-stone-500">
-              Registration will later be handled securely by Supabase.
+              Your account is now handled by the real RallyStack backend.
             </p>
           </div>
 
@@ -117,6 +137,12 @@ function RegistrationPage() {
             {error && (
               <div className="border border-red-500/25 bg-red-500/[0.05] px-4 py-3 text-xs font-semibold text-red-400">
                 {error}
+              </div>
+            )}
+
+            {message && (
+              <div className="border border-emerald-500/25 bg-emerald-500/[0.05] px-4 py-3 text-xs leading-5 text-emerald-400">
+                {message}
               </div>
             )}
 
@@ -134,9 +160,10 @@ function RegistrationPage() {
                 <input
                   type="email"
                   value={form.email}
-                  onChange={(event) => updateField('email', event.target.value)}
-                  placeholder="you@example.com"
-                  className="h-12 w-full border border-white/10 bg-[#0b0d0e] pl-11 pr-4 text-sm text-white outline-none placeholder:text-stone-700 focus:border-amber-500/50"
+                  onChange={(event) =>
+                    updateField('email', event.target.value)
+                  }
+                  className="h-12 w-full border border-white/10 bg-[#0b0d0e] pl-11 pr-4 text-sm text-white outline-none focus:border-amber-500/50"
                 />
               </div>
             </label>
@@ -155,9 +182,10 @@ function RegistrationPage() {
                 <input
                   type="password"
                   value={form.password}
-                  onChange={(event) => updateField('password', event.target.value)}
-                  placeholder="Minimum 8 characters"
-                  className="h-12 w-full border border-white/10 bg-[#0b0d0e] pl-11 pr-4 text-sm text-white outline-none placeholder:text-stone-700 focus:border-amber-500/50"
+                  onChange={(event) =>
+                    updateField('password', event.target.value)
+                  }
+                  className="h-12 w-full border border-white/10 bg-[#0b0d0e] pl-11 pr-4 text-sm text-white outline-none focus:border-amber-500/50"
                 />
               </div>
             </label>
@@ -179,18 +207,18 @@ function RegistrationPage() {
                   onChange={(event) =>
                     updateField('confirmPassword', event.target.value)
                   }
-                  placeholder="Enter it again"
-                  className="h-12 w-full border border-white/10 bg-[#0b0d0e] pl-11 pr-4 text-sm text-white outline-none placeholder:text-stone-700 focus:border-amber-500/50"
+                  className="h-12 w-full border border-white/10 bg-[#0b0d0e] pl-11 pr-4 text-sm text-white outline-none focus:border-amber-500/50"
                 />
               </div>
             </label>
 
             <button
               type="submit"
-              className="flex h-12 w-full items-center justify-center gap-2 bg-amber-500 text-xs font-black tracking-wider text-black transition hover:bg-amber-400"
+              disabled={submitting}
+              className="flex h-12 w-full items-center justify-center gap-2 bg-amber-500 text-xs font-black tracking-wider text-black transition hover:bg-amber-400 disabled:opacity-50"
             >
-              CREATE ACCOUNT
-              <ArrowRight size={16} />
+              {submitting ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
+              {!submitting && <ArrowRight size={16} />}
             </button>
 
             <div className="text-center text-xs text-stone-600">

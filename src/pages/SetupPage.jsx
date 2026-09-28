@@ -1,4 +1,7 @@
-﻿import { useState } from 'react'
+﻿import {
+  useEffect,
+  useState,
+} from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,10 +15,11 @@ import {
   Plane,
   Search,
   ShieldCheck,
-  Star,
   Wrench,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 
 const roleOptions = [
   {
@@ -51,82 +55,162 @@ const roleOptions = [
 ]
 
 const defaultSetup = {
-  callsign: '',
+  inGameName: '',
   region: 'UK / EU',
   playStyle: 'Casual Tactical',
   usualTimes: '19:00 - 23:00',
   mic: true,
   primaryRoles: [],
   secondaryRoles: [],
-  discordConnected: false,
-  steamConnected: false,
+}
+
+function loadDraft() {
+  try {
+    const saved = sessionStorage.getItem('rallystack-setup-draft')
+    return saved ? JSON.parse(saved) : null
+  } catch {
+    return null
+  }
 }
 
 function SetupPage() {
   const navigate = useNavigate()
+  const { user, profile: storedProfile, refreshProfile } = useAuth()
 
-  const [step, setStep] = useState(1)
-  const [profile, setProfile] = useState(defaultSetup)
+  const [step, setStep] = useState(() => {
+    const saved = Number(
+      sessionStorage.getItem('rallystack-setup-step') || 1,
+    )
+
+    return saved >= 1 && saved <= 4 ? saved : 1
+  })
+
+  const [profile, setProfile] = useState(
+    () => loadDraft() || defaultSetup,
+  )
+
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [discordConnected, setDiscordConnected] = useState(false)
+
+  useEffect(() => {
+    if (loadDraft()) return
+    if (!storedProfile) return
+
+    setProfile({
+      inGameName: storedProfile.in_game_name || '',
+      region: storedProfile.region || 'UK / EU',
+      playStyle: storedProfile.play_style || 'Casual Tactical',
+      usualTimes: storedProfile.usual_play_times || '19:00 - 23:00',
+      mic: storedProfile.mic ?? true,
+      primaryRoles: storedProfile.primary_roles || [],
+      secondaryRoles: storedProfile.secondary_roles || [],
+    })
+  }, [storedProfile])
+
+  useEffect(() => {
+    const checkDiscord = async () => {
+      const { data } = await supabase.auth.getUserIdentities()
+
+      const identities = data?.identities || []
+
+      setDiscordConnected(
+        identities.some((identity) => identity.provider === 'discord'),
+      )
+    }
+
+    checkDiscord()
+  }, [])
+
+  const persistDraft = (nextProfile = profile, nextStep = step) => {
+    sessionStorage.setItem(
+      'rallystack-setup-draft',
+      JSON.stringify(nextProfile),
+    )
+
+    sessionStorage.setItem(
+      'rallystack-setup-step',
+      String(nextStep),
+    )
+  }
 
   const updateField = (field, value) => {
-    setProfile((current) => ({
-      ...current,
+    const updated = {
+      ...profile,
       [field]: value,
-    }))
+    }
+
+    setProfile(updated)
+    persistDraft(updated, step)
   }
 
   const choosePrimary = (role) => {
     setError('')
 
+    let updated
+
     if (profile.primaryRoles.includes(role)) {
-      setProfile((current) => ({
-        ...current,
-        primaryRoles: current.primaryRoles.filter((item) => item !== role),
-      }))
-      return
+      updated = {
+        ...profile,
+        primaryRoles: profile.primaryRoles.filter(
+          (item) => item !== role,
+        ),
+      }
+    } else {
+      if (profile.primaryRoles.length >= 2) {
+        setError('Choose a maximum of 2 primary roles.')
+        return
+      }
+
+      updated = {
+        ...profile,
+        primaryRoles: [...profile.primaryRoles, role],
+        secondaryRoles: profile.secondaryRoles.filter(
+          (item) => item !== role,
+        ),
+      }
     }
 
-    if (profile.primaryRoles.length >= 2) {
-      setError('Choose a maximum of 2 primary roles.')
-      return
-    }
-
-    setProfile((current) => ({
-      ...current,
-      primaryRoles: [...current.primaryRoles, role],
-      secondaryRoles: current.secondaryRoles.filter((item) => item !== role),
-    }))
+    setProfile(updated)
+    persistDraft(updated, step)
   }
 
   const chooseSecondary = (role) => {
     setError('')
 
+    let updated
+
     if (profile.secondaryRoles.includes(role)) {
-      setProfile((current) => ({
-        ...current,
-        secondaryRoles: current.secondaryRoles.filter((item) => item !== role),
-      }))
-      return
+      updated = {
+        ...profile,
+        secondaryRoles: profile.secondaryRoles.filter(
+          (item) => item !== role,
+        ),
+      }
+    } else {
+      if (profile.secondaryRoles.length >= 3) {
+        setError('Choose a maximum of 3 secondary roles.')
+        return
+      }
+
+      updated = {
+        ...profile,
+        primaryRoles: profile.primaryRoles.filter(
+          (item) => item !== role,
+        ),
+        secondaryRoles: [...profile.secondaryRoles, role],
+      }
     }
 
-    if (profile.secondaryRoles.length >= 3) {
-      setError('Choose a maximum of 3 secondary roles.')
-      return
-    }
-
-    setProfile((current) => ({
-      ...current,
-      primaryRoles: current.primaryRoles.filter((item) => item !== role),
-      secondaryRoles: [...current.secondaryRoles, role],
-    }))
+    setProfile(updated)
+    persistDraft(updated, step)
   }
 
   const next = () => {
     setError('')
 
-    if (step === 1 && !profile.callsign.trim()) {
-      setError('Choose a callsign before continuing.')
+    if (step === 1 && !profile.inGameName.trim()) {
+      setError('Enter your in-game name before continuing.')
       return
     }
 
@@ -135,31 +219,72 @@ function SetupPage() {
       return
     }
 
-    setStep((current) => Math.min(current + 1, 4))
+    const nextStep = Math.min(step + 1, 4)
+
+    setStep(nextStep)
+    persistDraft(profile, nextStep)
   }
 
   const back = () => {
     setError('')
-    setStep((current) => Math.max(current - 1, 1))
+
+    const nextStep = Math.max(step - 1, 1)
+
+    setStep(nextStep)
+    persistDraft(profile, nextStep)
   }
 
-  const finish = () => {
-    const completedProfile = {
-      ...profile,
-      lookingForGroup: false,
-      setupComplete: true,
-      session: {
-        active: false,
-        serverCode: '',
-      },
+  const connectDiscord = async () => {
+    setError('')
+
+    persistDraft(profile, 4)
+
+    const { error: linkError } = await supabase.auth.linkIdentity({
+      provider: 'discord',
+    })
+
+    if (linkError) {
+      setError(
+        `Discord is not ready yet: ${linkError.message}`,
+      )
+    }
+  }
+
+  const finish = async () => {
+    if (!user) return
+
+    setSaving(true)
+    setError('')
+
+    const { error: saveError } = await supabase
+      .from('profiles')
+      .update({
+        in_game_name: profile.inGameName.trim(),
+        region: profile.region,
+        play_style: profile.playStyle,
+        usual_play_times: profile.usualTimes,
+        mic: profile.mic,
+        primary_roles: profile.primaryRoles,
+        secondary_roles: profile.secondaryRoles,
+        setup_complete: true,
+      })
+      .eq('id', user.id)
+
+    setSaving(false)
+
+    if (saveError) {
+      setError(saveError.message)
+      return
     }
 
-    localStorage.setItem(
-      'rallystack-profile',
-      JSON.stringify(completedProfile),
-    )
+    sessionStorage.removeItem('rallystack-setup-draft')
+    sessionStorage.removeItem('rallystack-setup-step')
 
-    navigate('/profile')
+    await refreshProfile()
+
+    navigate('/profile', {
+      replace: true,
+    })
   }
 
   return (
@@ -174,8 +299,8 @@ function SetupPage() {
         </h1>
 
         <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-500">
-          A few quick choices and RallyStack will know who you want to play
-          with, what roles you prefer and how other players can find you.
+          Set your in-game identity, roles and play preferences once.
+          RallyStack will use them for LFG and squad matching.
         </p>
       </div>
 
@@ -231,7 +356,6 @@ function SetupPage() {
       )}
 
       <section className="border border-white/8 bg-[#0e1011]">
-
         {step === 1 && (
           <div className="p-6">
             <div className="mb-6">
@@ -240,22 +364,25 @@ function SetupPage() {
               </div>
 
               <h2 className="mt-2 text-2xl font-black text-white">
-                Who are you?
+                Who are you in WARDOGS?
               </h2>
             </div>
 
             <div className="grid gap-5 md:grid-cols-2">
               <label>
                 <span className="mb-2 block text-[10px] font-black tracking-wider text-stone-500">
-                  CALLSIGN
+                  IN-GAME NAME
                 </span>
 
                 <input
-                  value={profile.callsign}
+                  value={profile.inGameName}
                   onChange={(event) =>
-                    updateField('callsign', event.target.value)
+                    updateField(
+                      'inGameName',
+                      event.target.value,
+                    )
                   }
-                  placeholder="How players will see you"
+                  placeholder="Your WARDOGS name"
                   className="h-12 w-full border border-white/10 bg-[#0b0d0e] px-4 text-sm text-white outline-none placeholder:text-stone-700 focus:border-amber-500/50"
                 />
               </label>
@@ -268,7 +395,10 @@ function SetupPage() {
                 <select
                   value={profile.region}
                   onChange={(event) =>
-                    updateField('region', event.target.value)
+                    updateField(
+                      'region',
+                      event.target.value,
+                    )
                   }
                   className="h-12 w-full border border-white/10 bg-[#0b0d0e] px-4 text-sm text-white outline-none"
                 >
@@ -303,8 +433,11 @@ function SetupPage() {
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {roleOptions.map((role) => {
                 const Icon = role.icon
-                const primary = profile.primaryRoles.includes(role.name)
-                const secondary = profile.secondaryRoles.includes(role.name)
+                const primary =
+                  profile.primaryRoles.includes(role.name)
+
+                const secondary =
+                  profile.secondaryRoles.includes(role.name)
 
                 return (
                   <article
@@ -344,7 +477,9 @@ function SetupPage() {
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => choosePrimary(role.name)}
+                        onClick={() =>
+                          choosePrimary(role.name)
+                        }
                         className={[
                           'h-9 border text-[9px] font-black tracking-wider',
                           primary
@@ -357,7 +492,9 @@ function SetupPage() {
 
                       <button
                         type="button"
-                        onClick={() => chooseSecondary(role.name)}
+                        onClick={() =>
+                          chooseSecondary(role.name)
+                        }
                         className={[
                           'h-9 border text-[9px] font-black tracking-wider',
                           secondary
@@ -396,7 +533,10 @@ function SetupPage() {
                 <select
                   value={profile.playStyle}
                   onChange={(event) =>
-                    updateField('playStyle', event.target.value)
+                    updateField(
+                      'playStyle',
+                      event.target.value,
+                    )
                   }
                   className="h-12 w-full border border-white/10 bg-[#0b0d0e] px-4 text-sm text-white outline-none"
                 >
@@ -416,7 +556,10 @@ function SetupPage() {
                 <input
                   value={profile.usualTimes}
                   onChange={(event) =>
-                    updateField('usualTimes', event.target.value)
+                    updateField(
+                      'usualTimes',
+                      event.target.value,
+                    )
                   }
                   className="h-12 w-full border border-white/10 bg-[#0b0d0e] px-4 text-sm text-white outline-none"
                 />
@@ -425,7 +568,9 @@ function SetupPage() {
 
             <button
               type="button"
-              onClick={() => updateField('mic', !profile.mic)}
+              onClick={() =>
+                updateField('mic', !profile.mic)
+              }
               className={[
                 'mt-5 flex w-full items-center justify-between border p-4',
                 profile.mic
@@ -437,7 +582,9 @@ function SetupPage() {
                 <Headphones
                   size={20}
                   className={
-                    profile.mic ? 'text-emerald-400' : 'text-stone-600'
+                    profile.mic
+                      ? 'text-emerald-400'
+                      : 'text-stone-600'
                   }
                 />
 
@@ -447,12 +594,19 @@ function SetupPage() {
                   </div>
 
                   <div className="mt-1 text-[10px] text-stone-600">
-                    Let other players know whether you use voice comms.
+                    Tell other players whether you use voice comms.
                   </div>
                 </div>
               </div>
 
-              <div className="text-xs font-black text-emerald-400">
+              <div
+                className={[
+                  'text-xs font-black',
+                  profile.mic
+                    ? 'text-emerald-400'
+                    : 'text-stone-500',
+                ].join(' ')}
+              >
                 {profile.mic ? 'YES' : 'NO'}
               </div>
             </button>
@@ -471,25 +625,24 @@ function SetupPage() {
               </h2>
 
               <p className="mt-2 text-xs text-stone-500">
-                Optional for now. These will use real OAuth once Supabase and
-                the RallyStack integrations are connected.
+                These are optional. Your RallyStack profile works without
+                either connection.
               </p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <button
                 type="button"
-                onClick={() =>
-                  updateField(
-                    'discordConnected',
-                    !profile.discordConnected,
-                  )
+                onClick={
+                  discordConnected
+                    ? undefined
+                    : connectDiscord
                 }
                 className={[
                   'border p-5 text-left transition',
-                  profile.discordConnected
+                  discordConnected
                     ? 'border-[#5865F2]/50 bg-[#5865F2]/10'
-                    : 'border-white/8 bg-[#111416]',
+                    : 'border-white/8 bg-[#111416] hover:border-[#5865F2]/40',
                 ].join(' ')}
               >
                 <div className="flex items-center justify-between">
@@ -498,8 +651,11 @@ function SetupPage() {
                     className="text-[#8d96ff]"
                   />
 
-                  {profile.discordConnected && (
-                    <Check size={18} className="text-emerald-400" />
+                  {discordConnected && (
+                    <Check
+                      size={18}
+                      className="text-emerald-400"
+                    />
                   )}
                 </div>
 
@@ -508,35 +664,28 @@ function SetupPage() {
                 </div>
 
                 <div className="mt-2 text-xs leading-5 text-stone-500">
-                  LFG commands, squad community, voice presence and server
-                  session shortcuts.
+                  {discordConnected
+                    ? 'Discord identity connected.'
+                    : 'Connect Discord for LFG commands, squad features and server session shortcuts.'}
+                </div>
+
+                <div className="mt-4 text-[9px] font-black tracking-wider text-[#8d96ff]">
+                  {discordConnected
+                    ? 'CONNECTED'
+                    : 'CONNECT DISCORD'}
                 </div>
               </button>
 
-              <button
-                type="button"
-                onClick={() =>
-                  updateField(
-                    'steamConnected',
-                    !profile.steamConnected,
-                  )
-                }
-                className={[
-                  'border p-5 text-left transition',
-                  profile.steamConnected
-                    ? 'border-sky-500/40 bg-sky-500/[0.06]'
-                    : 'border-white/8 bg-[#111416]',
-                ].join(' ')}
-              >
+              <div className="border border-white/8 bg-[#111416] p-5">
                 <div className="flex items-center justify-between">
                   <Gamepad2
                     size={25}
                     className="text-sky-400"
                   />
 
-                  {profile.steamConnected && (
-                    <Check size={18} className="text-emerald-400" />
-                  )}
+                  <span className="text-[9px] font-black tracking-wider text-stone-600">
+                    NEXT
+                  </span>
                 </div>
 
                 <div className="mt-5 text-sm font-black text-white">
@@ -544,10 +693,14 @@ function SetupPage() {
                 </div>
 
                 <div className="mt-2 text-xs leading-5 text-stone-500">
-                  Game identity, profile information and WARDOGS presence
-                  where available.
+                  Steam will use Valve's real login flow. We will wire
+                  that immediately after Discord.
                 </div>
-              </button>
+
+                <div className="mt-4 text-[9px] font-black tracking-wider text-sky-400">
+                  STEAM LINKING NEXT
+                </div>
+              </div>
             </div>
 
             <div className="mt-5 border border-emerald-500/20 bg-emerald-500/[0.04] p-4">
@@ -559,12 +712,12 @@ function SetupPage() {
 
                 <div>
                   <div className="text-xs font-black text-white">
-                    You can change this later
+                    Connections are optional
                   </div>
 
                   <div className="mt-1 text-[10px] leading-5 text-stone-600">
-                    Discord and Steam are optional. RallyStack itself will not
-                    require either account to use basic LFG and loadout tools.
+                    RallyStack will never require Discord or Steam just
+                    to use basic loadout and LFG features.
                   </div>
                 </div>
               </div>
@@ -596,10 +749,11 @@ function SetupPage() {
             <button
               type="button"
               onClick={finish}
-              className="flex h-11 items-center gap-2 bg-amber-500 px-5 text-[10px] font-black tracking-wider text-black"
+              disabled={saving}
+              className="flex h-11 items-center gap-2 bg-amber-500 px-5 text-[10px] font-black tracking-wider text-black disabled:opacity-50"
             >
-              FINISH SETUP
-              <Check size={15} />
+              {saving ? 'SAVING...' : 'FINISH SETUP'}
+              {!saving && <Check size={15} />}
             </button>
           )}
         </div>

@@ -1,6 +1,11 @@
 ﻿import { useState } from 'react'
-import { ArrowRight, Lock, Mail } from 'lucide-react'
+import {
+  ArrowRight,
+  Lock,
+  Mail,
+} from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -8,25 +13,28 @@ function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault()
 
-    if (!email || !password) {
-      setError('Enter your email and password.')
+    setError('')
+    setSubmitting(true)
+
+    const { error: loginError } =
+      await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      })
+
+    setSubmitting(false)
+
+    if (loginError) {
+      setError(loginError.message)
       return
     }
 
-    const existingAccount = localStorage.getItem('rallystack-preview-account')
-
-    if (!existingAccount) {
-      setError('No preview account exists yet. Register first.')
-      return
-    }
-
-    const profile = localStorage.getItem('rallystack-profile')
-
-    navigate(profile ? '/profile' : '/setup')
+    navigate('/')
   }
 
   return (
@@ -95,10 +103,11 @@ function LoginPage() {
 
           <button
             type="submit"
-            className="flex h-12 w-full items-center justify-center gap-2 bg-amber-500 text-xs font-black tracking-wider text-black"
+            disabled={submitting}
+            className="flex h-12 w-full items-center justify-center gap-2 bg-amber-500 text-xs font-black tracking-wider text-black disabled:opacity-50"
           >
-            SIGN IN
-            <ArrowRight size={16} />
+            {submitting ? 'SIGNING IN...' : 'SIGN IN'}
+            {!submitting && <ArrowRight size={16} />}
           </button>
 
           <div className="text-center text-xs text-stone-600">
