@@ -1,4 +1,4 @@
-﻿import {
+import {
   useEffect,
   useState,
 } from 'react'
@@ -83,6 +83,11 @@ function ProfilePage() {
 
   const [steamConnected, setSteamConnected] =
     useState(false)
+  const [steamAccount, setSteamAccount] =
+    useState(null)
+
+  const [steamConnecting, setSteamConnecting] =
+    useState(false)
 
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
@@ -155,12 +160,27 @@ function ProfilePage() {
 
     const { data: steam } = await supabase
       .from('linked_accounts')
-      .select('id')
+      .select(`
+        id,
+        provider_user_id,
+        provider_username,
+        provider_avatar_url,
+        provider_profile_url,
+        metadata,
+        linked_at,
+        updated_at
+      `)
       .eq('user_id', user.id)
       .eq('provider', 'steam')
       .maybeSingle()
 
-    setSteamConnected(Boolean(steam))
+    setSteamAccount(
+      steam || null
+    )
+
+    setSteamConnected(
+      Boolean(steam)
+    )
   }
 
   useEffect(() => {
@@ -354,10 +374,109 @@ function ProfilePage() {
     }
   }
 
-  const connectSteam = () => {
-    setMessage(
-      'Steam linking is the next backend integration.',
+  const connectSteam = async () => {
+    if (!user) {
+      setMessage(
+        'You need to be signed in before connecting Steam.',
+      )
+
+      return
+    }
+
+    setMessage('')
+    setSteamConnecting(true)
+
+    let popup = null
+
+    const handleSteamMessage = async (
+      event,
+    ) => {
+      if (
+        event.data?.type !==
+        'rallystack-steam-link'
+      ) {
+        return
+      }
+
+      window.removeEventListener(
+        'message',
+        handleSteamMessage,
+      )
+
+      setSteamConnecting(false)
+
+      if (!event.data.ok) {
+        setMessage(
+          'Steam linking did not complete.',
+        )
+
+        return
+      }
+
+      await loadConnections()
+
+      setMessage(
+        'Steam account connected successfully.',
+      )
+    }
+
+    window.addEventListener(
+      'message',
+      handleSteamMessage,
     )
+
+    try {
+      const {
+        data,
+        error,
+      } =
+        await supabase.functions.invoke(
+          'steam-link',
+          {
+            body: {},
+          },
+        )
+
+      if (error) {
+        throw error
+      }
+
+      if (!data?.auth_url) {
+        throw new Error(
+          'Steam login URL was not returned.',
+        )
+      }
+
+      popup =
+        window.open(
+          data.auth_url,
+          'rallystack-steam-link',
+          'popup=yes,width=720,height=760,resizable=yes,scrollbars=yes',
+        )
+
+      if (!popup) {
+        throw new Error(
+          'Your browser blocked the Steam login popup.',
+        )
+      }
+
+      popup.focus()
+    }
+    catch (error) {
+      window.removeEventListener(
+        'message',
+        handleSteamMessage,
+      )
+
+      setSteamConnecting(false)
+
+      setMessage(
+        `Steam connection failed: ${
+          error?.message ||
+          'Unknown error'
+        }`,
+      )
+    }
   }
 
   return (
@@ -697,6 +816,12 @@ function ProfilePage() {
             }
             steamConnected={
               steamConnected
+            }
+            steamAccount={
+              steamAccount
+            }
+            steamConnecting={
+              steamConnecting
             }
             onDiscord={
               connectDiscord

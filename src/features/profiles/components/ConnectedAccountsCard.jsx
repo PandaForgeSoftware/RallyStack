@@ -1,13 +1,16 @@
-﻿import {
+import {
   Check,
   ExternalLink,
   Gamepad2,
+  Loader2,
   MessageCircleMore,
 } from 'lucide-react'
 
 function ConnectedAccountsCard({
   discordConnected,
   steamConnected,
+  steamAccount,
+  steamConnecting,
   onDiscord,
   onSteam,
 }) {
@@ -60,11 +63,14 @@ function ConnectedAccountsCard({
                     </div>
 
                     <div className="mt-1 text-[10px] text-stone-600">
-                      OAuth identity will appear here.
+                      Discord identity connected.
                     </div>
                   </div>
 
-                  <ExternalLink size={14} className="text-stone-600" />
+                  <ExternalLink
+                    size={14}
+                    className="text-stone-600"
+                  />
                 </div>
               ) : (
                 <button
@@ -95,7 +101,7 @@ function ConnectedAccountsCard({
 
                   <div className="mt-1 text-xs text-stone-500">
                     {steamConnected
-                      ? 'Steam identity connected'
+                      ? 'Steam account connected'
                       : 'Game identity and WARDOGS presence'}
                   </div>
                 </div>
@@ -109,27 +115,63 @@ function ConnectedAccountsCard({
               </div>
 
               {steamConnected ? (
-                <div className="mt-4 flex items-center justify-between border border-white/8 bg-black/20 px-4 py-3">
-                  <div>
-                    <div className="text-xs font-bold text-stone-300">
-                      Steam account
+                <div className="mt-4 flex items-center gap-3 border border-white/8 bg-black/20 px-4 py-3">
+                  {steamAccount?.provider_avatar_url ? (
+                    <img
+                      src={steamAccount.provider_avatar_url}
+                      alt=""
+                      className="h-10 w-10 shrink-0 object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#1b2838] text-sky-400">
+                      <Gamepad2 size={18} />
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-bold text-stone-200">
+                      {steamAccount?.provider_username ||
+                        'Steam account'}
                     </div>
 
-                    <div className="mt-1 text-[10px] text-stone-600">
-                      Steam username and avatar will appear here.
+                    <div className="mt-1 truncate text-[10px] text-stone-600">
+                      Steam ID:{' '}
+                      {steamAccount?.provider_user_id ||
+                        'Linked'}
                     </div>
                   </div>
 
-                  <ExternalLink size={14} className="text-stone-600" />
+                  {steamAccount?.provider_profile_url && (
+                    <a
+                      href={steamAccount.provider_profile_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Open Steam profile"
+                      className="text-stone-600 transition hover:text-sky-400"
+                    >
+                      <ExternalLink size={15} />
+                    </a>
+                  )}
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={onSteam}
-                  className="mt-4 flex h-10 w-full items-center justify-center gap-2 bg-[#1b2838] text-[10px] font-black tracking-wider text-white transition hover:bg-[#22354a]"
+                  disabled={steamConnecting}
+                  className="mt-4 flex h-10 w-full items-center justify-center gap-2 bg-[#1b2838] text-[10px] font-black tracking-wider text-white transition hover:bg-[#22354a] disabled:cursor-wait disabled:opacity-60"
                 >
-                  <Gamepad2 size={15} />
-                  CONNECT STEAM
+                  {steamConnecting ? (
+                    <Loader2
+                      size={15}
+                      className="animate-spin"
+                    />
+                  ) : (
+                    <Gamepad2 size={15} />
+                  )}
+
+                  {steamConnecting
+                    ? 'OPENING STEAM'
+                    : 'CONNECT STEAM'}
                 </button>
               )}
             </div>
