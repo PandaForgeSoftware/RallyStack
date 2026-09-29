@@ -1,3 +1,4 @@
+import { registerSquadSync } from './squad-sync.mjs'
 import { registerLfg } from './lfg-command.mjs'
 import { registerProfileCommand } from './profile-command.mjs'
 import { registerOnboarding } from './onboarding.mjs'
@@ -2178,5 +2179,7 @@ registerOnboarding(client, config, BRAND)
 registerProfileCommand(client, config, BRAND)
 
 registerLfg(client, config, BRAND)
+
+registerSquadSync(client, config)
 
 client.login(token)
