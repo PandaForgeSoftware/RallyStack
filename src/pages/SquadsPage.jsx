@@ -1,3 +1,4 @@
+import SquadRosterPanel from '../features/squads/components/SquadRosterPanel'
 import {
   CheckCircle2,
   Crown,
@@ -1092,6 +1093,22 @@ function SquadsPage() {
           </section>
         )}
 
+      {myMembership && (
+        <SquadRosterPanel
+          squadId={
+            myMembership.squad.id
+          }
+          currentUserId={
+            user.id
+          }
+          currentUserRole={
+            myMembership.role
+          }
+          onChanged={
+            loadSquads
+          }
+        />
+      )}
       <section className="border border-white/8 bg-[#0e1011]">
         <div className="flex flex-col gap-4 border-b border-white/8 p-5 md:flex-row md:items-center md:justify-between">
           <div>
