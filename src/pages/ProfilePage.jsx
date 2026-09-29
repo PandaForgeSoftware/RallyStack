@@ -840,7 +840,7 @@ function ProfilePage() {
 
               <div>
                 <div className="text-[10px] font-bold tracking-[0.25em] text-amber-500">
-                  CURRENT SQUAD
+                  SQUAD STATUS
                 </div>
 
                 <div className="mt-2 text-xl font-black text-white">
@@ -851,7 +851,7 @@ function ProfilePage() {
                 </div>
 
                 <div className="mt-2 text-xs font-bold tracking-[0.15em] text-stone-400">
-                  ONE MORE ROUND.
+                  JOIN OR CREATE A SQUAD
                 </div>
               </div>
             </div>
