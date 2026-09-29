@@ -1,3 +1,4 @@
+import { registerLfg } from './lfg-command.mjs'
 import { registerProfileCommand } from './profile-command.mjs'
 import { registerOnboarding } from './onboarding.mjs'
 import fs from 'node:fs'
@@ -2175,5 +2176,7 @@ client.once(
 registerOnboarding(client, config, BRAND)
 
 registerProfileCommand(client, config, BRAND)
+
+registerLfg(client, config, BRAND)
 
 client.login(token)

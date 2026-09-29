@@ -1,3 +1,4 @@
+import { getActiveGroupForUser } from './lfg-store.mjs'
 import {
   ApplicationCommandOptionType,
   EmbedBuilder,
@@ -57,6 +58,8 @@ const REGIONS = [
     emoji: '\u{1F30F}',
   },
 ]
+
+const PROFILE_DELETE_AFTER_MS = 60_000
 
 const STAFF_ROLES = [
   'Founder',
@@ -358,7 +361,7 @@ function buildProfileEmbed(
 
     .setFooter({
       text:
-        'RALLYSTACK • BUILD. SQUAD UP. DEPLOY.',
+        'RALLYSTACK | BUILD. SQUAD UP. DEPLOY.',
     })
 
     .setTimestamp()
@@ -445,11 +448,58 @@ export function registerProfileCommand(
             brand
           )
 
+        const activeGroup =
+          getActiveGroupForUser(
+            member.id
+          )
+
+        if (activeGroup) {
+          const groupStatus =
+            activeGroup.memberIds.length >=
+            activeGroup.maxPlayers
+              ? '\u{1F534} Full'
+              : activeGroup.status === 'running'
+                ? '\u{1F7E0} Group Running'
+                : '\u{1F7E2} Recruiting'
+
+          embed.addFields({
+            name:
+              'Active Group',
+
+            value:
+              `${activeGroup.activityEmoji ?? ''} **${activeGroup.activityLabel ?? 'RallyStack Group'}**
+${activeGroup.memberIds.length} / ${activeGroup.maxPlayers} players
+${groupStatus}`,
+
+            inline:
+              false,
+          })
+        }
+
         await interaction.reply({
           embeds: [
             embed,
           ],
         })
+
+        // Automatically remove public profile cards so
+        // community channels do not fill up with old profiles.
+
+        setTimeout(
+          async () => {
+            try {
+              await interaction.deleteReply()
+
+              console.log(
+                `[PROFILE] Auto-deleted profile for ${member.user.username}`
+              )
+            }
+            catch {
+              // Message may already have been deleted.
+            }
+          },
+          PROFILE_DELETE_AFTER_MS
+        )
       }
       catch (error) {
         console.error(

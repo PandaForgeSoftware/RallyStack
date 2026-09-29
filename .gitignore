@@ -24,3 +24,7 @@ dist-ssr
 *.sw?
 
 .env.local
+
+discord-bot/node_modules/
+
+discord-bot/lfg-data.json
