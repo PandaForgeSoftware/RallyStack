@@ -1,3 +1,4 @@
+import { getDiscordWardogsPresence } from './rallystack-live.mjs'
 import {
   ActionRowBuilder,
   ApplicationCommandOptionType,
@@ -401,26 +402,37 @@ async function ensureVoiceCategory(
 // VOICE ROOM
 // ============================================================
 
-async function createGroupVoice(
+async function createGroupArea(
   guild,
   group
 ) {
   if (
-    group.voiceChannelId
+    group.voiceChannelId &&
+    group.textChannelId
   ) {
     try {
-      const existing =
+      const voice =
         await guild.channels.fetch(
           group.voiceChannelId
         )
 
-      if (existing) {
-        return existing
+      const text =
+        await guild.channels.fetch(
+          group.textChannelId
+        )
+
+      if (
+        voice &&
+        text
+      ) {
+        return {
+          voice,
+          text,
+        }
       }
     }
     catch {
-      group.voiceChannelId =
-        null
+      // Rebuild missing group area.
     }
   }
 
@@ -439,12 +451,28 @@ async function createGroupVoice(
       group.activityKey
     )
 
-  const roomName =
+  const baseName =
     cleanVoiceName(
       `${activity.label} - ${owner.displayName}`
     )
 
-  const permissionOverwrites = [
+  const textName =
+    baseName
+      .toLowerCase()
+      .replace(
+        /\s+/g,
+        '-'
+      )
+      .replace(
+        /[^a-z0-9-_]/g,
+        ''
+      )
+      .slice(
+        0,
+        80
+      ) || `group-${group.id.toLowerCase()}`
+
+  const voiceOverwrites = [
     {
       id:
         guild.roles.everyone.id,
@@ -456,11 +484,22 @@ async function createGroupVoice(
     },
   ]
 
+  const textOverwrites = [
+    {
+      id:
+        guild.roles.everyone.id,
+
+      deny: [
+        PermissionFlagsBits.ViewChannel,
+      ],
+    },
+  ]
+
   for (
     const memberId of
     group.memberIds
   ) {
-    permissionOverwrites.push({
+    voiceOverwrites.push({
       id:
         memberId,
 
@@ -470,12 +509,44 @@ async function createGroupVoice(
         PermissionFlagsBits.Speak,
       ],
     })
+
+    textOverwrites.push({
+      id:
+        memberId,
+
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.AddReactions,
+        PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.AttachFiles,
+      ],
+    })
   }
 
-  const channel =
+  const text =
     await guild.channels.create({
       name:
-        roomName,
+        textName,
+
+      type:
+        ChannelType.GuildText,
+
+      parent:
+        category.id,
+
+      permissionOverwrites:
+        textOverwrites,
+
+      reason:
+        `RallyStack LFG chat ${group.id}`,
+    })
+
+  const voice =
+    await guild.channels.create({
+      name:
+        baseName,
 
       type:
         ChannelType.GuildVoice,
@@ -486,14 +557,18 @@ async function createGroupVoice(
       userLimit:
         group.maxPlayers,
 
-      permissionOverwrites,
+      permissionOverwrites:
+        voiceOverwrites,
 
       reason:
-        `RallyStack LFG ${group.id}`,
+        `RallyStack LFG voice ${group.id}`,
     })
 
+  group.textChannelId =
+    text.id
+
   group.voiceChannelId =
-    channel.id
+    voice.id
 
   group.status =
     'running'
@@ -502,11 +577,82 @@ async function createGroupVoice(
     group
   )
 
+  // ----------------------------------------------------------
+  // GROUP CHAT HEADER
+  // ----------------------------------------------------------
+
+  await text.send({
+    embeds: [
+      new EmbedBuilder()
+
+        .setColor(
+          0xF59E0B
+        )
+
+        .setTitle(
+          `${activity.emoji} ${activity.label}`
+        )
+
+        .setDescription(
+          [
+            `Group leader: <@${group.ownerId}>`,
+            '',
+            `Players: **${group.memberIds.length} / ${group.maxPlayers}**`,
+            group.serverCode
+              ? group.serverSource === 'steam'
+                ? `Server: \`${group.serverCode}\` (Steam live)`
+                : `Server: \`${group.serverCode}\``
+              : 'Server: Not supplied',
+            group.note
+              ? `\n${group.note}`
+              : '',
+            '',
+            `Voice: <#${voice.id}>`,
+            '',
+            'This is a temporary RallyStack group channel.',
+          ].join('\n')
+        )
+
+        .setFooter({
+          text:
+            `RALLYSTACK | GROUP ${group.id}`,
+        }),
+    ],
+  })
+
+  // ----------------------------------------------------------
+  // IF CREATOR IS ALREADY IN VOICE, MOVE THEM STRAIGHT IN
+  // ----------------------------------------------------------
+
+  try {
+    if (
+      owner.voice?.channelId
+    ) {
+      await owner.voice.setChannel(
+        voice,
+        'RallyStack group created'
+      )
+
+      console.log(
+        `[LFG] Moved ${owner.user.username} into ${voice.name}`
+      )
+    }
+  }
+  catch (error) {
+    console.error(
+      '[LFG] Could not move creator into voice',
+      error?.rawError ?? error
+    )
+  }
+
   console.log(
-    `[LFG] Voice created: ${channel.name}`
+    `[LFG] Group area created: #${text.name} + ${voice.name}`
   )
 
-  return channel
+  return {
+    voice,
+    text,
+  }
 }
 
 async function allowMemberInVoice(
@@ -544,6 +690,109 @@ async function allowMemberInVoice(
       '[LFG] Voice permission add failed',
       error?.rawError ?? error
     )
+  }
+}
+
+async function allowMemberInGroupChannels(
+  guild,
+  group,
+  memberId
+) {
+  if (
+    group.voiceChannelId
+  ) {
+    try {
+      const voice =
+        await guild.channels.fetch(
+          group.voiceChannelId
+        )
+
+      await voice.permissionOverwrites.edit(
+        memberId,
+        {
+          ViewChannel: true,
+          Connect: true,
+          Speak: true,
+        }
+      )
+    }
+    catch (error) {
+      console.error(
+        '[LFG] Voice permission add failed',
+        error?.rawError ?? error
+      )
+    }
+  }
+
+  if (
+    group.textChannelId
+  ) {
+    try {
+      const text =
+        await guild.channels.fetch(
+          group.textChannelId
+        )
+
+      await text.permissionOverwrites.edit(
+        memberId,
+        {
+          ViewChannel: true,
+          ReadMessageHistory: true,
+          SendMessages: true,
+          AddReactions: true,
+          EmbedLinks: true,
+          AttachFiles: true,
+        }
+      )
+    }
+    catch (error) {
+      console.error(
+        '[LFG] Text permission add failed',
+        error?.rawError ?? error
+      )
+    }
+  }
+}
+
+async function removeMemberFromGroupChannels(
+  guild,
+  group,
+  memberId
+) {
+  if (
+    group.voiceChannelId
+  ) {
+    try {
+      const voice =
+        await guild.channels.fetch(
+          group.voiceChannelId
+        )
+
+      await voice.permissionOverwrites.delete(
+        memberId
+      )
+    }
+    catch {
+      // Ignore.
+    }
+  }
+
+  if (
+    group.textChannelId
+  ) {
+    try {
+      const text =
+        await guild.channels.fetch(
+          group.textChannelId
+        )
+
+      await text.permissionOverwrites.delete(
+        memberId
+      )
+    }
+    catch {
+      // Ignore.
+    }
   }
 }
 
@@ -691,13 +940,23 @@ async function buildGroupEmbed(
     )
 
   let voiceText =
-    'Created when the group starts'
+    'Not created'
 
   if (
     group.voiceChannelId
   ) {
     voiceText =
       `<#${group.voiceChannelId}>`
+  }
+
+  let textText =
+    'Not created'
+
+  if (
+    group.textChannelId
+  ) {
+    textText =
+      `<#${group.textChannelId}>`
   }
 
   const embed =
@@ -786,7 +1045,10 @@ async function buildGroupEmbed(
 
           value:
             group.serverCode
-              ? `\`${group.serverCode}\``
+              ? group.serverSource === 'steam'
+                ? `\`${group.serverCode}\`
+Steam live`
+                : `\`${group.serverCode}\``
               : 'Not supplied',
 
           inline:
@@ -802,6 +1064,17 @@ async function buildGroupEmbed(
 
           inline:
             false,
+        },
+
+        {
+          name:
+            'Group Chat',
+
+          value:
+            textText,
+
+          inline:
+            true,
         },
 
         {
@@ -1159,6 +1432,33 @@ async function closeGroup(
   }
 
   // ----------------------------------------------------------
+  // GROUP CHANNEL CLEANUP
+  // ----------------------------------------------------------
+
+  if (
+    group.textChannelId
+  ) {
+    try {
+      const text =
+        await guild.channels.fetch(
+          group.textChannelId
+        )
+
+      if (text) {
+        await text.delete(
+          'RallyStack LFG closed'
+        )
+      }
+    }
+    catch {
+      // Already gone.
+    }
+
+    group.textChannelId =
+      null
+  }
+
+  // ----------------------------------------------------------
   // VOICE CLEANUP
   // ----------------------------------------------------------
 
@@ -1377,6 +1677,28 @@ async function registerCommand(
         type:
           ApplicationCommandOptionType.Subcommand,
       },
+
+      {
+        name:
+          'leave',
+
+        description:
+          'Leave your current RallyStack group',
+
+        type:
+          ApplicationCommandOptionType.Subcommand,
+      },
+
+      {
+        name:
+          'delete',
+
+        description:
+          'Delete the RallyStack group you created',
+
+        type:
+          ApplicationCommandOptionType.Subcommand,
+      },
     ],
   }
 
@@ -1397,6 +1719,202 @@ async function registerCommand(
     console.log(
       '[LFG] /lfg registered'
     )
+  }
+}
+
+// ============================================================
+// LIVE STEAM / WARDOGS SERVER SYNC
+// ============================================================
+
+async function getSteamServerForMember(
+  memberId
+) {
+  try {
+    return await getDiscordWardogsPresence(
+      memberId
+    )
+  }
+  catch (error) {
+    console.error(
+      '[LFG] Steam presence lookup failed',
+      error?.message ?? error
+    )
+
+    return null
+  }
+}
+
+async function postSteamServerUpdate(
+  guild,
+  group,
+  text
+) {
+  if (
+    !group.textChannelId
+  ) {
+    return
+  }
+
+  try {
+    const channel =
+      await guild.channels.fetch(
+        group.textChannelId
+      )
+
+    if (
+      channel?.isTextBased()
+    ) {
+      await channel.send({
+        content:
+          text,
+      })
+    }
+  }
+  catch {
+    // Temporary group chat may already be gone.
+  }
+}
+
+async function refreshSteamServerForGroup(
+  guild,
+  group,
+  brand
+) {
+  if (
+    group.status === 'closed'
+  ) {
+    return
+  }
+
+  const presence =
+    await getSteamServerForMember(
+      group.ownerId
+    )
+
+  if (!presence) {
+    return
+  }
+
+  if (
+    presence.playingWardogs &&
+    presence.serverIp
+  ) {
+    const changed =
+      group.serverCode !==
+        presence.serverIp ||
+      group.serverSource !==
+        'steam'
+
+    if (!changed) {
+      return
+    }
+
+    const previous =
+      group.serverCode
+
+    group.serverCode =
+      presence.serverIp
+
+    group.serverSource =
+      'steam'
+
+    group.steamGameId =
+      presence.gameId ?? null
+
+    group.steamCheckedAt =
+      presence.checkedAt ?? null
+
+    saveGroup(
+      group
+    )
+
+    await updateGroupMessage(
+      guild,
+      group,
+      brand
+    )
+
+    if (
+      previous &&
+      previous !==
+        presence.serverIp
+    ) {
+      await postSteamServerUpdate(
+        guild,
+        group,
+        `Steam detected a WARDOGS server change: \`${presence.serverIp}\``
+      )
+    }
+    else {
+      await postSteamServerUpdate(
+        guild,
+        group,
+        `Live WARDOGS server detected through Steam: \`${presence.serverIp}\``
+      )
+    }
+
+    return
+  }
+
+  if (
+    group.serverSource ===
+    'steam'
+  ) {
+    group.serverCode =
+      ''
+
+    group.serverSource =
+      null
+
+    group.steamGameId =
+      null
+
+    group.steamCheckedAt =
+      presence.checkedAt ??
+      new Date().toISOString()
+
+    saveGroup(
+      group
+    )
+
+    await updateGroupMessage(
+      guild,
+      group,
+      brand
+    )
+
+    await postSteamServerUpdate(
+      guild,
+      group,
+      'Steam no longer detects the group leader in WARDOGS. Live server information has been cleared.'
+    )
+  }
+}
+
+async function refreshSteamServers(
+  guild,
+  brand
+) {
+  const groups =
+    getAllGroups()
+
+  for (
+    const group of
+    groups
+  ) {
+    try {
+      await refreshSteamServerForGroup(
+        guild,
+        group,
+        brand
+      )
+    }
+    catch (error) {
+      console.error(
+        `[LFG] Steam refresh failed for ${group.id}`,
+        error?.message ?? error
+      )
+    }
   }
 }
 
@@ -1508,10 +2026,34 @@ async function createLfg(
       true
     )
 
-  const serverCode =
+  const manualServerCode =
     interaction.options.getString(
       'server'
     )?.trim() ?? ''
+
+  let serverCode =
+    manualServerCode
+
+  let serverSource =
+    manualServerCode
+      ? 'manual'
+      : null
+
+  const liveSteam =
+    await getSteamServerForMember(
+      member.id
+    )
+
+  if (
+    liveSteam?.playingWardogs &&
+    liveSteam?.serverIp
+  ) {
+    serverCode =
+      liveSteam.serverIp
+
+    serverSource =
+      'steam'
+  }
 
   const note =
     interaction.options.getString(
@@ -1544,12 +2086,23 @@ async function createLfg(
 
     serverCode,
 
+    serverSource,
+
+    steamGameId:
+      liveSteam?.gameId ?? null,
+
+    steamCheckedAt:
+      liveSteam?.checkedAt ?? null,
+
     note,
 
     status:
       'recruiting',
 
     voiceChannelId:
+      null,
+
+    textChannelId:
       null,
 
     channelId:
@@ -1596,6 +2149,31 @@ async function createLfg(
 
   await addLookingRole(
     member
+  )
+
+  // Create private text + voice immediately.
+
+  try {
+    await createGroupArea(
+      guild,
+      group
+    )
+  }
+  catch (error) {
+    console.error(
+      '[LFG] Initial group area creation failed',
+      error?.rawError ?? error
+    )
+  }
+
+  saveGroup(
+    group
+  )
+
+  await updateGroupMessage(
+    guild,
+    group,
+    brand
   )
 
   const manage =
@@ -1714,13 +2292,16 @@ async function joinGroup(
     group.memberIds.length >= 2
   ) {
     try {
-      voice =
-        await createGroupVoice(
+      const area =
+        await createGroupArea(
           interaction.guild,
           group
         )
 
-      await allowMemberInVoice(
+      voice =
+        area.voice
+
+      await allowMemberInGroupChannels(
         interaction.guild,
         group,
         member.id
@@ -1826,7 +2407,7 @@ async function leaveGroup(
     member
   )
 
-  await removeMemberFromVoice(
+  await removeMemberFromGroupChannels(
     interaction.guild,
     group,
     member.id
@@ -1887,7 +2468,7 @@ async function startGroup(
   await interaction.deferUpdate()
 
   try {
-    await createGroupVoice(
+    await createGroupArea(
       interaction.guild,
       group
     )
@@ -2169,6 +2750,11 @@ async function handleEditModal(
       )
       .trim()
 
+  group.serverSource =
+    group.serverCode
+      ? 'manual'
+      : null
+
   group.note =
     interaction.fields
       .getTextInputValue(
@@ -2271,6 +2857,274 @@ async function closeFromButton(
 
     components: [],
   })
+}
+
+// ============================================================
+// LEAVE CURRENT GROUP
+// ============================================================
+
+async function leaveCurrentGroup(
+  interaction,
+  brand
+) {
+  const group =
+    getActiveGroupForUser(
+      interaction.user.id
+    )
+
+  if (!group) {
+    await interaction.reply({
+      content:
+        'You are not currently in an active RallyStack group.',
+
+      flags:
+        MessageFlags.Ephemeral,
+    })
+
+    return
+  }
+
+  if (
+    group.ownerId ===
+    interaction.user.id
+  ) {
+    await interaction.reply({
+      content:
+        'You created this group. Use `/lfg delete` to remove the whole LFG.',
+
+      flags:
+        MessageFlags.Ephemeral,
+    })
+
+    return
+  }
+
+  group.memberIds =
+    group.memberIds.filter(
+      userId =>
+        userId !==
+        interaction.user.id
+    )
+
+  saveGroup(
+    group
+  )
+
+  try {
+    const member =
+      await interaction.guild.members.fetch(
+        interaction.user.id
+      )
+
+    await removeLookingRole(
+      member
+    )
+
+    await removeMemberFromGroupChannels(
+      interaction.guild,
+      group,
+      member.id
+    )
+  }
+  catch (error) {
+    console.error(
+      '[LFG] Leave cleanup failed',
+      error?.rawError ?? error
+    )
+  }
+
+  await updateGroupMessage(
+    interaction.guild,
+    group,
+    brand
+  )
+
+  await interaction.reply({
+    content:
+      'You have left the RallyStack group.',
+
+    flags:
+      MessageFlags.Ephemeral,
+  })
+
+  console.log(
+    `[LFG] ${interaction.user.username} left ${group.id}`
+  )
+}
+
+// ============================================================
+// DELETE CHANNEL SAFELY
+// ============================================================
+
+async function deleteChannelSafe(
+  guild,
+  channelId,
+  reason
+) {
+  if (!channelId) {
+    return
+  }
+
+  try {
+    const channel =
+      await guild.channels.fetch(
+        channelId
+      )
+
+    if (channel) {
+      await channel.delete(
+        reason
+      )
+    }
+  }
+  catch {
+    // Already gone.
+  }
+}
+
+// ============================================================
+// HARD DELETE OWNED GROUP
+// ============================================================
+
+async function deleteOwnedGroup(
+  interaction
+) {
+  const group =
+    getOwnedGroup(
+      interaction.user.id
+    )
+
+  if (!group) {
+    const active =
+      getActiveGroupForUser(
+        interaction.user.id
+      )
+
+    if (active) {
+      await interaction.reply({
+        content:
+          "You are a member of another player's group. Use `/lfg leave` instead.",
+
+        flags:
+          MessageFlags.Ephemeral,
+      })
+
+      return
+    }
+
+    await interaction.reply({
+      content:
+        'You do not currently own an active RallyStack group.',
+
+      flags:
+        MessageFlags.Ephemeral,
+    })
+
+    return
+  }
+
+  await interaction.deferReply({
+    flags:
+      MessageFlags.Ephemeral,
+  })
+
+  const guild =
+    interaction.guild
+
+  const memberIds =
+    [...group.memberIds]
+
+  // ----------------------------------------------------------
+  // DELETE FROM LFG STORE FIRST
+  // ----------------------------------------------------------
+
+  deleteGroup(
+    group.id
+  )
+
+  // ----------------------------------------------------------
+  // CLEAR LOOKING TO PLAY ROLES
+  // ----------------------------------------------------------
+
+  for (
+    const userId of
+    memberIds
+  ) {
+    try {
+      const member =
+        await guild.members.fetch(
+          userId
+        )
+
+      const stillInAnotherGroup =
+        getActiveGroupForUser(
+          userId
+        )
+
+      if (!stillInAnotherGroup) {
+        await removeLookingRole(
+          member
+        )
+      }
+    }
+    catch {
+      // Member may no longer exist.
+    }
+  }
+
+  // ----------------------------------------------------------
+  // DELETE TEMP TEXT CHANNEL
+  // ----------------------------------------------------------
+
+  await deleteChannelSafe(
+    guild,
+    group.textChannelId,
+    'RallyStack LFG deleted by owner'
+  )
+
+  // ----------------------------------------------------------
+  // DELETE TEMP VOICE CHANNEL
+  // ----------------------------------------------------------
+
+  await deleteChannelSafe(
+    guild,
+    group.voiceChannelId,
+    'RallyStack LFG deleted by owner'
+  )
+
+  // ----------------------------------------------------------
+  // DELETE PUBLIC LFG CARD
+  // ----------------------------------------------------------
+
+  if (
+    group.channelId &&
+    group.messageId
+  ) {
+    try {
+      const channel =
+        await guild.channels.fetch(
+          group.channelId
+        )
+
+      const message =
+        await channel.messages.fetch(
+          group.messageId
+        )
+
+      await message.delete()
+    }
+    catch {
+      // Already gone.
+    }
+  }
+
+  await interaction.editReply(
+    `RallyStack group **${group.id}** has been completely deleted.`
+  )
+
+  console.log(
+    `[LFG] Hard deleted ${group.id} by ${interaction.user.username}`
+  )
 }
 
 // ============================================================
@@ -2577,6 +3431,29 @@ export function registerLfg(
           await manageLfg(
             interaction
           )
+
+          return
+        }
+
+        if (
+          subcommand === 'leave'
+        ) {
+          await leaveCurrentGroup(
+            interaction,
+            brand
+          )
+
+          return
+        }
+
+        if (
+          subcommand === 'delete'
+        ) {
+          await deleteOwnedGroup(
+            interaction
+          )
+
+          return
         }
       }
       catch (error) {
@@ -2787,7 +3664,8 @@ export function registerLfg(
             )
 
           if (
-            channel.members.size === 0
+            channel.members.size === 0 &&
+            oldGroup.status === 'closed'
           ) {
             scheduleVoiceDelete(
               oldState.guild,

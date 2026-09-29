@@ -28,3 +28,5 @@ dist-ssr
 discord-bot/node_modules/
 
 discord-bot/lfg-data.json
+
+discord-bot/.env.bot.local
