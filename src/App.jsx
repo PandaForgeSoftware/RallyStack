@@ -1,4 +1,5 @@
-﻿import {
+import SquadsPage from './pages/SquadsPage'
+import {
   Navigate,
   Route,
   Routes,
@@ -100,15 +101,7 @@ function App() {
             element={<FindPlayersPage />}
           />
 
-          <Route
-            path="/squads"
-            element={
-              <PlaceholderPage
-                title="Squads"
-                description="Discover squads, manage rosters, recruit players and organise permanent groups including LAST ORDERS [LAST]."
-              />
-            }
-          />
+          <Route path="/squads" element={<SquadsPage />} />
 
           <Route
             path="/armory"

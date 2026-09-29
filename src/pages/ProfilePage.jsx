@@ -100,6 +100,9 @@ function ProfilePage() {
     setSteamPresenceLoading,
   ] = useState(false)
 
+  const [currentSquad, setCurrentSquad] =
+    useState(null)
+
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -190,6 +193,65 @@ function ProfilePage() {
     finally {
       setSteamPresenceLoading(false)
     }
+  }
+
+  const loadCurrentSquad = async () => {
+    if (!user) {
+      setCurrentSquad(null)
+      return
+    }
+
+    const {
+      data,
+      error,
+    } =
+      await supabase
+        .from('squad_members')
+        .select(`
+          id,
+          role,
+          joined_at,
+          squad:squads (
+            id,
+            name,
+            tag,
+            motto,
+            recruiting,
+            region
+          )
+        `)
+        .eq(
+          'user_id',
+          user.id,
+        )
+        .maybeSingle()
+
+    if (error) {
+      console.error(
+        'Could not load squad membership:',
+        error,
+      )
+
+      setCurrentSquad(null)
+      return
+    }
+
+    if (!data?.squad) {
+      setCurrentSquad(null)
+      return
+    }
+
+    setCurrentSquad({
+      ...data.squad,
+      membershipId:
+        data.id,
+
+      membershipRole:
+        data.role,
+
+      joinedAt:
+        data.joined_at,
+    })
   }
 
   const loadConnections = async () => {
@@ -349,6 +411,7 @@ function ProfilePage() {
   useEffect(() => {
     loadSession()
     loadConnections()
+    loadCurrentSquad()
   }, [user?.id])
 
   useEffect(() => {
@@ -1055,21 +1118,64 @@ function ProfilePage() {
                 className="text-amber-500"
               />
 
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="text-[10px] font-bold tracking-[0.25em] text-amber-500">
                   SQUAD STATUS
                 </div>
 
-                <div className="mt-2 text-xl font-black text-white">
-                  LAST ORDERS{' '}
-                  <span className="text-amber-500">
-                    [LAST]
-                  </span>
-                </div>
+                {currentSquad ? (
+                  <>
+                    <div className="mt-2 text-xl font-black text-white">
+                      {currentSquad.name}{' '}
 
-                <div className="mt-2 text-xs font-bold tracking-[0.15em] text-stone-400">
-                  JOIN OR CREATE A SQUAD
-                </div>
+                      <span className="text-amber-500">
+                        [{currentSquad.tag}]
+                      </span>
+                    </div>
+
+                    {currentSquad.motto && (
+                      <div className="mt-2 text-xs font-bold tracking-[0.15em] text-stone-400">
+                        {currentSquad.motto}
+                      </div>
+                    )}
+
+                    <div className="mt-3 flex flex-wrap gap-3 text-[9px] font-black tracking-wider text-stone-600">
+                      <span>
+                        {currentSquad.membershipRole?.toUpperCase()}
+                      </span>
+
+                      <span>
+                        {currentSquad.recruiting
+                          ? 'RECRUITING'
+                          : 'RECRUITMENT CLOSED'}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="mt-2 text-xl font-black text-white">
+                      NO SQUAD JOINED
+                    </div>
+
+                    <div className="mt-2 text-xs font-bold tracking-[0.15em] text-stone-400">
+                      JOIN OR CREATE A SQUAD
+                    </div>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    window.location.assign(
+                      '/squads',
+                    )
+                  }
+                  className="mt-4 h-9 border border-amber-500/20 bg-amber-500/[0.05] px-4 text-[9px] font-black tracking-wider text-amber-500 transition hover:bg-amber-500/10"
+                >
+                  {currentSquad
+                    ? 'OPEN SQUAD'
+                    : 'BROWSE SQUADS'}
+                </button>
               </div>
             </div>
           </section>
