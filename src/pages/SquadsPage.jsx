@@ -1,3 +1,4 @@
+import SquadRecruitmentPanel from '../features/squads/components/SquadRecruitmentPanel'
 import SquadRosterPanel from '../features/squads/components/SquadRosterPanel'
 import {
   CheckCircle2,
@@ -125,6 +126,7 @@ function SquadsPage() {
               region,
               visibility,
               recruiting,
+              join_policy,
               avatar_url,
               banner_url,
               created_by,
@@ -463,6 +465,107 @@ function SquadsPage() {
         myMembership ||
         !squad.recruiting
       ) {
+        return
+      }
+
+      if (
+        squad.join_policy ===
+        'invite_only'
+      ) {
+        setMessage(
+          'This squad is invite only. You need a direct invite or invite code.',
+        )
+
+        return
+      }
+
+      if (
+        squad.join_policy ===
+        'application'
+      ) {
+        setWorking(true)
+        setMessage('')
+
+        const {
+          data: existing,
+          error: existingError,
+        } =
+          await supabase
+            .from(
+              'squad_applications',
+            )
+            .select(
+              'id',
+            )
+            .eq(
+              'squad_id',
+              squad.id,
+            )
+            .eq(
+              'user_id',
+              user.id,
+            )
+            .eq(
+              'status',
+              'pending',
+            )
+            .maybeSingle()
+
+        if (existingError) {
+          setWorking(false)
+
+          setMessage(
+            existingError.message,
+          )
+
+          return
+        }
+
+        if (existing) {
+          setWorking(false)
+
+          setMessage(
+            `You already have a pending application with ${squad.name}.`,
+          )
+
+          return
+        }
+
+        const {
+          error,
+        } =
+          await supabase
+            .from(
+              'squad_applications',
+            )
+            .insert({
+              squad_id:
+                squad.id,
+
+              user_id:
+                user.id,
+            })
+
+        setWorking(false)
+
+        if (error) {
+          setMessage(
+            error.message,
+          )
+
+          return
+        }
+
+        setMessage(
+          `Application sent to ${squad.name}.`,
+        )
+
+        window.dispatchEvent(
+          new Event(
+            'rallystack-recruitment-changed',
+          ),
+        )
+
         return
       }
 
@@ -1109,7 +1212,21 @@ function SquadsPage() {
           }
         />
       )}
-      <section className="border border-white/8 bg-[#0e1011]">
+            <SquadRecruitmentPanel
+        user={
+          user
+        }
+        myMembership={
+          myMembership
+        }
+        onChanged={
+          loadSquads
+        }
+        onMessage={
+          setMessage
+        }
+      />
+<section className="border border-white/8 bg-[#0e1011]">
         <div className="flex flex-col gap-4 border-b border-white/8 p-5 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="text-[10px] font-black tracking-[0.25em] text-stone-500">
@@ -1251,7 +1368,13 @@ function SquadsPage() {
                           className="flex h-9 items-center gap-2 bg-amber-500 px-4 text-[9px] font-black tracking-wider text-black disabled:opacity-50"
                         >
                           <UserPlus size={13} />
-                          JOIN
+                          {squad.join_policy ===
+                          'application'
+                            ? 'APPLY'
+                            : squad.join_policy ===
+                                'invite_only'
+                              ? 'INVITE ONLY'
+                              : 'JOIN'}
                         </button>
                       ) : myMembership ? (
                         <div className="text-[9px] font-bold text-stone-700">
