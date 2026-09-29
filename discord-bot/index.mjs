@@ -1,3 +1,4 @@
+import { registerLfgSupabaseSync } from './lfg-supabase-sync.mjs'
 import { registerSquadSync } from './squad-sync.mjs'
 import { registerLfg } from './lfg-command.mjs'
 import { registerProfileCommand } from './profile-command.mjs'
@@ -2181,5 +2182,7 @@ registerProfileCommand(client, config, BRAND)
 registerLfg(client, config, BRAND)
 
 registerSquadSync(client, config)
+
+registerLfgSupabaseSync(client, config)
 
 client.login(token)
