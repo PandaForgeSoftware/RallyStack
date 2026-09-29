@@ -83,6 +83,9 @@ function ProfilePage() {
 
   const [steamConnected, setSteamConnected] =
     useState(false)
+  const [discordAccount, setDiscordAccount] =
+    useState(null)
+
   const [steamAccount, setSteamAccount] =
     useState(null)
 
@@ -190,20 +193,133 @@ function ProfilePage() {
   }
 
   const loadConnections = async () => {
-    const { data: identityData } =
+    const {
+      data: identityData,
+      error: identityError,
+    } =
       await supabase.auth.getUserIdentities()
+
+    if (identityError) {
+      console.error(
+        'Could not load linked identities:',
+        identityError,
+      )
+    }
 
     const identities =
       identityData?.identities || []
 
-    setDiscordConnected(
-      identities.some(
+    const discordIdentity =
+      identities.find(
         (identity) =>
           identity.provider === 'discord',
-      ),
+      ) || null
+
+    setDiscordConnected(
+      Boolean(discordIdentity),
     )
 
     if (!user) return
+
+    if (discordIdentity) {
+      const identityData =
+        discordIdentity.identity_data || {}
+
+      const discordUserId =
+        discordIdentity.provider_id ||
+        identityData.provider_id ||
+        identityData.sub ||
+        null
+
+      const discordUsername =
+        identityData.global_name ||
+        identityData.full_name ||
+        identityData.name ||
+        identityData.user_name ||
+        identityData.preferred_username ||
+        null
+
+      const discordAvatar =
+        identityData.avatar_url ||
+        identityData.picture ||
+        null
+
+      if (discordUserId) {
+        const {
+          data: savedDiscord,
+          error: discordSaveError,
+        } =
+          await supabase
+            .from('linked_accounts')
+            .upsert(
+              {
+                user_id:
+                  user.id,
+
+                provider:
+                  'discord',
+
+                provider_user_id:
+                  String(
+                    discordUserId,
+                  ),
+
+                provider_username:
+                  discordUsername,
+
+                provider_avatar_url:
+                  discordAvatar,
+
+                provider_profile_url:
+                  null,
+
+                metadata: {
+                  identity_id:
+                    discordIdentity.id,
+
+                  provider_id:
+                    discordIdentity.provider_id,
+
+                  identity_data:
+                    identityData,
+                },
+
+                updated_at:
+                  new Date().toISOString(),
+              },
+              {
+                onConflict:
+                  'user_id,provider',
+              },
+            )
+            .select(`
+              id,
+              provider_user_id,
+              provider_username,
+              provider_avatar_url,
+              provider_profile_url,
+              metadata,
+              linked_at,
+              updated_at
+            `)
+            .single()
+
+        if (discordSaveError) {
+          console.error(
+            'Could not sync Discord identity:',
+            discordSaveError,
+          )
+        }
+        else {
+          setDiscordAccount(
+            savedDiscord,
+          )
+        }
+      }
+    }
+    else {
+      setDiscordAccount(null)
+    }
 
     const { data: steam } = await supabase
       .from('linked_accounts')
@@ -902,6 +1018,9 @@ function ProfilePage() {
           <ConnectedAccountsCard
             discordConnected={
               discordConnected
+            }
+            discordAccount={
+              discordAccount
             }
             steamConnected={
               steamConnected

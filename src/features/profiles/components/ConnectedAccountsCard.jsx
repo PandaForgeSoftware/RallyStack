@@ -9,6 +9,7 @@ import {
 
 function ConnectedAccountsCard({
   discordConnected,
+  discordAccount,
   steamConnected,
   steamAccount,
   steamConnecting,
@@ -71,21 +72,31 @@ function ConnectedAccountsCard({
               </div>
 
               {discordConnected ? (
-                <div className="mt-4 flex items-center justify-between border border-white/8 bg-black/20 px-4 py-3">
-                  <div>
-                    <div className="text-xs font-bold text-stone-300">
-                      RallyStack Discord
+                <div className="mt-4 flex items-center gap-3 border border-white/8 bg-black/20 px-4 py-3">
+                  {discordAccount?.provider_avatar_url ? (
+                    <img
+                      src={discordAccount.provider_avatar_url}
+                      alt=""
+                      className="h-10 w-10 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#5865F2]/10 text-[#8d96ff]">
+                      <MessageCircleMore size={18} />
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-bold text-stone-200">
+                      {discordAccount?.provider_username ||
+                        'Discord account'}
                     </div>
 
-                    <div className="mt-1 text-[10px] text-stone-600">
-                      Discord identity connected.
+                    <div className="mt-1 truncate text-[10px] text-stone-600">
+                      Discord ID:{' '}
+                      {discordAccount?.provider_user_id ||
+                        'Connected'}
                     </div>
                   </div>
-
-                  <ExternalLink
-                    size={14}
-                    className="text-stone-600"
-                  />
                 </div>
               ) : (
                 <button
