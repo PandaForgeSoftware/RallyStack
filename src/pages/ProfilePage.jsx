@@ -89,6 +89,14 @@ function ProfilePage() {
   const [steamConnecting, setSteamConnecting] =
     useState(false)
 
+  const [steamPresence, setSteamPresence] =
+    useState(null)
+
+  const [
+    steamPresenceLoading,
+    setSteamPresenceLoading,
+  ] = useState(false)
+
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -142,6 +150,45 @@ function ProfilePage() {
     })
   }
 
+  const loadSteamPresence = async () => {
+    if (!user) {
+      setSteamPresence(null)
+      return
+    }
+
+    setSteamPresenceLoading(true)
+
+    try {
+      const {
+        data,
+        error,
+      } =
+        await supabase.functions.invoke(
+          'steam-presence',
+          {
+            body: {},
+          },
+        )
+
+      if (error) {
+        throw error
+      }
+
+      setSteamPresence(
+        data || null
+      )
+    }
+    catch (error) {
+      console.error(
+        'Steam presence check failed:',
+        error,
+      )
+    }
+    finally {
+      setSteamPresenceLoading(false)
+    }
+  }
+
   const loadConnections = async () => {
     const { data: identityData } =
       await supabase.auth.getUserIdentities()
@@ -187,6 +234,47 @@ function ProfilePage() {
     loadSession()
     loadConnections()
   }, [user?.id])
+
+  useEffect(() => {
+    if (
+      !user?.id ||
+      !steamConnected
+    ) {
+      setSteamPresence(null)
+      return
+    }
+
+    loadSteamPresence()
+
+    const timer =
+      window.setInterval(
+        loadSteamPresence,
+        60_000,
+      )
+
+    const handleFocus = () => {
+      loadSteamPresence()
+    }
+
+    window.addEventListener(
+      'focus',
+      handleFocus,
+    )
+
+    return () => {
+      window.clearInterval(
+        timer
+      )
+
+      window.removeEventListener(
+        'focus',
+        handleFocus,
+      )
+    }
+  }, [
+    user?.id,
+    steamConnected,
+  ])
 
   const updateField = (field, value) => {
     setForm((current) => ({
@@ -414,6 +502,7 @@ function ProfilePage() {
       }
 
       await loadConnections()
+      await loadSteamPresence()
 
       setMessage(
         'Steam account connected successfully.',
@@ -822,6 +911,15 @@ function ProfilePage() {
             }
             steamConnecting={
               steamConnecting
+            }
+            steamPresence={
+              steamPresence
+            }
+            steamPresenceLoading={
+              steamPresenceLoading
+            }
+            onRefreshSteam={
+              loadSteamPresence
             }
             onDiscord={
               connectDiscord
