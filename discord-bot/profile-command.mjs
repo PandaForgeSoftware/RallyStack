@@ -476,6 +476,34 @@ ${groupStatus}`,
           })
         }
 
+        const activeGroup =
+          getActiveGroupForUser(
+            member.id
+          )
+
+        if (activeGroup) {
+          const groupStatus =
+            activeGroup.memberIds.length >=
+            activeGroup.maxPlayers
+              ? '\u{1F534} Full'
+              : activeGroup.status === 'running'
+                ? '\u{1F7E0} Group Running'
+                : '\u{1F7E2} Recruiting'
+
+          embed.addFields({
+            name:
+              'Active Group',
+
+            value:
+              `${activeGroup.activityEmoji ?? ''} **${activeGroup.activityLabel ?? 'RallyStack Group'}**
+${activeGroup.memberIds.length} / ${activeGroup.maxPlayers} players
+${groupStatus}`,
+
+            inline:
+              false,
+          })
+        }
+
         await interaction.reply({
           embeds: [
             embed,
