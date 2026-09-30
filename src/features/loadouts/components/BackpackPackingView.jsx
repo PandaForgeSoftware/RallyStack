@@ -157,6 +157,612 @@ function makeInstances(
   rotations = {},
 ) {
 
+  const instances = []
+
+  Object.entries(
+    packed,
+  ).forEach(
+    ([
+      itemId,
+      roundCount,
+    ]) => {
+
+      const item =
+        items.find(
+          (candidate) =>
+            candidate.id ===
+            itemId,
+        )
+
+      if (!item) {
+        return
+      }
+
+      const {
+        purchaseQuantity,
+        maxStack,
+      } =
+        getAmmoRule(
+          item,
+        )
+
+      const totalRounds =
+        Math.max(
+          0,
+          Number(
+            roundCount ||
+            0,
+          ),
+        )
+
+      const physicalStacks =
+        Math.ceil(
+          totalRounds /
+          maxStack,
+        )
+
+      for (
+        let index = 0;
+        index <
+        physicalStacks;
+        index += 1
+      ) {
+
+        const rounds =
+          Math.min(
+            maxStack,
+            totalRounds -
+              index *
+              maxStack,
+          )
+
+        const key =
+          `${item.id}-${index}`
+
+        const baseFootprint =
+          getFootprint(
+            item,
+          )
+
+        const rotated =
+          Boolean(
+            rotations[
+              key
+            ],
+          )
+
+        instances.push({
+          key,
+
+          item,
+
+          rounds,
+
+          maxStack,
+
+          purchaseQuantity,
+
+          rotated,
+
+          baseWidth:
+            baseFootprint.width,
+
+          baseHeight:
+            baseFootprint.height,
+
+          footprint: {
+            width:
+              rotated
+                ? baseFootprint.height
+                : baseFootprint.width,
+
+            height:
+              rotated
+                ? baseFootprint.width
+                : baseFootprint.height,
+          },
+        })
+      }
+    },
+  )
+
+  return instances
+}
+
+function makeGearInstances(
+  items,
+  packed,
+  rotations = {},
+) {
+
+  const instances = []
+
+  Object.entries(
+    packed || {},
+  ).forEach(
+    ([
+      itemId,
+      quantity,
+    ]) => {
+
+      const item =
+        items.find(
+          (candidate) =>
+            candidate.id ===
+            itemId,
+        )
+
+      if (!item) {
+        return
+      }
+
+      const count =
+        Math.max(
+          0,
+          Number(
+            quantity ||
+            0,
+          ),
+        )
+
+      for (
+        let index = 0;
+        index < count;
+        index += 1
+      ) {
+
+        const key =
+          `gear-${item.id}-${index}`
+
+        const baseFootprint =
+          getFootprint(
+            item,
+          )
+
+        const rotated =
+          Boolean(
+            rotations[
+              key
+            ],
+          )
+
+        instances.push({
+          key,
+
+          kind:
+            'gear',
+
+          item,
+
+          rotated,
+
+          baseWidth:
+            baseFootprint.width,
+
+          baseHeight:
+            baseFootprint.height,
+
+          footprint: {
+            width:
+              rotated
+                ? baseFootprint.height
+                : baseFootprint.width,
+
+            height:
+              rotated
+                ? baseFootprint.width
+                : baseFootprint.height,
+          },
+        })
+      }
+    },
+  )
+
+  return instances
+}
+
+function cellsForPlacement({
+  row,
+  column,
+  width,
+  height,
+  columns,
+}) {
+
+  const cells = []
+
+  for (
+    let y = 0;
+    y < height;
+    y += 1
+  ) {
+
+    for (
+      let x = 0;
+      x < width;
+      x += 1
+    ) {
+
+      cells.push(
+        (
+          row + y
+        ) *
+          columns +
+        column +
+        x,
+      )
+    }
+  }
+
+  return cells
+}
+
+function canPlace({
+  backpack,
+  row,
+  column,
+  width,
+  height,
+  occupied,
+}) {
+
+  if (
+    row < 0 ||
+    column < 0 ||
+    row + height >
+      backpack.rows ||
+    column + width >
+      backpack.columns
+  ) {
+
+    return false
+  }
+
+  const blocked =
+    new Set(
+      backpack.blocked ||
+        [],
+    )
+
+  return cellsForPlacement({
+    row,
+    column,
+    width,
+    height,
+    columns:
+      backpack.columns,
+  }).every(
+    (cell) =>
+      !blocked.has(
+        cell,
+      ) &&
+      !occupied.has(
+        cell,
+      ),
+  )
+}
+
+function buildLayout(
+  backpack,
+  instances,
+  positions,
+) {
+
+  const usedCells =
+    instances.reduce(
+      (
+        total,
+        instance,
+      ) =>
+        total +
+        (
+          instance
+            .footprint
+            .width *
+          instance
+            .footprint
+            .height
+        ),
+      0,
+    )
+
+  if (
+    backpack.exactLayoutPending ||
+    !backpack.columns ||
+    !backpack.rows
+  ) {
+
+    return {
+      placements: [],
+      fits:
+        usedCells <=
+        backpack.capacity,
+      usedCells,
+      remaining:
+        Math.max(
+          0,
+          backpack.capacity -
+            usedCells,
+        ),
+    }
+  }
+
+  const occupied =
+    new Set()
+
+  const placements =
+    []
+
+  const unresolved =
+    []
+
+  instances.forEach(
+    (instance) => {
+
+      const preferred =
+        positions[
+          instance.key
+        ]
+
+      if (!preferred) {
+
+        unresolved.push(
+          instance,
+        )
+
+        return
+      }
+
+      const valid =
+        canPlace({
+          backpack,
+          row:
+            preferred.row,
+          column:
+            preferred.column,
+          width:
+            instance
+              .footprint
+              .width,
+          height:
+            instance
+              .footprint
+              .height,
+          occupied,
+        })
+
+      if (!valid) {
+
+        unresolved.push(
+          instance,
+        )
+
+        return
+      }
+
+      const cells =
+        cellsForPlacement({
+          row:
+            preferred.row,
+          column:
+            preferred.column,
+          width:
+            instance
+              .footprint
+              .width,
+          height:
+            instance
+              .footprint
+              .height,
+          columns:
+            backpack.columns,
+        })
+
+      cells.forEach(
+        (cell) =>
+          occupied.add(
+            cell,
+          ),
+      )
+
+      placements.push({
+        ...instance,
+        ...preferred,
+        width:
+          instance
+            .footprint
+            .width,
+        height:
+          instance
+            .footprint
+            .height,
+        cells,
+      })
+    },
+  )
+
+  unresolved.forEach(
+    (instance) => {
+
+      if (
+        placements.length >
+        instances.length
+      ) {
+        return
+      }
+
+      let found =
+        null
+
+      for (
+        let row = 0;
+        row <
+        backpack.rows;
+        row += 1
+      ) {
+
+        for (
+          let column = 0;
+          column <
+          backpack.columns;
+          column += 1
+        ) {
+
+          const valid =
+            canPlace({
+              backpack,
+              row,
+              column,
+              width:
+                instance
+                  .footprint
+                  .width,
+              height:
+                instance
+                  .footprint
+                  .height,
+              occupied,
+            })
+
+          if (!valid) {
+            continue
+          }
+
+          const cells =
+            cellsForPlacement({
+              row,
+              column,
+              width:
+                instance
+                  .footprint
+                  .width,
+              height:
+                instance
+                  .footprint
+                  .height,
+              columns:
+                backpack.columns,
+            })
+
+          found = {
+            ...instance,
+            row,
+            column,
+            width:
+              instance
+                .footprint
+                .width,
+            height:
+              instance
+                .footprint
+                .height,
+            cells,
+          }
+
+          break
+        }
+
+        if (found) {
+          break
+        }
+      }
+
+      if (!found) {
+        return
+      }
+
+      found.cells.forEach(
+        (cell) =>
+          occupied.add(
+            cell,
+          ),
+      )
+
+      placements.push(
+        found,
+      )
+    },
+  )
+
+  return {
+    placements,
+
+    fits:
+      placements.length ===
+      instances.length,
+
+    usedCells,
+
+    remaining:
+      Math.max(
+        0,
+        backpack.capacity -
+          usedCells,
+      ),
+  }
+}
+
+function BackpackPackingView({
+  backpack,
+  looseAmmo,
+  medicalItems,
+  packedAmmo,
+  packedGear,
+  equippedCalibres,
+  changeAmmoRounds,
+  changePackedGear,
+  equipmentValue,
+  contentsValue,
+  totalValue,
+  knownWeight,
+  totalRounds,
+  onBack,
+}) {
+
+  const [
+    category,
+    setCategory,
+  ] =
+    useState(
+      'RECOMMENDED',
+    )
+
+  const [
+    calibre,
+    setCalibre,
+  ] =
+    useState(null)
+
+  const [
+    query,
+    setQuery,
+  ] =
+    useState('')
+
+  const [
+    positions,
+    setPositions,
+  ] =
+    useState({})
+
+  
+  const [
+    rotations,
+    setRotations,
+  ] =
+    useState({})
+const [
+    draggingKey,
+    setDraggingKey,
+  ] =
+    useState(null)
+
+  const [
+    error,
+    setError,
+  ] =
+    useState('')
+
   const instances =
     useMemo(
       () => [
@@ -167,8 +773,8 @@ function makeInstances(
         ),
 
         ...makeGearInstances(
-          medicalItems,
-          packedGear,
+          medicalItems || [],
+          packedGear || {},
           rotations,
         ),
       ],
@@ -342,7 +948,7 @@ function makeInstances(
         'gear'
       ) {
 
-        const nextPackedGear = {
+        const nextGear = {
           ...packedGear,
 
           [item.id]:
@@ -363,8 +969,8 @@ function makeInstances(
           ),
 
           ...makeGearInstances(
-            medicalItems,
-            nextPackedGear,
+            medicalItems || [],
+            nextGear,
             rotations,
           ),
         ]
@@ -455,8 +1061,8 @@ function makeInstances(
           ),
 
           ...makeGearInstances(
-            medicalItems,
-            packedGear,
+            medicalItems || [],
+            packedGear || {},
             rotations,
           ),
         ]
@@ -1081,7 +1687,7 @@ function makeInstances(
 
                               {/* RALLYSTACK_MEDICAL_CATALOGUE */}
 
-                              {medicalItems
+                              {(medicalItems || [])
                                 .filter(
                                   (item) => {
 
@@ -1127,7 +1733,6 @@ function makeInstances(
                                         </div>
 
                                         <div className="mt-1 text-[9px] leading-4 text-stone-400">
-
                                           {
                                             item.inventoryWidth
                                           }
@@ -1155,7 +1760,6 @@ function makeInstances(
                                               item.price,
                                             )
                                           }
-
                                         </div>
 
                                       </div>
@@ -1163,7 +1767,7 @@ function makeInstances(
                                       <button
                                         type="button"
                                         title={
-                                          `Add ${item.name} to backpack`
+                                          `Add ${item.name}`
                                         }
                                         onClick={() =>
                                           tryAdd(
