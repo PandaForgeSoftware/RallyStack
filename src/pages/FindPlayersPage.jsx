@@ -21,8 +21,8 @@ import LfgPlayerCard from '../features/lfg/components/LfgPlayerCard'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 
-const DISCORD_GUILD_URL =
-  'https://discord.com/channels/1554082200583147593'
+const DISCORD_LFG_URL =
+  'https://discord.com/channels/1554082200583147593/1554115548051415151'
 
 const roleOptions = [
   'ALL ROLES',
@@ -112,7 +112,7 @@ function formatExpiry(
 
 function openDiscord() {
   window.open(
-    DISCORD_GUILD_URL,
+    DISCORD_LFG_URL,
     '_blank',
     'noopener,noreferrer',
   )
