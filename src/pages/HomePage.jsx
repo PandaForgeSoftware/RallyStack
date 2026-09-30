@@ -21,7 +21,7 @@ const groups = [
     players: '3 / 5',
     region: 'EU',
     style: 'Tactical',
-    needs: 'Medic â€¢ Logistics',
+    needs: 'Medic  /  Logistics',
   },
   {
     title: 'New Players Welcome',
@@ -400,12 +400,12 @@ function HomePage() {
             <div className="mt-12 flex flex-wrap gap-x-9 gap-y-4 text-xs font-bold tracking-wider text-stone-500">
               <span className="flex items-center gap-2">
                 <span className="h-2 w-2 bg-emerald-500" />
-                27 LOOKING TO PLAY
+                {homeStats.live_players} LOOKING TO PLAY
               </span>
 
               <span className="flex items-center gap-2">
                 <span className="h-2 w-2 bg-amber-500" />
-                8 GROUPS FORMING
+                {homeStats.live_groups} GROUPS FORMING
               </span>
 
               <span className="flex items-center gap-2">
@@ -457,7 +457,7 @@ function HomePage() {
                   </div>
 
                   <div className="mt-2 text-xs text-stone-500">
-                    {featuredSquad ? `${featuredSquad.region} â€¢ Recruiting` : 'No public recruiting squad yet'}
+                    {featuredSquad ? `${featuredSquad.region}  /  Recruiting` : 'No public recruiting squad yet'}
                   </div>
                 </div>
 
@@ -712,7 +712,7 @@ function HomePage() {
                   </div>
 
                   <div className="mt-1 text-xs text-stone-500">
-                    {squad.region} â€¢ {squad.members}
+                    {squad.region}  /  {squad.members}
                   </div>
 
                   <div className="mt-3 inline-flex bg-emerald-500/10 px-2 py-1 text-[9px] font-black tracking-wider text-emerald-400">
