@@ -25,7 +25,7 @@ import {
 
 import {
   medicalItems,
-} from '../data/wardogsMedicalData'
+} from '../data/wardogsPackableData'
 
 import {
   ammoStackRules,

@@ -1795,7 +1795,17 @@ const [
 
                             </div>
 
-                          ) : entry === 'MEDICAL' ? (
+                          ) : [
+                              'MEDICAL',
+                              'MAGAZINES',
+                              'GRENADES',
+                              'TACTICAL',
+                              'BUILDING',
+                              'RECON',
+                              'VEHICLE',
+                            ].includes(
+                              entry,
+                            ) ? (
 
                             <div className="space-y-2 p-2">
 
@@ -1860,7 +1870,7 @@ const [
 
                                           {
                                             item.maxPerLoadout
-                                              ? `1 / LIFE`
+                                              ? `${item.maxPerLoadout} / LIFE`
                                               : item.stackVerified
                                                 ? `STACK ${item.maxStack}`
                                                 : 'STACK ?'
@@ -1883,9 +1893,11 @@ const [
                                           {
                                             item.price === 0
                                               ? 'FREE'
-                                              : money(
-                                                  item.price,
-                                                )
+                                              : item.price == null
+                                                ? 'PRICE ?'
+                                                : money(
+                                                    item.price,
+                                                  )
                                           }
 
                                         </div>
