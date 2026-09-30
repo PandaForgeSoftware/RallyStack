@@ -24,6 +24,10 @@ import {
 } from '../data/wardogsLoadoutData'
 
 import {
+  medicalItems,
+} from '../data/wardogsMedicalData'
+
+import {
   ammoStackRules,
 } from '../data/wardogsAmmoStackRules'
 import BackpackPackingView from '../features/loadouts/components/BackpackPackingView'
@@ -580,7 +584,15 @@ function LoadoutsPage() {
   ] =
     useState({})
 
+  
+
   const [
+    packedGear,
+    setPackedGear,
+  ] =
+    useState({})
+
+const [
     selectedItem,
     setSelectedItem,
   ] =
@@ -894,25 +906,95 @@ function LoadoutsPage() {
       ],
     )
 
-  const contentsValue =
+  const medicalRows =
     useMemo(
       () =>
-        ammoRows.reduce(
-          (
-            total,
-            item,
-          ) =>
-            total +
+        Object.entries(
+          packedGear,
+        )
+          .map(
+            ([
+              id,
+              quantity,
+            ]) => {
+
+              const item =
+                medicalItems.find(
+                  (candidate) =>
+                    candidate.id ===
+                    id,
+                )
+
+              if (!item) {
+                return null
+              }
+
+              return {
+                item,
+                quantity:
+                  Number(
+                    quantity ||
+                    0,
+                  ),
+              }
+            },
+          )
+          .filter(Boolean),
+      [
+        packedGear,
+      ],
+    )
+
+  const contentsValue =
+    useMemo(
+      () => {
+
+        const ammoValue =
+          ammoRows.reduce(
             (
-              Number(
-                item.price ||
-                0,
-              ) *
-              item.purchases
-            ),
-          0,
-        ),
-      [ammoRows],
+              total,
+              item,
+            ) =>
+              total +
+              (
+                Number(
+                  item.price ||
+                  0,
+                ) *
+                Number(
+                  item.purchases ||
+                  0,
+                )
+              ),
+            0,
+          )
+
+        const gearValue =
+          medicalRows.reduce(
+            (
+              total,
+              row,
+            ) =>
+              total +
+              (
+                Number(
+                  row.item.price ||
+                  0,
+                ) *
+                row.quantity
+              ),
+            0,
+          )
+
+        return (
+          ammoValue +
+          gearValue
+        )
+      },
+      [
+        ammoRows,
+        medicalRows,
+      ],
     )
 
   const totalValue =
@@ -921,25 +1003,45 @@ function LoadoutsPage() {
 
   const knownWeight =
     useMemo(
-      () =>
-        equippedWeapons.reduce(
+      () => {
+
+        const baseWeight =
+          equippedWeapons.reduce(
+            (
+              total,
+              item,
+            ) =>
+              total +
+              Number(
+                item.weight ||
+                0,
+              ),
+            Number(
+              selectedBackpack.weight ||
+              0,
+            ),
+          )
+
+        return medicalRows.reduce(
           (
             total,
-            item,
+            row,
           ) =>
             total +
-            Number(
-              item.weight ||
+            (
+              Number(
+                row.item.weight ||
                 0,
+              ) *
+              row.quantity
             ),
-          Number(
-            selectedBackpack.weight ||
-              0,
-          ),
-        ),
+          baseWeight,
+        )
+      },
       [
         equippedWeapons,
         selectedBackpack,
+        medicalRows,
       ],
     )
 
@@ -961,7 +1063,19 @@ function LoadoutsPage() {
         item,
       ) =>
         total +
-        item.physicalStacks,
+        Number(
+          item.physicalStacks ||
+          0,
+        ),
+      0,
+    ) +
+    medicalRows.reduce(
+      (
+        total,
+        row,
+      ) =>
+        total +
+        row.quantity,
       0,
     )
 
@@ -1098,6 +1212,55 @@ function LoadoutsPage() {
       )
     }
 
+  const changePackedGear =
+    (
+      id,
+      difference,
+    ) => {
+
+      setPackedGear(
+        (current) => {
+
+          const next =
+            Math.max(
+              0,
+              Number(
+                current[
+                  id
+                ] ||
+                0,
+              ) +
+              Number(
+                difference ||
+                0,
+              ),
+            )
+
+          const updated = {
+            ...current,
+          }
+
+          if (
+            next === 0
+          ) {
+
+            delete updated[
+              id
+            ]
+          }
+          else {
+
+            updated[
+              id
+            ] =
+              next
+          }
+
+          return updated
+        },
+      )
+    }
+
   if (
     activeTab === 'builder' &&
     builderView === 'backpack'
@@ -1106,9 +1269,12 @@ function LoadoutsPage() {
       <BackpackPackingView
         backpack={selectedBackpack}
         looseAmmo={looseAmmo}
+        medicalItems={medicalItems}
         packedAmmo={packedAmmo}
+        packedGear={packedGear}
         equippedCalibres={equippedCalibres}
         changeAmmoRounds={changeAmmoRounds}
+        changePackedGear={changePackedGear}
         equipmentValue={equipmentValue}
         contentsValue={contentsValue}
         totalValue={totalValue}

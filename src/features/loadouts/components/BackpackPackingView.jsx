@@ -157,531 +157,30 @@ function makeInstances(
   rotations = {},
 ) {
 
-  const instances = []
-
-  Object.entries(
-    packed,
-  ).forEach(
-    ([
-      itemId,
-      roundCount,
-    ]) => {
-
-      const item =
-        items.find(
-          (candidate) =>
-            candidate.id ===
-            itemId,
-        )
-
-      if (!item) {
-        return
-      }
-
-      const {
-        purchaseQuantity,
-        maxStack,
-      } =
-        getAmmoRule(
-          item,
-        )
-
-      const totalRounds =
-        Math.max(
-          0,
-          Number(
-            roundCount ||
-            0,
-          ),
-        )
-
-      const physicalStacks =
-        Math.ceil(
-          totalRounds /
-          maxStack,
-        )
-
-      for (
-        let index = 0;
-        index <
-        physicalStacks;
-        index += 1
-      ) {
-
-        const rounds =
-          Math.min(
-            maxStack,
-            totalRounds -
-              index *
-              maxStack,
-          )
-
-        const key =
-          `${item.id}-${index}`
-
-        const baseFootprint =
-          getFootprint(
-            item,
-          )
-
-        const rotated =
-          Boolean(
-            rotations[
-              key
-            ],
-          )
-
-        instances.push({
-          key,
-
-          item,
-
-          rounds,
-
-          maxStack,
-
-          purchaseQuantity,
-
-          rotated,
-
-          baseWidth:
-            baseFootprint.width,
-
-          baseHeight:
-            baseFootprint.height,
-
-          footprint: {
-            width:
-              rotated
-                ? baseFootprint.height
-                : baseFootprint.width,
-
-            height:
-              rotated
-                ? baseFootprint.width
-                : baseFootprint.height,
-          },
-        })
-      }
-    },
-  )
-
-  return instances
-}
-
-function cellsForPlacement({
-  row,
-  column,
-  width,
-  height,
-  columns,
-}) {
-
-  const cells = []
-
-  for (
-    let y = 0;
-    y < height;
-    y += 1
-  ) {
-
-    for (
-      let x = 0;
-      x < width;
-      x += 1
-    ) {
-
-      cells.push(
-        (
-          row + y
-        ) *
-          columns +
-        column +
-        x,
-      )
-    }
-  }
-
-  return cells
-}
-
-function canPlace({
-  backpack,
-  row,
-  column,
-  width,
-  height,
-  occupied,
-}) {
-
-  if (
-    row < 0 ||
-    column < 0 ||
-    row + height >
-      backpack.rows ||
-    column + width >
-      backpack.columns
-  ) {
-
-    return false
-  }
-
-  const blocked =
-    new Set(
-      backpack.blocked ||
-        [],
-    )
-
-  return cellsForPlacement({
-    row,
-    column,
-    width,
-    height,
-    columns:
-      backpack.columns,
-  }).every(
-    (cell) =>
-      !blocked.has(
-        cell,
-      ) &&
-      !occupied.has(
-        cell,
-      ),
-  )
-}
-
-function buildLayout(
-  backpack,
-  instances,
-  positions,
-) {
-
-  const usedCells =
-    instances.reduce(
-      (
-        total,
-        instance,
-      ) =>
-        total +
-        (
-          instance
-            .footprint
-            .width *
-          instance
-            .footprint
-            .height
-        ),
-      0,
-    )
-
-  if (
-    backpack.exactLayoutPending ||
-    !backpack.columns ||
-    !backpack.rows
-  ) {
-
-    return {
-      placements: [],
-      fits:
-        usedCells <=
-        backpack.capacity,
-      usedCells,
-      remaining:
-        Math.max(
-          0,
-          backpack.capacity -
-            usedCells,
-        ),
-    }
-  }
-
-  const occupied =
-    new Set()
-
-  const placements =
-    []
-
-  const unresolved =
-    []
-
-  instances.forEach(
-    (instance) => {
-
-      const preferred =
-        positions[
-          instance.key
-        ]
-
-      if (!preferred) {
-
-        unresolved.push(
-          instance,
-        )
-
-        return
-      }
-
-      const valid =
-        canPlace({
-          backpack,
-          row:
-            preferred.row,
-          column:
-            preferred.column,
-          width:
-            instance
-              .footprint
-              .width,
-          height:
-            instance
-              .footprint
-              .height,
-          occupied,
-        })
-
-      if (!valid) {
-
-        unresolved.push(
-          instance,
-        )
-
-        return
-      }
-
-      const cells =
-        cellsForPlacement({
-          row:
-            preferred.row,
-          column:
-            preferred.column,
-          width:
-            instance
-              .footprint
-              .width,
-          height:
-            instance
-              .footprint
-              .height,
-          columns:
-            backpack.columns,
-        })
-
-      cells.forEach(
-        (cell) =>
-          occupied.add(
-            cell,
-          ),
-      )
-
-      placements.push({
-        ...instance,
-        ...preferred,
-        width:
-          instance
-            .footprint
-            .width,
-        height:
-          instance
-            .footprint
-            .height,
-        cells,
-      })
-    },
-  )
-
-  unresolved.forEach(
-    (instance) => {
-
-      if (
-        placements.length >
-        instances.length
-      ) {
-        return
-      }
-
-      let found =
-        null
-
-      for (
-        let row = 0;
-        row <
-        backpack.rows;
-        row += 1
-      ) {
-
-        for (
-          let column = 0;
-          column <
-          backpack.columns;
-          column += 1
-        ) {
-
-          const valid =
-            canPlace({
-              backpack,
-              row,
-              column,
-              width:
-                instance
-                  .footprint
-                  .width,
-              height:
-                instance
-                  .footprint
-                  .height,
-              occupied,
-            })
-
-          if (!valid) {
-            continue
-          }
-
-          const cells =
-            cellsForPlacement({
-              row,
-              column,
-              width:
-                instance
-                  .footprint
-                  .width,
-              height:
-                instance
-                  .footprint
-                  .height,
-              columns:
-                backpack.columns,
-            })
-
-          found = {
-            ...instance,
-            row,
-            column,
-            width:
-              instance
-                .footprint
-                .width,
-            height:
-              instance
-                .footprint
-                .height,
-            cells,
-          }
-
-          break
-        }
-
-        if (found) {
-          break
-        }
-      }
-
-      if (!found) {
-        return
-      }
-
-      found.cells.forEach(
-        (cell) =>
-          occupied.add(
-            cell,
-          ),
-      )
-
-      placements.push(
-        found,
-      )
-    },
-  )
-
-  return {
-    placements,
-
-    fits:
-      placements.length ===
-      instances.length,
-
-    usedCells,
-
-    remaining:
-      Math.max(
-        0,
-        backpack.capacity -
-          usedCells,
-      ),
-  }
-}
-
-function BackpackPackingView({
-  backpack,
-  looseAmmo,
-  packedAmmo,
-  equippedCalibres,
-  changeAmmoRounds,
-  equipmentValue,
-  contentsValue,
-  totalValue,
-  knownWeight,
-  totalRounds,
-  onBack,
-}) {
-
-  const [
-    category,
-    setCategory,
-  ] =
-    useState(
-      'RECOMMENDED',
-    )
-
-  const [
-    calibre,
-    setCalibre,
-  ] =
-    useState(null)
-
-  const [
-    query,
-    setQuery,
-  ] =
-    useState('')
-
-  const [
-    positions,
-    setPositions,
-  ] =
-    useState({})
-
-  
-  const [
-    rotations,
-    setRotations,
-  ] =
-    useState({})
-const [
-    draggingKey,
-    setDraggingKey,
-  ] =
-    useState(null)
-
-  const [
-    error,
-    setError,
-  ] =
-    useState('')
-
   const instances =
     useMemo(
-      () =>
-        makeInstances(
+      () => [
+        ...makeInstances(
           looseAmmo,
           packedAmmo,
           rotations,
         ),
+
+        ...makeGearInstances(
+          medicalItems,
+          packedGear,
+          rotations,
+        ),
+      ],
       [
         looseAmmo,
         packedAmmo,
+        medicalItems,
+        packedGear,
         rotations,
       ],
     )
+
   useEffect(
     () => {
 
@@ -838,6 +337,69 @@ const [
   const tryAdd =
     (item) => {
 
+      if (
+        item.kind ===
+        'gear'
+      ) {
+
+        const nextPackedGear = {
+          ...packedGear,
+
+          [item.id]:
+            (
+              packedGear[
+                item.id
+              ] ||
+              0
+            ) +
+            1,
+        }
+
+        const nextInstances = [
+          ...makeInstances(
+            looseAmmo,
+            packedAmmo,
+            rotations,
+          ),
+
+          ...makeGearInstances(
+            medicalItems,
+            nextPackedGear,
+            rotations,
+          ),
+        ]
+
+        const test =
+          buildLayout(
+            backpack,
+            nextInstances,
+            positions,
+          )
+
+        if (!test.fits) {
+
+          const footprint =
+            getFootprint(
+              item,
+            )
+
+          setError(
+            `${item.name} needs ${footprint.width}x${footprint.height} space, but the backpack is full.`,
+          )
+
+          return
+        }
+
+        changePackedGear(
+          item.id,
+          1,
+        )
+
+        setError('')
+
+        return
+      }
+
       const {
         purchaseQuantity,
         maxStack,
@@ -885,12 +447,19 @@ const [
         currentPhysicalStacks
       ) {
 
-        const nextInstances =
-          makeInstances(
+        const nextInstances = [
+          ...makeInstances(
             looseAmmo,
             nextPacked,
             rotations,
-          )
+          ),
+
+          ...makeGearInstances(
+            medicalItems,
+            packedGear,
+            rotations,
+          ),
+        ]
 
         const test =
           buildLayout(
@@ -901,8 +470,13 @@ const [
 
         if (!test.fits) {
 
+          const footprint =
+            getFootprint(
+              item,
+            )
+
           setError(
-            `${item.name} needs another ${getFootprint(item).width}x${getFootprint(item).height} space, but the backpack is full.`,
+            `${item.name} needs another ${footprint.width}x${footprint.height} space, but the backpack is full.`,
           )
 
           return
@@ -950,15 +524,30 @@ const [
         },
       )
 
-      changeAmmoRounds(
-        placement
-          .item
-          .id,
-        -Number(
-          placement.rounds ||
-          0,
-        ),
-      )
+      if (
+        placement.kind ===
+        'gear'
+      ) {
+
+        changePackedGear(
+          placement
+            .item
+            .id,
+          -1,
+        )
+      }
+      else {
+
+        changeAmmoRounds(
+          placement
+            .item
+            .id,
+          -Number(
+            placement.rounds ||
+            0,
+          ),
+        )
+      }
 
       setError('')
     }
@@ -1483,6 +1072,116 @@ const [
                                   )
                                 },
                               )}
+
+                            </div>
+
+                          ) : entry === 'MEDICAL' ? (
+
+                            <div className="space-y-2 p-2">
+
+                              {/* RALLYSTACK_MEDICAL_CATALOGUE */}
+
+                              {medicalItems
+                                .filter(
+                                  (item) => {
+
+                                    const needle =
+                                      query
+                                        .trim()
+                                        .toLowerCase()
+
+                                    return (
+                                      !needle ||
+                                      item.name
+                                        .toLowerCase()
+                                        .includes(
+                                          needle,
+                                        )
+                                    )
+                                  },
+                                )
+                                .map(
+                                  (item) => (
+
+                                    <div
+                                      key={
+                                        item.id
+                                      }
+                                      className="flex items-center gap-3 border border-white/10 bg-[#121617] p-3 transition hover:border-amber-500/25 hover:bg-[#15191b]"
+                                    >
+
+                                      <WardogsItemImage
+                                        item={
+                                          item
+                                        }
+                                        className="h-14 w-20 shrink-0 border border-white/8 bg-black/20"
+                                        imageClassName="p-1"
+                                      />
+
+                                      <div className="min-w-0 flex-1">
+
+                                        <div className="truncate text-[10px] font-black leading-4 text-white">
+                                          {
+                                            item.name
+                                          }
+                                        </div>
+
+                                        <div className="mt-1 text-[9px] leading-4 text-stone-400">
+
+                                          {
+                                            item.inventoryWidth
+                                          }
+                                          x
+                                          {
+                                            item.inventoryHeight
+                                          }
+
+                                          {' / '}
+
+                                          {
+                                            Number(
+                                              item.weight ||
+                                              0,
+                                            ).toFixed(
+                                              2,
+                                            )
+                                          }
+                                          kg
+
+                                          {' / '}
+
+                                          {
+                                            money(
+                                              item.price,
+                                            )
+                                          }
+
+                                        </div>
+
+                                      </div>
+
+                                      <button
+                                        type="button"
+                                        title={
+                                          `Add ${item.name} to backpack`
+                                        }
+                                        onClick={() =>
+                                          tryAdd(
+                                            item,
+                                          )
+                                        }
+                                        className="flex h-10 w-10 shrink-0 items-center justify-center bg-amber-500 text-black transition hover:bg-amber-400"
+                                      >
+                                        <Plus
+                                          size={
+                                            15
+                                          }
+                                        />
+                                      </button>
+
+                                    </div>
+                                  ),
+                                )}
 
                             </div>
 

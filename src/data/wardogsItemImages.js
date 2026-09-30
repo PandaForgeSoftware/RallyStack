@@ -79,4 +79,11 @@ export const itemImages = {
   'svd': '/wardogs/items/svd.webp',
   't21': '/wardogs/items/t21.webp',
   'verba': '/wardogs/items/verba.webp',
+  'medical-adrenaline-pen': '/wardogs/items/medical-adrenaline-pen.webp',
+  'medical-bandage': '/wardogs/items/medical-bandage.webp',
+  'medical-defibrillator': '/wardogs/items/medical-defibrillator.webp',
+  'medical-enox': '/wardogs/items/medical-enox.webp',
+  'medical-field-resuscitator': '/wardogs/items/medical-field-resuscitator.webp',
+  'medical-ifak': '/wardogs/items/medical-ifak.webp',
+  'medical-medical-bag': '/wardogs/items/medical-medical-bag.webp',
 }
