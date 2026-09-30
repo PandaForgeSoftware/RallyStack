@@ -278,7 +278,8 @@ function makeGearInstances(
   const instances = []
 
   Object.entries(
-    packed || {},
+    packed ||
+    {},
   ).forEach(
     ([
       itemId,
@@ -296,7 +297,7 @@ function makeGearInstances(
         return
       }
 
-      const count =
+      const totalQuantity =
         Math.max(
           0,
           Number(
@@ -305,11 +306,35 @@ function makeGearInstances(
           ),
         )
 
+      const maxStack =
+        Math.max(
+          1,
+          Number(
+            item.maxStack ||
+            1,
+          ),
+        )
+
+      const physicalStacks =
+        Math.ceil(
+          totalQuantity /
+          maxStack,
+        )
+
       for (
         let index = 0;
-        index < count;
+        index <
+        physicalStacks;
         index += 1
       ) {
+
+        const stackCount =
+          Math.min(
+            maxStack,
+            totalQuantity -
+              index *
+              maxStack,
+          )
 
         const key =
           `gear-${item.id}-${index}`
@@ -334,6 +359,8 @@ function makeGearInstances(
 
           item,
 
+          stackCount,
+
           rotated,
 
           baseWidth:
@@ -341,6 +368,21 @@ function makeGearInstances(
 
           baseHeight:
             baseFootprint.height,
+
+          /*
+           * StableBackpackGrid already knows how
+           * to draw count / max overlays for ammo.
+           * Reuse it for genuinely stackable gear.
+           */
+          rounds:
+            maxStack > 1
+              ? stackCount
+              : undefined,
+
+          maxStack:
+            maxStack > 1
+              ? maxStack
+              : undefined,
 
           footprint: {
             width:
@@ -724,7 +766,7 @@ function BackpackPackingView({
     setCategory,
   ] =
     useState(
-      'RECOMMENDED',
+      '',
     )
 
   const [
@@ -948,52 +990,114 @@ const [
         'gear'
       ) {
 
+        const currentQuantity =
+          Math.max(
+            0,
+            Number(
+              packedGear[
+                item.id
+              ] ||
+              0,
+            ),
+          )
+
+        const maxStack =
+          Math.max(
+            1,
+            Number(
+              item.maxStack ||
+              1,
+            ),
+          )
+
+        const maxPerLoadout =
+          item.maxPerLoadout
+            ? Number(
+                item.maxPerLoadout,
+              )
+            : null
+
+        if (
+          maxPerLoadout &&
+          currentQuantity >=
+            maxPerLoadout
+        ) {
+
+          setError(
+            `${item.name} is limited to ${maxPerLoadout} per life.`,
+          )
+
+          return
+        }
+
+        const nextQuantity =
+          currentQuantity +
+          1
+
+        const currentPhysicalStacks =
+          Math.ceil(
+            currentQuantity /
+            maxStack,
+          )
+
+        const nextPhysicalStacks =
+          Math.ceil(
+            nextQuantity /
+            maxStack,
+          )
+
         const nextGear = {
           ...packedGear,
 
           [item.id]:
-            (
-              packedGear[
-                item.id
-              ] ||
-              0
-            ) +
-            1,
+            nextQuantity,
         }
 
-        const nextInstances = [
-          ...makeInstances(
-            looseAmmo,
-            packedAmmo,
-            rotations,
-          ),
+        /*
+         * Only check for another free footprint
+         * when this click actually creates
+         * another physical stack.
+         */
+        if (
+          nextPhysicalStacks >
+          currentPhysicalStacks
+        ) {
 
-          ...makeGearInstances(
-            medicalItems || [],
-            nextGear,
-            rotations,
-          ),
-        ]
+          const nextInstances = [
+            ...makeInstances(
+              looseAmmo,
+              packedAmmo,
+              rotations,
+            ),
 
-        const test =
-          buildLayout(
-            backpack,
-            nextInstances,
-            positions,
-          )
+            ...makeGearInstances(
+              medicalItems ||
+                [],
+              nextGear,
+              rotations,
+            ),
+          ]
 
-        if (!test.fits) {
-
-          const footprint =
-            getFootprint(
-              item,
+          const test =
+            buildLayout(
+              backpack,
+              nextInstances,
+              positions,
             )
 
-          setError(
-            `${item.name} needs ${footprint.width}x${footprint.height} space, but the backpack is full.`,
-          )
+          if (!test.fits) {
 
-          return
+            const footprint =
+              getFootprint(
+                item,
+              )
+
+            setError(
+              `${item.name} needs another ${footprint.width}x${footprint.height} space, but the backpack is full.`,
+            )
+
+            return
+          }
         }
 
         changePackedGear(
@@ -1061,8 +1165,10 @@ const [
           ),
 
           ...makeGearInstances(
-            medicalItems || [],
-            packedGear || {},
+            medicalItems ||
+              [],
+            packedGear ||
+              {},
             rotations,
           ),
         ]
@@ -1089,12 +1195,12 @@ const [
         }
       }
 
-      setError('')
-
       changeAmmoRounds(
         item.id,
         purchaseQuantity,
       )
+
+      setError('')
     }
 
   const removeInstance =
@@ -1139,7 +1245,14 @@ const [
           placement
             .item
             .id,
-          -1,
+
+          -Math.max(
+            1,
+            Number(
+              placement.stackCount ||
+              1,
+            ),
+          ),
         )
       }
       else {
@@ -1148,6 +1261,7 @@ const [
           placement
             .item
             .id,
+
           -Number(
             placement.rounds ||
             0,
@@ -1733,6 +1847,7 @@ const [
                                         </div>
 
                                         <div className="mt-1 text-[9px] leading-4 text-stone-400">
+
                                           {
                                             item.inventoryWidth
                                           }
@@ -1744,22 +1859,35 @@ const [
                                           {' / '}
 
                                           {
-                                            Number(
-                                              item.weight ||
-                                              0,
-                                            ).toFixed(
-                                              2,
-                                            )
+                                            item.maxPerLoadout
+                                              ? `1 / LIFE`
+                                              : item.stackVerified
+                                                ? `STACK ${item.maxStack}`
+                                                : 'STACK ?'
                                           }
-                                          kg
 
                                           {' / '}
 
                                           {
-                                            money(
-                                              item.price,
-                                            )
+                                            item.weight == null
+                                              ? 'WEIGHT ?'
+                                              : `${Number(
+                                                  item.weight,
+                                                ).toFixed(
+                                                  2,
+                                                )}kg`
                                           }
+
+                                          {' / '}
+
+                                          {
+                                            item.price === 0
+                                              ? 'FREE'
+                                              : money(
+                                                  item.price,
+                                                )
+                                          }
+
                                         </div>
 
                                       </div>

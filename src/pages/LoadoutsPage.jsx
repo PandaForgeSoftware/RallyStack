@@ -548,7 +548,7 @@ function LoadoutsPage() {
     backpackCategory,
     setBackpackCategory,
   ] =
-    useState('RECOMMENDED')
+    useState('')
 
   const [
     ammoCalibre,
@@ -1065,6 +1065,7 @@ const [
         total +
         Number(
           item.physicalStacks ||
+          item.stacks ||
           0,
         ),
       0,
@@ -1075,7 +1076,16 @@ const [
         row,
       ) =>
         total +
-        row.quantity,
+        Math.ceil(
+          row.quantity /
+          Math.max(
+            1,
+            Number(
+              row.item.maxStack ||
+              1,
+            ),
+          ),
+        ),
       0,
     )
 
@@ -1151,7 +1161,7 @@ const [
       )
 
       setBackpackCategory(
-        'RECOMMENDED',
+        '',
       )
 
       setAmmoCalibre(
