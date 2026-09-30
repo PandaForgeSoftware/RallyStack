@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import {
   ArrowRight,
   Backpack,
@@ -19,7 +21,7 @@ const groups = [
     players: '3 / 5',
     region: 'EU',
     style: 'Tactical',
-    needs: 'Medic • Logistics',
+    needs: 'Medic â€¢ Logistics',
   },
   {
     title: 'New Players Welcome',
@@ -114,6 +116,233 @@ function SectionHeader({ eyebrow, title, action }) {
 }
 
 function HomePage() {
+  const [
+    homeStats,
+    setHomeStats,
+  ] = useState({
+    players: 0,
+    live_players: 0,
+    live_groups: 0,
+    squads: 0,
+    recruiting_squads: 0,
+  })
+
+  const [
+    liveGroups,
+    setLiveGroups,
+  ] = useState([])
+
+  const [
+    liveSquads,
+    setLiveSquads,
+  ] = useState([])
+
+  const loadHomeData =
+    async () => {
+      const [
+        statsResult,
+        groupsResult,
+        squadsResult,
+      ] =
+        await Promise.all([
+          supabase.rpc(
+            'get_home_stats',
+          ),
+
+          supabase.rpc(
+            'get_home_live_groups',
+            {
+              p_limit: 3,
+            },
+          ),
+
+          supabase.rpc(
+            'get_home_recruiting_squads',
+            {
+              p_limit: 3,
+            },
+          ),
+        ])
+
+      if (
+        statsResult.error ||
+        groupsResult.error ||
+        squadsResult.error
+      ) {
+        console.error(
+          'Could not load RallyStack home data:',
+          statsResult.error ||
+            groupsResult.error ||
+            squadsResult.error,
+        )
+
+        return
+      }
+
+      setHomeStats(
+        statsResult.data || {
+          players: 0,
+          live_players: 0,
+          live_groups: 0,
+          squads: 0,
+          recruiting_squads: 0,
+        },
+      )
+
+      setLiveGroups(
+        (
+          groupsResult.data ||
+          []
+        ).map(
+          (
+            group,
+          ) => {
+            const current =
+              Number(
+                group.player_count ||
+                  0,
+              )
+
+            const maximum =
+              Number(
+                group.max_players ||
+                  0,
+              )
+
+            const openSpots =
+              Math.max(
+                0,
+                maximum -
+                  current,
+              )
+
+            return {
+              id: group.id,
+              title:
+                group.title ||
+                'WARDOGS GROUP',
+              host:
+                group.host ||
+                'RallyStack player',
+              region:
+                group.region ||
+                'Not set',
+              style:
+                group.play_style ||
+                'Not set',
+              players:
+                `${current} / ${maximum}`,
+              needs:
+                openSpots > 0
+                  ? `${openSpots} ${
+                      openSpots === 1
+                        ? 'SPOT'
+                        : 'SPOTS'
+                    } OPEN`
+                  : 'GROUP FULL',
+              status:
+                group.status,
+            }
+          },
+        ),
+      )
+
+      setLiveSquads(
+        (
+          squadsResult.data ||
+          []
+        ).map(
+          (
+            squad,
+          ) => {
+            const members =
+              Number(
+                squad.member_count ||
+                  0,
+              )
+
+            return {
+              id:
+                squad.id,
+
+              name:
+                squad.name,
+
+              rawTag:
+                squad.tag ||
+                '',
+
+              tag:
+                squad.tag
+                  ? `[${squad.tag}]`
+                  : '',
+
+              motto:
+                squad.motto ||
+                'Ready to deploy.',
+
+              region:
+                squad.region ||
+                'Not set',
+
+              memberCount:
+                members,
+
+              members:
+                `${members} ${
+                  members === 1
+                    ? 'member'
+                    : 'members'
+                }`,
+
+              status:
+                'RECRUITING',
+
+              avatarUrl:
+                squad.avatar_url ||
+                '',
+            }
+          },
+        ),
+      )
+    }
+
+  useEffect(
+    () => {
+      loadHomeData()
+
+      const interval =
+        window.setInterval(
+          loadHomeData,
+          30000,
+        )
+
+      const refreshOnFocus =
+        () =>
+          loadHomeData()
+
+      window.addEventListener(
+        'focus',
+        refreshOnFocus,
+      )
+
+      return () => {
+        window.clearInterval(
+          interval,
+        )
+
+        window.removeEventListener(
+          'focus',
+          refreshOnFocus,
+        )
+      }
+    },
+    [],
+  )
+
+  const featuredSquad =
+    liveSquads[0] ||
+    null
   return (
     <main>
       <PromotionStrip />
@@ -164,7 +393,7 @@ function HomePage() {
                 className="flex h-13 items-center gap-3 border border-white/15 bg-white/[0.03] px-6 text-sm font-black tracking-wider text-white transition hover:border-white/30 hover:bg-white/[0.06]"
               >
                 <UserSearch size={18} />
-                FIND PLAYERS
+                OPEN LFG
               </Link>
             </div>
 
@@ -181,7 +410,7 @@ function HomePage() {
 
               <span className="flex items-center gap-2">
                 <span className="h-2 w-2 bg-sky-500" />
-                14 SQUADS RECRUITING
+                {homeStats.recruiting_squads} SQUADS RECRUITING
               </span>
             </div>
           </div>
@@ -199,9 +428,9 @@ function HomePage() {
                     </div>
 
                     <div className="mt-2 text-2xl font-black text-white">
-                      LAST ORDERS{' '}
+                      {featuredSquad?.name?.toUpperCase() || 'NO SQUAD YET'}{' '}
                       <span className="text-amber-500">
-                        [LAST]
+                        {featuredSquad?.tag || ''}
                       </span>
                     </div>
                   </div>
@@ -218,17 +447,17 @@ function HomePage() {
                   <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full border border-amber-500/40 bg-amber-500/[0.06]">
                     <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-black/40">
                       <span className="text-4xl font-black text-amber-500">
-                        LAST
+                        {featuredSquad?.rawTag || 'RS'}
                       </span>
                     </div>
                   </div>
 
                   <div className="mt-5 text-sm font-black tracking-[0.25em] text-stone-200">
-                    ONE MORE ROUND.
+                    {featuredSquad?.motto?.toUpperCase() || 'BUILD. SQUAD UP. DEPLOY.'}
                   </div>
 
                   <div className="mt-2 text-xs text-stone-500">
-                    UK / EU • Casual Tactical • Recruiting
+                    {featuredSquad ? `${featuredSquad.region} â€¢ Recruiting` : 'No public recruiting squad yet'}
                   </div>
                 </div>
 
@@ -237,7 +466,7 @@ function HomePage() {
 
                   <div>
                     <div className="text-lg font-black text-white">
-                      18
+                      {featuredSquad?.memberCount ?? 0}
                     </div>
 
                     <div className="text-[9px] font-bold tracking-wider text-stone-500">
@@ -247,21 +476,21 @@ function HomePage() {
 
                   <div className="border-x border-white/8">
                     <div className="text-lg font-black text-emerald-400">
-                      7
+                      {homeStats.live_players}
                     </div>
 
                     <div className="text-[9px] font-bold tracking-wider text-stone-500">
-                      ONLINE
+                      LFG NOW
                     </div>
                   </div>
 
                   <div>
                     <div className="text-lg font-black text-white">
-                      3
+                      {homeStats.live_groups}
                     </div>
 
                     <div className="text-[9px] font-bold tracking-wider text-stone-500">
-                      EVENTS
+                      LIVE GROUPS
                     </div>
                   </div>
 
@@ -286,8 +515,8 @@ function HomePage() {
             },
             {
               icon: Users,
-              title: 'FIND PLAYERS',
-              text: 'Find people by region, role and play style.',
+              title: 'LIVE LFG',
+              text: 'See active groups and players looking to deploy.',
             },
             {
               icon: Shield,
@@ -337,11 +566,31 @@ function HomePage() {
           action="VIEW ALL GROUPS"
         />
 
-        <div className="grid gap-4 lg:grid-cols-3">
+                {liveGroups.length === 0 && (
+          <div className="mb-5 flex items-center justify-between gap-5 border border-white/8 bg-[#111416] p-5">
+            <div>
+              <div className="text-sm font-black text-white">
+                NO ACTIVE LFG GROUPS
+              </div>
 
-          {groups.map((group) => (
+              <div className="mt-1 text-xs text-stone-500">
+                Nobody has an active Discord LFG right now.
+              </div>
+            </div>
+
+            <Link
+              to="/find-players"
+              className="shrink-0 border border-amber-500/30 px-4 py-2 text-[10px] font-black tracking-wider text-amber-400"
+            >
+              OPEN LFG
+            </Link>
+          </div>
+        )}
+<div className="grid gap-4 lg:grid-cols-3">
+
+          {liveGroups.map((group) => (
             <article
-              key={group.title}
+              key={group.id}
               className="group border border-white/8 bg-[#111416] p-5 transition hover:border-amber-500/35"
             >
 
@@ -405,7 +654,7 @@ function HomePage() {
                 </div>
 
                 <button className="border border-white/10 px-4 py-2 text-[10px] font-black tracking-wider text-white transition group-hover:border-amber-500/40">
-                  JOIN GROUP
+                  OPEN LFG
                 </button>
 
               </div>
@@ -413,78 +662,6 @@ function HomePage() {
             </article>
           ))}
 
-        </div>
-      </section>
-
-
-      <section className="border-y border-white/8 bg-[#0e1011]">
-
-        <div className="mx-auto max-w-[1500px] px-5 py-20 lg:px-8">
-
-          <SectionHeader
-            eyebrow="COMMUNITY BUILDS"
-            title="Popular loadouts"
-            action="BROWSE LOADOUTS"
-          />
-
-          <div className="grid gap-4 lg:grid-cols-3">
-
-            {builds.map((build) => (
-              <article
-                key={build.name}
-                className="border border-white/8 bg-[#111416] transition hover:border-white/15"
-              >
-
-                <div className="flex min-h-44 items-center justify-center border-b border-white/8 bg-black/20">
-                  <Crosshair
-                    size={58}
-                    strokeWidth={1}
-                    className="text-stone-700"
-                  />
-                </div>
-
-                <div className="p-5">
-
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="bg-amber-500/10 px-2 py-1 text-[9px] font-black tracking-wider text-amber-500">
-                      {build.role}
-                    </span>
-
-                    <span className="text-sm font-black text-white">
-                      {build.cost}
-                    </span>
-                  </div>
-
-                  <h3 className="text-xl font-black text-white">
-                    {build.name}
-                  </h3>
-
-                  <div className="mt-1 text-sm text-stone-500">
-                    {build.weapon}
-                  </div>
-
-                  <div className="mt-5 flex items-center justify-between border-t border-white/8 pt-4">
-
-                    <span className="text-xs text-stone-500">
-                      by{' '}
-                      <span className="text-stone-300">
-                        {build.author}
-                      </span>
-                    </span>
-
-                    <ArrowRight
-                      size={16}
-                      className="text-stone-500"
-                    />
-
-                  </div>
-
-                </div>
-
-              </article>
-            ))}
-
-          </div>
         </div>
       </section>
 
@@ -497,11 +674,22 @@ function HomePage() {
           action="BROWSE SQUADS"
         />
 
-        <div className="grid gap-4 lg:grid-cols-3">
+                {liveSquads.length === 0 && (
+          <div className="mb-5 border border-white/8 bg-[#111416] p-5">
+            <div className="text-sm font-black text-white">
+              NO SQUADS RECRUITING
+            </div>
 
-          {squads.map((squad) => (
+            <div className="mt-1 text-xs text-stone-500">
+              No public RallyStack squads are recruiting right now.
+            </div>
+          </div>
+        )}
+<div className="grid gap-4 lg:grid-cols-3">
+
+          {liveSquads.map((squad) => (
             <article
-              key={squad.name}
+              key={squad.id}
               className="border border-white/8 bg-[#111416] p-5 transition hover:border-amber-500/25"
             >
 
@@ -524,7 +712,7 @@ function HomePage() {
                   </div>
 
                   <div className="mt-1 text-xs text-stone-500">
-                    {squad.region} • {squad.members}
+                    {squad.region} â€¢ {squad.members}
                   </div>
 
                   <div className="mt-3 inline-flex bg-emerald-500/10 px-2 py-1 text-[9px] font-black tracking-wider text-emerald-400">
@@ -576,7 +764,7 @@ function HomePage() {
               className="flex items-center gap-2 bg-amber-500 px-5 py-3 text-xs font-black tracking-wider text-black"
             >
               <Headphones size={17} />
-              FIND PLAYERS
+              OPEN LFG
             </Link>
 
             <Link
