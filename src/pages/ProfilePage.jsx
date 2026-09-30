@@ -68,7 +68,6 @@ function ProfilePage() {
     playStyle: 'Casual Tactical',
     usualTimes: '',
     mic: true,
-    lookingForGroup: false,
     primaryRoles: [],
     secondaryRoles: [],
   })
@@ -117,8 +116,6 @@ function ProfilePage() {
       usualTimes:
         storedProfile.usual_play_times || '',
       mic: storedProfile.mic ?? true,
-      lookingForGroup:
-        storedProfile.looking_for_group ?? false,
       primaryRoles:
         storedProfile.primary_roles || [],
       secondaryRoles:
@@ -555,8 +552,6 @@ function ProfilePage() {
         usual_play_times:
           form.usualTimes,
         mic: form.mic,
-        looking_for_group:
-          form.lookingForGroup,
         primary_roles:
           form.primaryRoles,
         secondary_roles:
@@ -937,53 +932,6 @@ function ProfilePage() {
             }
           />
 
-          <section className="border border-white/8 bg-[#0e1011] p-5">
-            <button
-              type="button"
-              onClick={() =>
-                updateField(
-                  'lookingForGroup',
-                  !form.lookingForGroup,
-                )
-              }
-              className={[
-                'flex w-full items-center justify-between border p-4 text-left',
-                form.lookingForGroup
-                  ? 'border-emerald-500/40 bg-emerald-500/[0.06]'
-                  : 'border-white/8 bg-[#111416]',
-              ].join(' ')}
-            >
-              <div>
-                <div className="text-sm font-black text-white">
-                  {form.lookingForGroup
-                    ? 'LOOKING TO PLAY'
-                    : 'NOT LOOKING FOR A GROUP'}
-                </div>
-
-                <div className="mt-1 text-xs text-stone-500">
-                  This controls whether you appear on the LFG board.
-                </div>
-              </div>
-
-              <div
-                className={[
-                  'relative h-6 w-11 rounded-full',
-                  form.lookingForGroup
-                    ? 'bg-emerald-500'
-                    : 'bg-stone-800',
-                ].join(' ')}
-              >
-                <span
-                  className={[
-                    'absolute top-1 h-4 w-4 rounded-full bg-white transition',
-                    form.lookingForGroup
-                      ? 'left-6'
-                      : 'left-1',
-                  ].join(' ')}
-                />
-              </div>
-            </button>
-          </section>
         </div>
 
         <aside className="space-y-5">
