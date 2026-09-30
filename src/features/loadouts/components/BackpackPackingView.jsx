@@ -1520,7 +1520,15 @@ const [
     category ===
       'RECOMMENDED' ||
     category ===
-      'LOOSE AMMO'
+      'LOOSE AMMO' ||
+    (
+      medicalItems ||
+      []
+    ).some(
+      (item) =>
+        item.packCategory ===
+        category,
+    )
 
   return (
     <main className="min-h-[calc(100vh-5rem)] bg-[#090b0c]">
@@ -1813,6 +1821,11 @@ const [
 
                               {(medicalItems || [])
                                 .filter(
+                                  (item) =>
+                                    item.packCategory ===
+                                    entry,
+                                )
+                                .filter(
                                   (item) => {
 
                                     const needle =
@@ -1820,14 +1833,21 @@ const [
                                         .trim()
                                         .toLowerCase()
 
-                                    return (
-                                      !needle ||
-                                      item.name
-                                        .toLowerCase()
-                                        .includes(
-                                          needle,
-                                        )
-                                    )
+                                    if (!needle) {
+                                      return true
+                                    }
+
+                                    return [
+                                      item.name,
+                                      item.sourceCategory,
+                                      item.packCategory,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(' ')
+                                      .toLowerCase()
+                                      .includes(
+                                        needle,
+                                      )
                                   },
                                 )
                                 .map(
