@@ -1117,7 +1117,7 @@ const [
 
           <div className="text-right">
 
-            <div className="text-[8px] font-black tracking-[0.18em] text-stone-600">
+            <div className="text-[9px] font-black tracking-[0.16em] text-stone-500">
               BACKPACK CAPACITY
             </div>
 
@@ -1133,7 +1133,7 @@ const [
 
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[330px_minmax(520px,1fr)_280px]">
+        <div className="grid gap-5 xl:grid-cols-[410px_minmax(560px,1fr)_320px]">
 
           <aside className="border border-white/8 bg-[#0e1011]">
 
@@ -1181,7 +1181,7 @@ const [
                   return (
                     <div
                       key={entry}
-                      className="mb-2 border border-white/8 bg-[#111416]"
+                      className="mb-3 border border-white/10 bg-[#111416]"
                     >
 
                       <button
@@ -1202,7 +1202,7 @@ const [
                       >
 
                         <span className={[
-                          'text-[9px] font-black tracking-[0.12em]',
+                          'text-[10px] font-black tracking-[0.12em]',
                           open
                             ? 'text-amber-400'
                             : 'text-stone-500',
@@ -1275,7 +1275,7 @@ const [
                                         className="flex w-full items-center justify-between px-3 py-2"
                                       >
 
-                                        <span className="text-[9px] font-black text-white">
+                                        <span className="text-[10px] font-black text-white">
                                           {
                                             calibreName
                                           }
@@ -1306,26 +1306,26 @@ const [
                                                   key={
                                                     item.id
                                                   }
-                                                  className="flex items-center gap-2 border border-white/8 bg-[#121617] p-2"
+                                                  className="flex items-center gap-3 border border-white/10 bg-[#121617] p-3 transition hover:border-amber-500/25 hover:bg-[#15191b]"
                                                 >
 
                                                   <WardogsItemImage
                                                     item={
                                                       item
                                                     }
-                                                    className="h-12 w-16 shrink-0"
+                                                    className="h-14 w-20 shrink-0 border border-white/8 bg-black/20"
                                                     imageClassName="p-1"
                                                   />
 
                                                   <div className="min-w-0 flex-1">
 
-                                                    <div className="truncate text-[8px] font-black text-white">
+                                                    <div className="truncate text-[10px] font-black leading-4 text-white">
                                                       {
                                                         item.name
                                                       }
                                                     </div>
 
-                                                    <div className="mt-1 text-[7px] text-stone-600">
+                                                    <div className="mt-1 text-[9px] leading-4 text-stone-400">
                                                       {
                                                         footprint.width
                                                       }
@@ -1350,9 +1350,9 @@ const [
                                                         item,
                                                       )
                                                     }
-                                                    className="flex h-8 w-8 shrink-0 items-center justify-center bg-amber-500 text-black"
+                                                    className="flex h-10 w-10 shrink-0 items-center justify-center bg-amber-500 text-black transition hover:bg-amber-400"
                                                   >
-                                                    <Plus size={12} />
+                                                    <Plus size={15} />
                                                   </button>
 
                                                 </div>
@@ -1373,7 +1373,7 @@ const [
 
                           ) : (
 
-                            <div className="p-4 text-center text-[8px] leading-4 text-stone-700">
+                            <div className="p-5 text-center text-[10px] leading-5 text-stone-600">
                               Verified {entry.toLowerCase()} items are being added to the catalogue.
                             </div>
 
@@ -1479,7 +1479,7 @@ const [
 
           <aside className="h-fit border border-amber-500/20 bg-[#111416] p-5">
 
-            <div className="text-[8px] font-black tracking-[0.18em] text-stone-600">
+            <div className="text-[9px] font-black tracking-[0.16em] text-stone-500">
               LOADOUT SUMMARY
             </div>
 
