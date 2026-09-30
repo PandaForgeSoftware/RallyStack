@@ -13,6 +13,7 @@ import AuthCallbackPage from './pages/AuthCallbackPage'
 import DealsPage from './pages/DealsPage'
 import FindPlayersPage from './pages/FindPlayersPage'
 import HomePage from './pages/HomePage'
+import LoadoutsPage from './pages/LoadoutsPage'
 import LegalPage from './pages/LegalPage'
 import LoginPage from './pages/LoginPage'
 import PlaceholderPage from './pages/PlaceholderPage'
@@ -86,15 +87,7 @@ function App() {
             element={<HomePage />}
           />
 
-          <Route
-            path="/loadouts"
-            element={
-              <PlaceholderPage
-                title="Loadouts"
-                description="Build, save, share and discover complete WARDOGS kits with weapons, attachments, armour, backpacks and equipment."
-              />
-            }
-          />
+          <Route path="/loadouts" element={<LoadoutsPage />} />
 
           <Route
             path="/find-players"
