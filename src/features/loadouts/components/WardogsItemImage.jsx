@@ -1,4 +1,5 @@
 import {
+  useMemo,
   useState,
 } from 'react'
 
@@ -17,38 +18,82 @@ function WardogsItemImage({
 }) {
 
   const [
-    failed,
-    setFailed,
+    failedSources,
+    setFailedSources,
   ] =
-    useState(false)
+    useState([])
+
+  const candidates =
+    useMemo(
+      () => {
+
+        if (!item?.id) {
+          return []
+        }
+
+        const values = [
+          item.id,
+        ]
+
+        if (
+          item.id.endsWith(
+            '-t',
+          )
+        ) {
+
+          values.push(
+            item.id.slice(
+              0,
+              -2,
+            ),
+          )
+        }
+
+        return values
+          .map(
+            (id) =>
+              itemImages[id],
+          )
+          .filter(Boolean)
+      },
+      [item],
+    )
 
   const source =
-    item
-      ? itemImages[
-          item.id
-        ]
-      : null
+    candidates.find(
+      (candidate) =>
+        !failedSources.includes(
+          candidate,
+        ),
+    )
 
   return (
     <div
       className={[
-        'relative flex items-center justify-center overflow-hidden bg-black/20',
+        'relative flex items-center justify-center overflow-hidden',
         className,
       ].join(' ')}
     >
 
-      {source &&
-      !failed ? (
+      {source ? (
 
         <img
           src={source}
-          alt={item.name}
-          onError={() =>
-            setFailed(true)
+          alt={
+            item?.name ||
+            'WARDOGS item'
           }
           draggable="false"
+          onError={() =>
+            setFailedSources(
+              (current) => [
+                ...current,
+                source,
+              ],
+            )
+          }
           className={[
-            'h-full w-full object-contain',
+            'block h-full w-full object-contain',
             imageClassName,
           ].join(' ')}
         />
@@ -56,7 +101,7 @@ function WardogsItemImage({
       ) : (
 
         <Package
-          size={34}
+          size={30}
           strokeWidth={1}
           className="text-stone-700"
         />

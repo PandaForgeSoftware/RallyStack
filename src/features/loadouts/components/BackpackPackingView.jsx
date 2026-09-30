@@ -7,9 +7,7 @@ import {
 import {
   ChevronDown,
   ChevronLeft,
-  ChevronRight,
   Minus,
-  Package,
   Plus,
   Search,
   X,
@@ -33,14 +31,51 @@ const categories = [
   'VEHICLE',
 ]
 
-function footprintForItem(
+function getFootprint(
   item,
 ) {
 
   if (
-    item.id ===
+    Number.isFinite(
+      item?.inventoryWidth,
+    ) &&
+    Number.isFinite(
+      item?.inventoryHeight,
+    )
+  ) {
+
+    return {
+      width:
+        item.inventoryWidth,
+
+      height:
+        item.inventoryHeight,
+    }
+  }
+
+  if (
+    Number.isFinite(
+      item?.width,
+    ) &&
+    Number.isFinite(
+      item?.height,
+    )
+  ) {
+
+    return {
+      width:
+        item.width,
+
+      height:
+        item.height,
+    }
+  }
+
+  if (
+    item?.id ===
     'broadhead-arrow'
   ) {
+
     return {
       width: 1,
       height: 3,
@@ -48,11 +83,12 @@ function footprintForItem(
   }
 
   if (
-    item.id ===
+    item?.id ===
       'explosive-arrow' ||
-    item.id ===
+    item?.id ===
       '93mm'
   ) {
+
     return {
       width: 3,
       height: 1,
@@ -60,9 +96,10 @@ function footprintForItem(
   }
 
   if (
-    item.calibre ===
+    item?.calibre ===
     '.45 Colt'
   ) {
+
     return {
       width: 1,
       height: 1,
@@ -76,22 +113,22 @@ function footprintForItem(
 }
 
 function makeInstances(
-  ammo,
-  packedAmmo,
+  items,
+  packed,
 ) {
 
   const instances = []
 
   Object.entries(
-    packedAmmo,
+    packed,
   ).forEach(
     ([
       itemId,
-      amount,
+      quantity,
     ]) => {
 
       const item =
-        ammo.find(
+        items.find(
           (candidate) =>
             candidate.id ===
             itemId,
@@ -103,7 +140,7 @@ function makeInstances(
 
       for (
         let index = 0;
-        index < amount;
+        index < quantity;
         index += 1
       ) {
 
@@ -114,7 +151,7 @@ function makeInstances(
           item,
 
           footprint:
-            footprintForItem(
+            getFootprint(
               item,
             ),
         })
@@ -125,7 +162,7 @@ function makeInstances(
   return instances
 }
 
-function placementCells({
+function cellsForPlacement({
   row,
   column,
   width,
@@ -133,7 +170,7 @@ function placementCells({
   columns,
 }) {
 
-  const result = []
+  const cells = []
 
   for (
     let y = 0;
@@ -147,22 +184,21 @@ function placementCells({
       x += 1
     ) {
 
-      result.push(
+      cells.push(
         (
           row + y
         ) *
           columns +
-        (
-          column + x
-        ),
+        column +
+        x,
       )
     }
   }
 
-  return result
+  return cells
 }
 
-function isPlacementValid({
+function canPlace({
   backpack,
   row,
   column,
@@ -172,13 +208,6 @@ function isPlacementValid({
 }) {
 
   if (
-    !backpack.columns ||
-    !backpack.rows
-  ) {
-    return false
-  }
-
-  if (
     row < 0 ||
     column < 0 ||
     row + height >
@@ -186,6 +215,7 @@ function isPlacementValid({
     column + width >
       backpack.columns
   ) {
+
     return false
   }
 
@@ -195,17 +225,14 @@ function isPlacementValid({
         [],
     )
 
-  const cells =
-    placementCells({
-      row,
-      column,
-      width,
-      height,
-      columns:
-        backpack.columns,
-    })
-
-  return cells.every(
+  return cellsForPlacement({
+    row,
+    column,
+    width,
+    height,
+    columns:
+      backpack.columns,
+  }).every(
     (cell) =>
       !blocked.has(
         cell,
@@ -216,17 +243,11 @@ function isPlacementValid({
   )
 }
 
-function calculatePlacements(
+function buildLayout(
   backpack,
   instances,
-  manualPositions,
+  positions,
 ) {
-
-  const capacity =
-    Number(
-      backpack.capacity ||
-        0,
-    )
 
   const usedCells =
     instances.reduce(
@@ -247,8 +268,7 @@ function calculatePlacements(
     )
 
   if (
-    backpack
-      .exactLayoutPending ||
+    backpack.exactLayoutPending ||
     !backpack.columns ||
     !backpack.rows
   ) {
@@ -257,12 +277,12 @@ function calculatePlacements(
       placements: [],
       fits:
         usedCells <=
-        capacity,
+        backpack.capacity,
       usedCells,
       remaining:
         Math.max(
           0,
-          capacity -
+          backpack.capacity -
             usedCells,
         ),
     }
@@ -277,212 +297,207 @@ function calculatePlacements(
   const unresolved =
     []
 
-  for (
-    const instance of
-    instances
-  ) {
+  instances.forEach(
+    (instance) => {
 
-    const preferred =
-      manualPositions[
-        instance.key
-      ]
+      const preferred =
+        positions[
+          instance.key
+        ]
 
-    if (!preferred) {
+      if (!preferred) {
 
-      unresolved.push(
-        instance,
-      )
+        unresolved.push(
+          instance,
+        )
 
-      continue
-    }
-
-    const valid =
-      isPlacementValid({
-        backpack,
-        row:
-          preferred.row,
-        column:
-          preferred.column,
-        width:
-          instance
-            .footprint
-            .width,
-        height:
-          instance
-            .footprint
-            .height,
-        occupied,
-      })
-
-    if (!valid) {
-
-      unresolved.push(
-        instance,
-      )
-
-      continue
-    }
-
-    const cells =
-      placementCells({
-        row:
-          preferred.row,
-        column:
-          preferred.column,
-        width:
-          instance
-            .footprint
-            .width,
-        height:
-          instance
-            .footprint
-            .height,
-        columns:
-          backpack.columns,
-      })
-
-    cells.forEach(
-      (cell) =>
-        occupied.add(
-          cell,
-        ),
-    )
-
-    placements.push({
-      ...instance,
-
-      row:
-        preferred.row,
-
-      column:
-        preferred.column,
-
-      width:
-        instance
-          .footprint
-          .width,
-
-      height:
-        instance
-          .footprint
-          .height,
-
-      cells,
-    })
-  }
-
-  for (
-    const instance of
-    unresolved
-  ) {
-
-    const width =
-      instance
-        .footprint
-        .width
-
-    const height =
-      instance
-        .footprint
-        .height
-
-    let found =
-      null
-
-    for (
-      let row = 0;
-      row <=
-      backpack.rows -
-        height;
-      row += 1
-    ) {
-
-      for (
-        let column = 0;
-        column <=
-        backpack.columns -
-          width;
-        column += 1
-      ) {
-
-        const valid =
-          isPlacementValid({
-            backpack,
-            row,
-            column,
-            width,
-            height,
-            occupied,
-          })
-
-        if (!valid) {
-          continue
-        }
-
-        const cells =
-          placementCells({
-            row,
-            column,
-            width,
-            height,
-            columns:
-              backpack.columns,
-          })
-
-        found = {
-          ...instance,
-          row,
-          column,
-          width,
-          height,
-          cells,
-        }
-
-        break
+        return
       }
 
-      if (found) {
-        break
+      const valid =
+        canPlace({
+          backpack,
+          row:
+            preferred.row,
+          column:
+            preferred.column,
+          width:
+            instance
+              .footprint
+              .width,
+          height:
+            instance
+              .footprint
+              .height,
+          occupied,
+        })
+
+      if (!valid) {
+
+        unresolved.push(
+          instance,
+        )
+
+        return
       }
-    }
 
-    if (!found) {
+      const cells =
+        cellsForPlacement({
+          row:
+            preferred.row,
+          column:
+            preferred.column,
+          width:
+            instance
+              .footprint
+              .width,
+          height:
+            instance
+              .footprint
+              .height,
+          columns:
+            backpack.columns,
+        })
 
-      return {
-        placements,
-        fits: false,
-        usedCells,
-        remaining:
-          Math.max(
-            0,
-            capacity -
-              usedCells,
-          ),
-      }
-    }
-
-    found
-      .cells
-      .forEach(
+      cells.forEach(
         (cell) =>
           occupied.add(
             cell,
           ),
       )
 
-    placements.push(
-      found,
-    )
-  }
+      placements.push({
+        ...instance,
+        ...preferred,
+        width:
+          instance
+            .footprint
+            .width,
+        height:
+          instance
+            .footprint
+            .height,
+        cells,
+      })
+    },
+  )
+
+  unresolved.forEach(
+    (instance) => {
+
+      if (
+        placements.length >
+        instances.length
+      ) {
+        return
+      }
+
+      let found =
+        null
+
+      for (
+        let row = 0;
+        row <
+        backpack.rows;
+        row += 1
+      ) {
+
+        for (
+          let column = 0;
+          column <
+          backpack.columns;
+          column += 1
+        ) {
+
+          const valid =
+            canPlace({
+              backpack,
+              row,
+              column,
+              width:
+                instance
+                  .footprint
+                  .width,
+              height:
+                instance
+                  .footprint
+                  .height,
+              occupied,
+            })
+
+          if (!valid) {
+            continue
+          }
+
+          const cells =
+            cellsForPlacement({
+              row,
+              column,
+              width:
+                instance
+                  .footprint
+                  .width,
+              height:
+                instance
+                  .footprint
+                  .height,
+              columns:
+                backpack.columns,
+            })
+
+          found = {
+            ...instance,
+            row,
+            column,
+            width:
+              instance
+                .footprint
+                .width,
+            height:
+              instance
+                .footprint
+                .height,
+            cells,
+          }
+
+          break
+        }
+
+        if (found) {
+          break
+        }
+      }
+
+      if (!found) {
+        return
+      }
+
+      found.cells.forEach(
+        (cell) =>
+          occupied.add(
+            cell,
+          ),
+      )
+
+      placements.push(
+        found,
+      )
+    },
+  )
 
   return {
     placements,
-    fits: true,
+
+    fits:
+      placements.length ===
+      instances.length,
+
     usedCells,
+
     remaining:
       Math.max(
         0,
-        capacity -
+        backpack.capacity -
           usedCells,
       ),
   }
@@ -503,20 +518,18 @@ function BackpackPackingView({
 }) {
 
   const [
-    openCategory,
-    setOpenCategory,
+    category,
+    setCategory,
   ] =
     useState(
       'RECOMMENDED',
     )
 
   const [
-    openCalibre,
-    setOpenCalibre,
+    calibre,
+    setCalibre,
   ] =
-    useState(
-      null,
-    )
+    useState(null)
 
   const [
     query,
@@ -525,8 +538,8 @@ function BackpackPackingView({
     useState('')
 
   const [
-    manualPositions,
-    setManualPositions,
+    positions,
+    setPositions,
   ] =
     useState({})
 
@@ -537,27 +550,20 @@ function BackpackPackingView({
     useState(null)
 
   const [
-    message,
-    setMessage,
+    error,
+    setError,
   ] =
     useState('')
-
-  const usableAmmo =
-    useMemo(
-      () =>
-        looseAmmo,
-      [looseAmmo],
-    )
 
   const instances =
     useMemo(
       () =>
         makeInstances(
-          usableAmmo,
+          looseAmmo,
           packedAmmo,
         ),
       [
-        usableAmmo,
+        looseAmmo,
         packedAmmo,
       ],
     )
@@ -565,15 +571,15 @@ function BackpackPackingView({
   useEffect(
     () => {
 
-      const validKeys =
+      const valid =
         new Set(
           instances.map(
-            (instance) =>
-              instance.key,
+            (item) =>
+              item.key,
           ),
         )
 
-      setManualPositions(
+      setPositions(
         (current) => {
 
           const next = {}
@@ -587,7 +593,7 @@ function BackpackPackingView({
             ]) => {
 
               if (
-                validKeys.has(
+                valid.has(
                   key,
                 )
               ) {
@@ -608,19 +614,19 @@ function BackpackPackingView({
   const layout =
     useMemo(
       () =>
-        calculatePlacements(
+        buildLayout(
           backpack,
           instances,
-          manualPositions,
+          positions,
         ),
       [
         backpack,
         instances,
-        manualPositions,
+        positions,
       ],
     )
 
-  const ammoGroups =
+  const visibleAmmo =
     useMemo(
       () => {
 
@@ -629,57 +635,80 @@ function BackpackPackingView({
             .trim()
             .toLowerCase()
 
-        const visible =
-          usableAmmo.filter(
-            (item) => {
+        return looseAmmo.filter(
+          (item) => {
 
-              const searchMatch =
-                !needle ||
-                item.name
-                  .toLowerCase()
-                  .includes(
-                    needle,
-                  ) ||
-                item.calibre
-                  .toLowerCase()
-                  .includes(
-                    needle,
-                  )
+            const recommended =
+              category ===
+              'RECOMMENDED'
 
-              const compatible =
-                openCategory !==
-                  'RECOMMENDED' ||
-                equippedCalibres
-                  .size === 0 ||
-                equippedCalibres
-                  .has(
-                    item.calibre,
-                  )
+            const compatible =
+              equippedCalibres
+                .size === 0 ||
+              equippedCalibres
+                .has(
+                  item.calibre,
+                )
 
-              return (
-                searchMatch &&
+            const searchMatch =
+              !needle ||
+              item.name
+                .toLowerCase()
+                .includes(
+                  needle,
+                ) ||
+              item.calibre
+                .toLowerCase()
+                .includes(
+                  needle,
+                )
+
+            const calibreMatch =
+              !calibre ||
+              item.calibre ===
+                calibre
+
+            return (
+              (
+                !recommended ||
                 compatible
-              )
-            },
-          )
+              ) &&
+              searchMatch &&
+              calibreMatch
+            )
+          },
+        )
+      },
+      [
+        looseAmmo,
+        category,
+        calibre,
+        query,
+        equippedCalibres,
+      ],
+    )
 
-        const grouped = {}
+  const groupedAmmo =
+    useMemo(
+      () => {
 
-        visible.forEach(
+        const groups = {}
+
+        looseAmmo.forEach(
           (item) => {
 
             if (
-              !grouped[
+              !groups[
                 item.calibre
               ]
             ) {
 
-              grouped[
+              groups[
                 item.calibre
               ] = []
             }
 
-            grouped[
+            groups[
               item.calibre
             ].push(
               item,
@@ -687,17 +716,12 @@ function BackpackPackingView({
           },
         )
 
-        return grouped
+        return groups
       },
-      [
-        usableAmmo,
-        query,
-        openCategory,
-        equippedCalibres,
-      ],
+      [looseAmmo],
     )
 
-  const tryAddItem =
+  const tryAdd =
     (item) => {
 
       const nextPacked = {
@@ -715,29 +739,27 @@ function BackpackPackingView({
 
       const nextInstances =
         makeInstances(
-          usableAmmo,
+          looseAmmo,
           nextPacked,
         )
 
-      const nextLayout =
-        calculatePlacements(
+      const test =
+        buildLayout(
           backpack,
           nextInstances,
-          manualPositions,
+          positions,
         )
 
-      if (
-        !nextLayout.fits
-      ) {
+      if (!test.fits) {
 
-        setMessage(
-          `${item.name} will not fit in the remaining backpack space.`,
+        setError(
+          `${item.name} will not fit.`,
         )
 
         return
       }
 
-      setMessage('')
+      setError('')
 
       changeAmmoStacks(
         item.id,
@@ -745,14 +767,10 @@ function BackpackPackingView({
       )
     }
 
-  const removeItem =
-    (
-      instance,
-    ) => {
+  const removeInstance =
+    (placement) => {
 
-      setMessage('')
-
-      setManualPositions(
+      setPositions(
         (current) => {
 
           const next = {
@@ -760,7 +778,7 @@ function BackpackPackingView({
           }
 
           delete next[
-            instance.key
+            placement.key
           ]
 
           return next
@@ -768,18 +786,20 @@ function BackpackPackingView({
       )
 
       changeAmmoStacks(
-        instance
+        placement
           .item
           .id,
         -1,
       )
+
+      setError('')
     }
 
-  const moveItem =
+  const moveInstance =
     (
-      instanceKey,
-      destinationRow,
-      destinationColumn,
+      key,
+      row,
+      column,
     ) => {
 
       const moving =
@@ -788,7 +808,7 @@ function BackpackPackingView({
           .find(
             (item) =>
               item.key ===
-              instanceKey,
+              key,
           )
 
       if (!moving) {
@@ -802,30 +822,23 @@ function BackpackPackingView({
         .placements
         .filter(
           (item) =>
-            item.key !==
-            instanceKey,
+            item.key !== key,
         )
         .forEach(
-          (item) => {
-
-            item
-              .cells
-              .forEach(
-                (cell) =>
-                  occupied.add(
-                    cell,
-                  ),
-              )
-          },
+          (item) =>
+            item.cells.forEach(
+              (cell) =>
+                occupied.add(
+                  cell,
+                ),
+            ),
         )
 
       const valid =
-        isPlacementValid({
+        canPlace({
           backpack,
-          row:
-            destinationRow,
-          column:
-            destinationColumn,
+          row,
+          column,
           width:
             moving.width,
           height:
@@ -835,512 +848,369 @@ function BackpackPackingView({
 
       if (!valid) {
 
-        setMessage(
-          'That item will not fit there.',
+        setError(
+          'That space is blocked or already occupied.',
         )
 
         return
       }
 
-      setMessage('')
-
-      setManualPositions(
+      setPositions(
         (current) => ({
           ...current,
 
-          [instanceKey]: {
-            row:
-              destinationRow,
-
-            column:
-              destinationColumn,
+          [key]: {
+            row,
+            column,
           },
         }),
       )
+
+      setError('')
     }
 
-  const categoryHasItems =
-    (
-      category,
-    ) =>
-      category ===
-        'RECOMMENDED' ||
-      category ===
-        'LOOSE AMMO'
+  const realCategory =
+    category ===
+      'RECOMMENDED' ||
+    category ===
+      'LOOSE AMMO'
 
   return (
     <main className="min-h-[calc(100vh-5rem)] bg-[#090b0c]">
 
-      <section className="border-b border-white/8 bg-[#0e1011]">
+      <div className="mx-auto max-w-[1680px] px-5 py-6 lg:px-8">
 
-        <div className="mx-auto max-w-[1700px] px-5 py-6 lg:px-8">
+        <div className="mb-5 flex items-center justify-between">
 
           <button
             type="button"
             onClick={onBack}
-            className="mb-6 flex h-11 items-center gap-3 border border-white/10 bg-[#151819] px-5 text-[10px] font-black tracking-[0.16em] text-white transition hover:border-amber-500/40 hover:text-amber-400"
+            className="flex h-11 items-center gap-2 border border-white/10 bg-[#121516] px-5 text-[9px] font-black tracking-[0.15em] text-white hover:border-amber-500/40 hover:text-amber-400"
           >
-            <ChevronLeft
-              size={17}
-            />
+            <ChevronLeft size={16} />
 
             BACK TO OPERATOR
           </button>
 
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div className="text-right">
 
-            <div>
-
-              <div className="text-[10px] font-black tracking-[0.28em] text-amber-500">
-                BACKPACK LOADOUT
-              </div>
-
-              <h1 className="mt-2 text-4xl font-black text-white">
-                PACK YOUR LOADOUT.
-              </h1>
-
-              <p className="mt-3 text-sm text-stone-500">
-                Add items from the categories below, then drag them anywhere they fit inside the backpack.
-              </p>
-
+            <div className="text-[8px] font-black tracking-[0.18em] text-stone-600">
+              BACKPACK CAPACITY
             </div>
 
-            <div className="flex gap-3">
-
-              <div className="border border-white/8 bg-[#111416] px-5 py-3 text-right">
-
-                <div className="text-[8px] font-black tracking-wider text-stone-600">
-                  USED
-                </div>
-
-                <div className="mt-1 text-xl font-black text-white">
-                  {
-                    layout.usedCells
-                  }
-                  <span className="text-stone-600">
-                    /
-                    {
-                      backpack.capacity
-                    }
-                  </span>
-                </div>
-
-              </div>
-
-              <div className="border border-amber-500/20 bg-amber-500/[0.04] px-5 py-3 text-right">
-
-                <div className="text-[8px] font-black tracking-wider text-amber-600">
-                  FREE
-                </div>
-
-                <div className="mt-1 text-xl font-black text-amber-400">
-                  {
-                    layout.remaining
-                  }
-                </div>
-
-              </div>
-
+            <div className="mt-1 text-xl font-black text-white">
+              {layout.usedCells}
+              <span className="text-stone-600">
+                {' / '}
+                {backpack.capacity}
+              </span>
             </div>
 
           </div>
 
         </div>
 
-      </section>
+        <div className="grid gap-5 xl:grid-cols-[330px_minmax(520px,1fr)_280px]">
 
-      <section className="mx-auto max-w-[1700px] px-5 py-6 lg:px-8">
+          <aside className="border border-white/8 bg-[#0e1011]">
 
-        <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)_320px]">
+            <div className="border-b border-white/8 p-4">
 
-          <aside className="space-y-3">
+              <div className="text-xs font-black tracking-[0.16em] text-white">
+                ADD ITEMS
+              </div>
 
-            <div className="border border-white/8 bg-[#0e1011]">
+              <div className="mt-1 text-[8px] tracking-wider text-stone-600">
+                CHOOSE A CATEGORY
+              </div>
 
-              <div className="border-b border-white/8 p-4">
+              <div className="mt-4 flex h-10 items-center gap-2 border border-white/8 bg-black/20 px-3">
 
-                <div className="text-xs font-black tracking-[0.16em] text-white">
-                  ADD TO BACKPACK
-                </div>
+                <Search
+                  size={14}
+                  className="text-stone-600"
+                />
 
-                <div className="mt-1 text-[9px] text-stone-600">
-                  OPEN A CATEGORY
-                </div>
-
-                <div className="mt-4 flex h-10 items-center gap-3 border border-white/8 bg-black/20 px-3">
-
-                  <Search
-                    size={14}
-                    className="text-stone-600"
-                  />
-
-                  <input
-                    value={query}
-                    onChange={(event) =>
-                      setQuery(
-                        event.target.value,
-                      )
-                    }
-                    placeholder="Search..."
-                    className="w-full bg-transparent text-xs text-white outline-none placeholder:text-stone-700"
-                  />
-
-                  {query && (
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setQuery('')
-                      }
-                    >
-                      <X
-                        size={13}
-                        className="text-stone-600"
-                      />
-                    </button>
-
-                  )}
-
-                </div>
+                <input
+                  value={query}
+                  onChange={(event) =>
+                    setQuery(
+                      event.target.value,
+                    )
+                  }
+                  className="w-full bg-transparent text-[10px] text-white outline-none placeholder:text-stone-700"
+                  placeholder="Search items..."
+                />
 
               </div>
 
-              <div className="max-h-[680px] overflow-y-auto p-2">
+            </div>
 
-                {categories.map(
-                  (category) => {
+            <div className="max-h-[720px] overflow-y-auto p-2">
 
-                    const open =
-                      openCategory ===
-                      category
+              {categories.map(
+                (entry) => {
 
-                    return (
-                      <div
-                        key={category}
-                        className="mb-2 border border-white/8 bg-[#111416]"
+                  const open =
+                    category ===
+                    entry
+
+                  return (
+                    <div
+                      key={entry}
+                      className="mb-2 border border-white/8 bg-[#111416]"
+                    >
+
+                      <button
+                        type="button"
+                        onClick={() => {
+
+                          setCategory(
+                            open
+                              ? null
+                              : entry,
+                          )
+
+                          setCalibre(
+                            null,
+                          )
+                        }}
+                        className="flex w-full items-center justify-between px-4 py-3"
                       >
 
-                        <button
-                          type="button"
-                          onClick={() => {
+                        <span className={[
+                          'text-[9px] font-black tracking-[0.12em]',
+                          open
+                            ? 'text-amber-400'
+                            : 'text-stone-500',
+                        ].join(' ')}>
+                          {entry}
+                        </span>
 
-                            setOpenCategory(
-                              open
-                                ? null
-                                : category,
-                            )
-
-                            setOpenCalibre(
-                              null,
-                            )
-
-                            setMessage(
-                              '',
-                            )
-                          }}
-                          className="flex w-full items-center justify-between px-4 py-3 text-left"
-                        >
-
-                          <span className={[
-                            'text-[9px] font-black tracking-[0.14em]',
+                        <ChevronDown
+                          size={13}
+                          className={[
+                            'transition',
                             open
-                              ? 'text-amber-400'
-                              : 'text-stone-500',
-                          ].join(' ')}>
-                            {category}
-                          </span>
+                              ? 'rotate-180 text-amber-500'
+                              : 'text-stone-700',
+                          ].join(' ')}
+                        />
 
-                          <ChevronDown
-                            size={14}
-                            className={[
-                              'transition',
-                              open
-                                ? 'rotate-180 text-amber-500'
-                                : 'text-stone-700',
-                            ].join(' ')}
-                          />
+                      </button>
 
-                        </button>
+                      {open && (
 
-                        {open && (
+                        <div className="border-t border-white/8 p-2">
 
-                          <div className="border-t border-white/8 p-2">
+                          {realCategory ? (
 
-                            {categoryHasItems(
-                              category,
-                            ) ? (
+                            <div className="space-y-2">
 
-                              <div className="space-y-2">
+                              {Object.keys(
+                                groupedAmmo,
+                              ).map(
+                                (
+                                  calibreName,
+                                ) => {
 
-                                {Object.entries(
-                                  ammoGroups,
-                                ).map(
-                                  ([
-                                    calibreName,
-                                    items,
-                                  ]) => {
+                                  const items =
+                                    visibleAmmo.filter(
+                                      (item) =>
+                                        item.calibre ===
+                                        calibreName,
+                                    )
 
-                                    const calibreOpen =
-                                      openCalibre ===
-                                      calibreName
+                                  if (
+                                    items.length ===
+                                    0
+                                  ) {
+                                    return null
+                                  }
 
-                                    return (
-                                      <div
-                                        key={calibreName}
-                                        className="border border-white/8 bg-black/20"
+                                  const calibreOpen =
+                                    calibre ===
+                                    calibreName
+
+                                  return (
+                                    <div
+                                      key={
+                                        calibreName
+                                      }
+                                      className="border border-white/8 bg-black/20"
+                                    >
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setCalibre(
+                                            calibreOpen
+                                              ? null
+                                              : calibreName,
+                                          )
+                                        }
+                                        className="flex w-full items-center justify-between px-3 py-2"
                                       >
 
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            setOpenCalibre(
-                                              calibreOpen
-                                                ? null
-                                                : calibreName,
-                                            )
+                                        <span className="text-[9px] font-black text-white">
+                                          {
+                                            calibreName
                                           }
-                                          className="flex w-full items-center justify-between px-3 py-2 text-left"
-                                        >
+                                        </span>
 
-                                          <span className="text-[9px] font-black text-stone-300">
-                                            {calibreName}
-                                          </span>
+                                        <span className="text-[8px] text-stone-600">
+                                          {
+                                            items.length
+                                          }
+                                        </span>
 
-                                          <ChevronRight
-                                            size={13}
-                                            className={[
-                                              'transition',
-                                              calibreOpen
-                                                ? 'rotate-90 text-amber-500'
-                                                : 'text-stone-700',
-                                            ].join(' ')}
-                                          />
+                                      </button>
 
-                                        </button>
+                                      {calibreOpen && (
 
-                                        {calibreOpen && (
+                                        <div className="space-y-1 border-t border-white/8 p-2">
 
-                                          <div className="space-y-2 border-t border-white/8 p-2">
+                                          {items.map(
+                                            (item) => {
 
-                                            {items.map(
-                                              (item) => {
+                                              const footprint =
+                                                getFootprint(
+                                                  item,
+                                                )
 
-                                                const footprint =
-                                                  footprintForItem(
-                                                    item,
-                                                  )
+                                              return (
+                                                <div
+                                                  key={
+                                                    item.id
+                                                  }
+                                                  className="flex items-center gap-2 border border-white/8 bg-[#121617] p-2"
+                                                >
 
-                                                return (
-                                                  <div
-                                                    key={item.id}
-                                                    className="border border-white/8 bg-[#121617] p-2"
-                                                  >
+                                                  <WardogsItemImage
+                                                    item={
+                                                      item
+                                                    }
+                                                    className="h-12 w-16 shrink-0"
+                                                    imageClassName="p-1"
+                                                  />
 
-                                                    <div className="flex gap-3">
+                                                  <div className="min-w-0 flex-1">
 
-                                                      <WardogsItemImage
-                                                        item={item}
-                                                        className="h-14 w-20 shrink-0 border border-white/8"
-                                                        imageClassName="p-1"
-                                                      />
-
-                                                      <div className="min-w-0 flex-1">
-
-                                                        <div className="truncate text-[9px] font-black text-white">
-                                                          {
-                                                            item.name
-                                                          }
-                                                        </div>
-
-                                                        <div className="mt-1 text-[8px] text-stone-600">
-                                                          {
-                                                            footprint.width
-                                                          }
-                                                          ×
-                                                          {
-                                                            footprint.height
-                                                          }
-                                                          {' / '}
-                                                          {
-                                                            money(
-                                                              item.price,
-                                                            )
-                                                          }
-                                                        </div>
-
-                                                      </div>
-
+                                                    <div className="truncate text-[8px] font-black text-white">
+                                                      {
+                                                        item.name
+                                                      }
                                                     </div>
 
-                                                    <button
-                                                      type="button"
-                                                      onClick={() =>
-                                                        tryAddItem(
-                                                          item,
+                                                    <div className="mt-1 text-[7px] text-stone-600">
+                                                      {
+                                                        footprint.width
+                                                      }
+                                                      ×
+                                                      {
+                                                        footprint.height
+                                                      }
+                                                      {' • '}
+                                                      {
+                                                        money(
+                                                          item.price,
                                                         )
                                                       }
-                                                      className="mt-2 flex h-8 w-full items-center justify-center gap-2 bg-amber-500 text-[8px] font-black tracking-wider text-black"
-                                                    >
-                                                      <Plus size={12} />
-
-                                                      ADD TO BAG
-                                                    </button>
+                                                    </div>
 
                                                   </div>
-                                                )
-                                              },
-                                            )}
 
-                                          </div>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                      tryAdd(
+                                                        item,
+                                                      )
+                                                    }
+                                                    className="flex h-8 w-8 shrink-0 items-center justify-center bg-amber-500 text-black"
+                                                  >
+                                                    <Plus size={12} />
+                                                  </button>
 
-                                        )}
+                                                </div>
+                                              )
+                                            },
+                                          )}
 
-                                      </div>
-                                    )
-                                  },
-                                )}
+                                        </div>
 
-                              </div>
+                                      )}
 
-                            ) : (
+                                    </div>
+                                  )
+                                },
+                              )}
 
-                              <div className="p-4 text-center text-[9px] leading-4 text-stone-700">
-                                Verified items for this category are being added next.
-                              </div>
+                            </div>
 
-                            )}
+                          ) : (
 
-                          </div>
+                            <div className="p-4 text-center text-[8px] leading-4 text-stone-700">
+                              Verified {entry.toLowerCase()} items are being added to the catalogue.
+                            </div>
 
-                        )}
+                          )}
 
-                      </div>
-                    )
-                  },
-                )}
+                        </div>
 
-              </div>
+                      )}
+
+                    </div>
+                  )
+                },
+              )}
 
             </div>
 
           </aside>
 
-          <section className="flex flex-col items-center">
+          <section className="flex min-h-[720px] flex-col items-center border border-white/8 bg-[#0e1011] p-6">
 
-            <div className="mb-4 text-center">
+            <div className="flex w-full items-start justify-center gap-5">
 
-              <div className="text-[9px] font-black tracking-[0.18em] text-stone-600">
-                EQUIPPED BACKPACK
-              </div>
+              <WardogsItemImage
+                item={backpack}
+                className="h-24 w-28"
+                imageClassName="p-1"
+              />
 
-              <div className="mt-1 text-2xl font-black text-white">
-                {
-                  backpack.name
-                }
-              </div>
+              <div>
 
-              <div className="mt-1 text-sm font-black text-amber-500">
-                {
-                  money(
+                <div className="text-[8px] font-black tracking-[0.2em] text-stone-600">
+                  EQUIPPED BACKPACK
+                </div>
+
+                <div className="mt-1 text-2xl font-black text-white">
+                  {backpack.name}
+                </div>
+
+                <div className="mt-1 text-sm font-black text-amber-500">
+                  {money(
                     backpack.price,
-                  )
-                }
+                  )}
+                </div>
+
               </div>
 
             </div>
 
-            <div className="relative w-full max-w-[620px] border border-white/8 bg-[#0e1011] p-8">
+            {!backpack.exactLayoutPending ? (
 
-              <WardogsItemImage
-                item={backpack}
-                className="pointer-events-none absolute inset-0 opacity-[0.05]"
-                imageClassName="p-16"
-              />
-
-              {backpack.exactLayoutPending ? (
-
-                <div className="relative z-10 mx-auto max-w-[440px] border border-white/10 bg-black/55 p-8">
-
-                  <div className="text-center">
-
-                    <div className="text-4xl font-black text-white">
-                      {
-                        layout.usedCells
-                      }
-                      /
-                      {
-                        backpack.capacity
-                      }
-                    </div>
-
-                    <div className="mt-2 text-[9px] font-black tracking-wider text-stone-600">
-                      CELLS USED
-                    </div>
-
-                  </div>
-
-                  <div className="mt-6 space-y-2">
-
-                    {instances.map(
-                      (instance) => (
-                        <div
-                          key={instance.key}
-                          className="flex items-center gap-3 border border-white/8 bg-[#111416] p-2"
-                        >
-
-                          <WardogsItemImage
-                            item={
-                              instance.item
-                            }
-                            className="h-14 w-20 shrink-0"
-                            imageClassName="p-1"
-                          />
-
-                          <div className="min-w-0 flex-1">
-
-                            <div className="truncate text-[10px] font-black text-white">
-                              {
-                                instance
-                                  .item
-                                  .name
-                              }
-                            </div>
-
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              removeItem(
-                                instance,
-                              )
-                            }
-                            className="flex h-8 w-8 items-center justify-center border border-red-500/20 text-red-400"
-                          >
-                            <Minus size={12} />
-                          </button>
-
-                        </div>
-                      ),
-                    )}
-
-                  </div>
-
-                </div>
-
-              ) : (
+              <div className="mt-8 flex flex-1 items-start justify-center">
 
                 <div
-                  className="relative z-10 mx-auto grid w-full max-w-[520px] gap-1 border border-white/10 bg-black/60 p-3"
+                  className="relative grid gap-[4px] border border-white/10 bg-black/60 p-3"
                   style={{
                     gridTemplateColumns:
-                      `repeat(${backpack.columns}, minmax(0, 1fr))`,
+                      `repeat(${backpack.columns}, 74px)`,
 
                     gridTemplateRows:
-                      `repeat(${backpack.rows}, minmax(0, 1fr))`,
-
-                    aspectRatio:
-                      `${backpack.columns} / ${backpack.rows}`,
+                      `repeat(${backpack.rows}, 74px)`,
                   }}
                 >
 
@@ -1379,7 +1249,10 @@ function BackpackPackingView({
                           }
                           onDragOver={(event) => {
 
-                            if (!blocked) {
+                            if (
+                              !blocked
+                            ) {
+
                               event.preventDefault()
                             }
                           }}
@@ -1394,7 +1267,7 @@ function BackpackPackingView({
                               return
                             }
 
-                            moveItem(
+                            moveInstance(
                               draggingKey,
                               row,
                               column,
@@ -1405,12 +1278,12 @@ function BackpackPackingView({
                             )
                           }}
                           className={[
-                            'min-h-0 border transition',
+                            'h-[74px] w-[74px] border',
                             blocked
-                              ? 'pointer-events-none border-transparent bg-transparent'
+                              ? 'border-transparent bg-transparent'
                               : draggingKey
-                                ? 'border-amber-500/20 bg-amber-500/[0.025]'
-                                : 'border-white/10 bg-[#121617]/85',
+                                ? 'border-amber-500/25 bg-amber-500/[0.03]'
+                                : 'border-white/10 bg-[#15191b]',
                           ].join(' ')}
                         />
                       )
@@ -1427,6 +1300,11 @@ function BackpackPackingView({
                           key={
                             placement.key
                           }
+                          title={
+                            placement
+                              .item
+                              .name
+                          }
                           draggable
                           onDragStart={() => {
 
@@ -1434,9 +1312,7 @@ function BackpackPackingView({
                               placement.key,
                             )
 
-                            setMessage(
-                              '',
-                            )
+                            setError('')
                           }}
                           onDragEnd={() =>
                             setDraggingKey(
@@ -1449,13 +1325,19 @@ function BackpackPackingView({
 
                             gridRow:
                               `${placement.row + 1} / span ${placement.height}`,
+
+                            width:
+                              `${placement.width * 74 + (placement.width - 1) * 4}px`,
+
+                            height:
+                              `${placement.height * 74 + (placement.height - 1) * 4}px`,
                           }}
                           className={[
-                            'relative z-20 min-h-0 min-w-0 cursor-grab overflow-hidden border bg-[#171b1d] active:cursor-grabbing',
+                            'relative z-20 cursor-grab overflow-hidden border bg-[#111416] active:cursor-grabbing',
                             draggingKey ===
                             placement.key
                               ? 'border-amber-300 opacity-60'
-                              : 'border-amber-500/45',
+                              : 'border-amber-500/50',
                           ].join(' ')}
                         >
 
@@ -1463,36 +1345,22 @@ function BackpackPackingView({
                             item={
                               placement.item
                             }
-                            className="absolute inset-0"
-                            imageClassName="p-0.5"
+                            className="absolute inset-[5px]"
+                            imageClassName="p-1"
                           />
 
-                          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-black/75 px-1 py-1">
-
-                            <div className="truncate text-[7px] font-black text-white">
-                              {
-                                placement
-                                  .item
-                                  .name
-                              }
-                            </div>
-
-                          </div>
-
-                          <div className="pointer-events-none absolute left-1 top-1 bg-emerald-500 px-1 py-0.5 text-[7px] font-black text-black">
-                            {
-                              money(
-                                placement
-                                  .item
-                                  .price,
-                              )
-                            }
+                          <div className="pointer-events-none absolute left-1 top-1 bg-emerald-400 px-1.5 py-0.5 text-[7px] font-black text-black">
+                            {money(
+                              placement
+                                .item
+                                .price,
+                            )}
                           </div>
 
                           <button
                             type="button"
                             onClick={() =>
-                              removeItem(
+                              removeInstance(
                                 placement,
                               )
                             }
@@ -1507,149 +1375,146 @@ function BackpackPackingView({
 
                 </div>
 
-              )}
+              </div>
 
-              {message && (
+            ) : (
 
-                <div className="relative z-20 mx-auto mt-4 max-w-[520px] border border-red-500/25 bg-red-500/[0.06] px-4 py-3 text-center text-[10px] font-bold text-red-400">
-                  {message}
+              <div className="mt-8 flex flex-1 items-center justify-center">
+
+                <div className="text-center">
+
+                  <div className="text-4xl font-black text-white">
+                    {layout.usedCells}
+                    /
+                    {backpack.capacity}
+                  </div>
+
+                  <div className="mt-2 text-[9px] text-stone-600">
+                    CELLS USED
+                  </div>
+
                 </div>
 
-              )}
+              </div>
 
-              {!backpack.exactLayoutPending && (
+            )}
 
-                <div className="relative z-20 mx-auto mt-4 max-w-[520px] text-center text-[8px] font-bold tracking-[0.14em] text-stone-700">
-                  DRAG PACKED ITEMS TO REARRANGE THEM
-                </div>
+            {error && (
 
-              )}
+              <div className="mt-4 border border-red-500/25 bg-red-500/[0.05] px-4 py-3 text-[9px] font-bold text-red-400">
+                {error}
+              </div>
 
+            )}
+
+            <div className="mt-4 text-[8px] font-bold tracking-[0.16em] text-stone-700">
+              DRAG ITEMS TO ANY VALID POSITION
             </div>
 
           </section>
 
-          <aside>
+          <aside className="h-fit border border-amber-500/20 bg-[#111416] p-5">
 
-            <div className="border border-amber-500/20 bg-[#111416] p-5">
+            <div className="text-[8px] font-black tracking-[0.18em] text-stone-600">
+              LOADOUT SUMMARY
+            </div>
 
-              <div className="text-[8px] font-black tracking-[0.18em] text-stone-600">
-                LOADOUT SUMMARY
+            <div className="mt-5 flex justify-between text-[9px] text-stone-500">
+
+              <span>
+                EQUIPMENT
+              </span>
+
+              <span className="font-black text-white">
+                {money(
+                  equipmentValue,
+                )}
+              </span>
+
+            </div>
+
+            <div className="mt-3 flex justify-between text-[9px] text-stone-500">
+
+              <span>
+                BAG CONTENTS
+              </span>
+
+              <span className="font-black text-white">
+                {money(
+                  contentsValue,
+                )}
+              </span>
+
+            </div>
+
+            <div className="mt-5 border-t border-white/8 pt-5">
+
+              <div className="text-[8px] font-black tracking-[0.18em] text-amber-600">
+                TOTAL VALUE
               </div>
 
-              <div className="mt-5 flex justify-between text-[10px] text-stone-500">
+              <div className="mt-1 text-3xl font-black text-amber-400">
+                {money(
+                  totalValue,
+                )}
+              </div>
+
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-2">
+
+              <div className="border border-white/8 bg-black/20 p-3">
+
+                <div className="text-[7px] font-black text-stone-600">
+                  WEIGHT
+                </div>
+
+                <div className="mt-1 text-sm font-black text-white">
+                  {knownWeight.toFixed(
+                    2,
+                  )}{' '}
+                  KG
+                </div>
+
+              </div>
+
+              <div className="border border-white/8 bg-black/20 p-3">
+
+                <div className="text-[7px] font-black text-stone-600">
+                  ROUNDS
+                </div>
+
+                <div className="mt-1 text-sm font-black text-emerald-400">
+                  {totalRounds}
+                </div>
+
+              </div>
+
+            </div>
+
+            <div className="mt-5 border-t border-white/8 pt-4">
+
+              <div className="flex justify-between text-[9px] text-stone-600">
 
                 <span>
-                  EQUIPMENT
+                  USED
                 </span>
 
                 <span className="font-black text-white">
-                  {
-                    money(
-                      equipmentValue,
-                    )
-                  }
+                  {layout.usedCells}
                 </span>
 
               </div>
 
-              <div className="mt-3 flex justify-between text-[10px] text-stone-500">
+              <div className="mt-2 flex justify-between text-[9px] text-stone-600">
 
                 <span>
-                  BAG CONTENTS
+                  FREE
                 </span>
 
-                <span className="font-black text-white">
-                  {
-                    money(
-                      contentsValue,
-                    )
-                  }
+                <span className="font-black text-amber-400">
+                  {layout.remaining}
                 </span>
-
-              </div>
-
-              <div className="mt-5 border-t border-white/8 pt-5">
-
-                <div className="text-[8px] font-black tracking-[0.18em] text-amber-600">
-                  TOTAL VALUE
-                </div>
-
-                <div className="mt-1 text-3xl font-black text-amber-400">
-                  {
-                    money(
-                      totalValue,
-                    )
-                  }
-                </div>
-
-              </div>
-
-              <div className="mt-6 grid grid-cols-2 gap-3">
-
-                <div className="border border-white/8 bg-black/20 p-3">
-
-                  <div className="text-[8px] font-black text-stone-600">
-                    WEIGHT
-                  </div>
-
-                  <div className="mt-1 text-sm font-black text-white">
-                    {
-                      knownWeight.toFixed(
-                        2,
-                      )
-                    }
-                    {' '}
-                    KG
-                  </div>
-
-                </div>
-
-                <div className="border border-white/8 bg-black/20 p-3">
-
-                  <div className="text-[8px] font-black text-stone-600">
-                    ROUNDS
-                  </div>
-
-                  <div className="mt-1 text-sm font-black text-emerald-400">
-                    {
-                      totalRounds
-                    }
-                  </div>
-
-                </div>
-
-              </div>
-
-              <div className="mt-5 border-t border-white/8 pt-4">
-
-                <div className="flex justify-between text-[9px] text-stone-600">
-
-                  <span>
-                    USED CELLS
-                  </span>
-
-                  <span className="font-black text-white">
-                    {
-                      layout.usedCells
-                    }
-                  </span>
-
-                </div>
-
-                <div className="mt-2 flex justify-between text-[9px] text-stone-600">
-
-                  <span>
-                    FREE CELLS
-                  </span>
-
-                  <span className="font-black text-amber-400">
-                    {
-                      layout.remaining
-                    }
-                  </span>
-
-                </div>
 
               </div>
 
@@ -1659,7 +1524,7 @@ function BackpackPackingView({
 
         </div>
 
-      </section>
+      </div>
 
     </main>
   )
