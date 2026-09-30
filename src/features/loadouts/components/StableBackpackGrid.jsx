@@ -2,7 +2,7 @@ import {
   X,
 } from 'lucide-react'
 
-import WardogsItemImage from './WardogsItemImage'
+import PackedItemImage from './PackedItemImage'
 
 const money =
   (value) =>
@@ -16,26 +16,6 @@ const CELL_GAP =
 
 const GRID_PADDING =
   12
-
-function getArtworkScale(
-  item,
-) {
-
-  if (
-    item?.type ===
-    'loose_ammo'
-  ) {
-    return 0.68
-  }
-
-  if (
-    item?.calibre
-  ) {
-    return 0.72
-  }
-
-  return 0.86
-}
 
 function StableBackpackGrid({
   backpack,
@@ -233,11 +213,6 @@ function StableBackpackGrid({
                 CELL_GAP
               )
 
-          const imageScale =
-            getArtworkScale(
-              placement.item,
-            )
-
           return (
             <div
               key={
@@ -276,30 +251,10 @@ function StableBackpackGrid({
               ].join(' ')}
             >
 
-              <WardogsItemImage
+              <PackedItemImage
                 item={
                   placement.item
                 }
-                className="pointer-events-none absolute inset-0"
-                imageStyle={{
-                  width:
-                    '100%',
-
-                  height:
-                    '100%',
-
-                  objectFit:
-                    'contain',
-
-                  objectPosition:
-                    'center',
-
-                  transform:
-                    `scale(${imageScale})`,
-
-                  transformOrigin:
-                    'center',
-                }}
               />
 
               <div className="pointer-events-none absolute left-1 top-1 z-30 bg-emerald-400 px-1.5 py-0.5 text-[7px] font-black leading-none text-black">
