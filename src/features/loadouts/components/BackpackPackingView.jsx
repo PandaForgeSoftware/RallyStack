@@ -1,4 +1,4 @@
-import {
+﻿import {
   useEffect,
   useMemo,
   useState,
@@ -19,6 +19,7 @@ import {
   ammoStackRules,
 } from '../../../data/wardogsAmmoStackRules'
 import StableBackpackGrid from './StableBackpackGrid'
+import { packableItems } from '../../../data/wardogsPackableData'
 
 const money =
   (value) =>
@@ -1521,15 +1522,7 @@ const [
     category ===
       'RECOMMENDED' ||
     category ===
-      'LOOSE AMMO' ||
-    (
-      medicalItems ||
-      []
-    ).some(
-      (item) =>
-        item.packCategory ===
-        category,
-    )
+      'LOOSE AMMO'
 
   return (
     <main className="min-h-[calc(100vh-5rem)] bg-[#090b0c]">
@@ -1821,7 +1814,7 @@ const [
 
                               {/* RALLYSTACK_MEDICAL_CATALOGUE */}
 
-                              {(medicalItems || [])
+                              {packableItems
                                 .filter(
                                   (item) =>
                                     item.packCategory ===
@@ -2175,3 +2168,5 @@ const [
 }
 
 export default BackpackPackingView
+
+
