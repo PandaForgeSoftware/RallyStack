@@ -1329,11 +1329,11 @@ const [
                                                       {
                                                         footprint.width
                                                       }
-                                                      Ã—
+                                                      x
                                                       {
                                                         footprint.height
                                                       }
-                                                      {' â€¢ '}
+                                                      {' / '}
                                                       {
                                                         money(
                                                           item.price,

@@ -367,7 +367,7 @@ export const backpacks = [
     unlockCost: 0,
   },
   {
-    id: 'scout',
+    id: 'scout-backpack',
     name: 'Scout Backpack',
     capacity: 8,
     columns: 4,
