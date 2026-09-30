@@ -116,6 +116,7 @@ function getFootprint(
 function makeInstances(
   items,
   packed,
+  rotations = {},
 ) {
 
   const instances = []
@@ -145,16 +146,45 @@ function makeInstances(
         index += 1
       ) {
 
+        const key =
+          `${item.id}-${index}`
+
+        const baseFootprint =
+          getFootprint(
+            item,
+          )
+
+        const rotated =
+          Boolean(
+            rotations[
+              key
+            ],
+          )
+
         instances.push({
-          key:
-            `${item.id}-${index}`,
+          key,
 
           item,
 
-          footprint:
-            getFootprint(
-              item,
-            ),
+          rotated,
+
+          baseWidth:
+            baseFootprint.width,
+
+          baseHeight:
+            baseFootprint.height,
+
+          footprint: {
+            width:
+              rotated
+                ? baseFootprint.height
+                : baseFootprint.width,
+
+            height:
+              rotated
+                ? baseFootprint.width
+                : baseFootprint.height,
+          },
         })
       }
     },
@@ -544,7 +574,13 @@ function BackpackPackingView({
   ] =
     useState({})
 
+  
   const [
+    rotations,
+    setRotations,
+  ] =
+    useState({})
+const [
     draggingKey,
     setDraggingKey,
   ] =
@@ -562,13 +598,14 @@ function BackpackPackingView({
         makeInstances(
           looseAmmo,
           packedAmmo,
+          rotations,
         ),
       [
         looseAmmo,
         packedAmmo,
+        rotations,
       ],
     )
-
   useEffect(
     () => {
 
@@ -742,6 +779,7 @@ function BackpackPackingView({
         makeInstances(
           looseAmmo,
           nextPacked,
+          rotations,
         )
 
       const test =
@@ -786,6 +824,20 @@ function BackpackPackingView({
         },
       )
 
+      setRotations(
+        (current) => {
+
+          const next = {
+            ...current,
+          }
+
+          delete next[
+            placement.key
+          ]
+
+          return next
+        },
+      )
       changeAmmoStacks(
         placement
           .item
@@ -870,6 +922,176 @@ function BackpackPackingView({
       setError('')
     }
 
+  const rotateInstance =
+    (key) => {
+
+      const moving =
+        layout
+          .placements
+          .find(
+            (item) =>
+              item.key ===
+              key,
+          )
+
+      if (!moving) {
+        return
+      }
+
+      if (
+        moving.baseWidth ===
+        moving.baseHeight
+      ) {
+        return
+      }
+
+      const nextRotated =
+        !Boolean(
+          rotations[
+            key
+          ],
+        )
+
+      const nextWidth =
+        nextRotated
+          ? moving.baseHeight
+          : moving.baseWidth
+
+      const nextHeight =
+        nextRotated
+          ? moving.baseWidth
+          : moving.baseHeight
+
+      const occupied =
+        new Set()
+
+      layout
+        .placements
+        .filter(
+          (item) =>
+            item.key !==
+            key,
+        )
+        .forEach(
+          (item) =>
+            item.cells.forEach(
+              (cell) =>
+                occupied.add(
+                  cell,
+                ),
+            ),
+        )
+
+      let destination =
+        null
+
+      const fitsHere =
+        canPlace({
+          backpack,
+
+          row:
+            moving.row,
+
+          column:
+            moving.column,
+
+          width:
+            nextWidth,
+
+          height:
+            nextHeight,
+
+          occupied,
+        })
+
+      if (fitsHere) {
+
+        destination = {
+          row:
+            moving.row,
+
+          column:
+            moving.column,
+        }
+      }
+      else {
+
+        for (
+          let row = 0;
+          row <
+          backpack.rows;
+          row += 1
+        ) {
+
+          for (
+            let column = 0;
+            column <
+            backpack.columns;
+            column += 1
+          ) {
+
+            const fits =
+              canPlace({
+                backpack,
+                row,
+                column,
+
+                width:
+                  nextWidth,
+
+                height:
+                  nextHeight,
+
+                occupied,
+              })
+
+            if (!fits) {
+              continue
+            }
+
+            destination = {
+              row,
+              column,
+            }
+
+            break
+          }
+
+          if (destination) {
+            break
+          }
+        }
+      }
+
+      if (!destination) {
+
+        setError(
+          'There is not enough space to rotate that item.',
+        )
+
+        return
+      }
+
+      setRotations(
+        (current) => ({
+          ...current,
+
+          [key]:
+            nextRotated,
+        }),
+      )
+
+      setPositions(
+        (current) => ({
+          ...current,
+
+          [key]:
+            destination,
+        }),
+      )
+
+      setError('')
+    }
   const realCategory =
     category ===
       'RECOMMENDED' ||
@@ -1210,6 +1432,7 @@ function BackpackPackingView({
                   draggingKey={draggingKey}
                   setDraggingKey={setDraggingKey}
                   moveInstance={moveInstance}
+                  rotateInstance={rotateInstance}
                   removeInstance={removeInstance}
                 />
 

@@ -56,6 +56,7 @@ function getImageSource(
 
 function PackedItemImage({
   item,
+  rotated = false,
 }) {
 
   const canvasRef =
@@ -184,7 +185,8 @@ function PackedItemImage({
               245
             ) {
 
-              transparentPixels += 1
+              transparentPixels +=
+                1
             }
           }
 
@@ -193,39 +195,35 @@ function PackedItemImage({
             totalPixels *
               0.02
 
-          const cornerSamples = [
-            [
-              0,
-              0,
-            ],
+          const corners = [
+            [0, 0],
+
             [
               sourceCanvas.width -
                 1,
               0,
             ],
+
             [
               0,
               sourceCanvas.height -
                 1,
             ],
+
             [
               sourceCanvas.width -
                 1,
+
               sourceCanvas.height -
                 1,
             ],
           ]
 
-          let backgroundR =
-            0
+          let backgroundR = 0
+          let backgroundG = 0
+          let backgroundB = 0
 
-          let backgroundG =
-            0
-
-          let backgroundB =
-            0
-
-          cornerSamples.forEach(
+          corners.forEach(
             ([
               x,
               y,
@@ -255,13 +253,13 @@ function PackedItemImage({
           )
 
           backgroundR /=
-            cornerSamples.length
+            corners.length
 
           backgroundG /=
-            cornerSamples.length
+            corners.length
 
           backgroundB /=
-            cornerSamples.length
+            corners.length
 
           for (
             let y = 0;
@@ -283,7 +281,7 @@ function PackedItemImage({
                     sourceCanvas.width +
                   x
                 ) *
-                  4
+                4
 
               const red =
                 data[index]
@@ -394,9 +392,6 @@ function PackedItemImage({
             minY +
             1
 
-          const padding =
-            4
-
           const destinationWidth =
             canvas.clientWidth
 
@@ -406,21 +401,20 @@ function PackedItemImage({
           const pixelRatio =
             Math.max(
               1,
-              window
-                .devicePixelRatio ||
+              window.devicePixelRatio ||
                 1,
             )
 
           canvas.width =
             Math.round(
               destinationWidth *
-              pixelRatio,
+                pixelRatio,
             )
 
           canvas.height =
             Math.round(
               destinationHeight *
-              pixelRatio,
+                pixelRatio,
             )
 
           context.setTransform(
@@ -439,28 +433,34 @@ function PackedItemImage({
             destinationHeight,
           )
 
+          const padding =
+            5
+
           const availableWidth =
-            Math.max(
-              1,
-              destinationWidth -
-                padding *
-                  2,
-            )
+            destinationWidth -
+            padding * 2
 
           const availableHeight =
-            Math.max(
-              1,
-              destinationHeight -
-                padding *
-                  2,
-            )
+            destinationHeight -
+            padding * 2
+
+          const visualWidth =
+            rotated
+              ? cropHeight
+              : cropWidth
+
+          const visualHeight =
+            rotated
+              ? cropWidth
+              : cropHeight
 
           const scale =
             Math.min(
               availableWidth /
-                cropWidth,
+                visualWidth,
+
               availableHeight /
-                cropHeight,
+                visualHeight,
             )
 
           const drawWidth =
@@ -471,46 +471,82 @@ function PackedItemImage({
             cropHeight *
             scale
 
-          const drawX =
-            (
-              destinationWidth -
-              drawWidth
-            ) /
-            2
-
-          const drawY =
-            (
-              destinationHeight -
-              drawHeight
-            ) /
-            2
-
           context.imageSmoothingEnabled =
             true
 
           context.imageSmoothingQuality =
             'high'
 
-          context.drawImage(
-            sourceCanvas,
-            minX,
-            minY,
-            cropWidth,
-            cropHeight,
-            drawX,
-            drawY,
-            drawWidth,
-            drawHeight,
-          )
+          if (rotated) {
+
+            context.save()
+
+            context.translate(
+              destinationWidth /
+                2,
+
+              destinationHeight /
+                2,
+            )
+
+            context.rotate(
+              Math.PI /
+                2,
+            )
+
+            context.drawImage(
+              sourceCanvas,
+
+              minX,
+              minY,
+              cropWidth,
+              cropHeight,
+
+              -drawWidth /
+                2,
+
+              -drawHeight /
+                2,
+
+              drawWidth,
+              drawHeight,
+            )
+
+            context.restore()
+          }
+          else {
+
+            context.drawImage(
+              sourceCanvas,
+
+              minX,
+              minY,
+              cropWidth,
+              cropHeight,
+
+              (
+                destinationWidth -
+                drawWidth
+              ) /
+                2,
+
+              (
+                destinationHeight -
+                drawHeight
+              ) /
+                2,
+
+              drawWidth,
+              drawHeight,
+            )
+          }
         }
 
       image.onerror =
-        () => {
-
+        () =>
           setFailed(
             true,
           )
-        }
 
       image.src =
         source
@@ -518,6 +554,7 @@ function PackedItemImage({
     [
       item,
       source,
+      rotated,
     ],
   )
 

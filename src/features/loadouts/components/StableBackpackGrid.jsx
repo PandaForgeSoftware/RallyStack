@@ -1,4 +1,5 @@
 import {
+  RotateCw,
   X,
 } from 'lucide-react'
 
@@ -23,6 +24,7 @@ function StableBackpackGrid({
   draggingKey,
   setDraggingKey,
   moveInstance,
+  rotateInstance,
   removeInstance,
 }) {
 
@@ -72,8 +74,6 @@ function StableBackpackGrid({
           `${height}px`,
       }}
     >
-
-      {/* PERMANENT BAG CELLS */}
 
       {Array.from({
         length:
@@ -137,7 +137,7 @@ function StableBackpackGrid({
                 disabled
                   ? 'border-transparent bg-transparent'
                   : draggingKey
-                    ? 'border-amber-500/30 bg-amber-500/[0.025]'
+                    ? 'border-amber-500/30 bg-amber-500/[0.03]'
                     : 'border-[#303638] bg-[#15191b]',
               ].join(' ')}
               style={{
@@ -171,8 +171,6 @@ function StableBackpackGrid({
           )
         },
       )}
-
-      {/* PACKED ITEMS */}
 
       {placements.map(
         (
@@ -213,6 +211,12 @@ function StableBackpackGrid({
                 CELL_GAP
               )
 
+          const canRotate =
+            placement
+              .baseWidth !==
+            placement
+              .baseHeight
+
           return (
             <div
               key={
@@ -243,17 +247,20 @@ function StableBackpackGrid({
                   `${itemHeight}px`,
               }}
               className={[
-                'absolute z-20 cursor-grab overflow-hidden bg-[#101314] active:cursor-grabbing',
+                'absolute z-20 cursor-grab overflow-hidden bg-[#101314] outline outline-1 active:cursor-grabbing',
                 draggingKey ===
                 placement.key
-                  ? 'outline outline-1 outline-amber-200 opacity-60'
-                  : 'outline outline-1 outline-amber-500/60',
+                  ? 'outline-amber-200 opacity-60'
+                  : 'outline-amber-500/60',
               ].join(' ')}
             >
 
               <PackedItemImage
                 item={
                   placement.item
+                }
+                rotated={
+                  placement.rotated
                 }
               />
 
@@ -269,7 +276,7 @@ function StableBackpackGrid({
 
               <button
                 type="button"
-                title="Remove from backpack"
+                title="Remove item"
                 onClick={() =>
                   removeInstance(
                     placement,
@@ -279,6 +286,31 @@ function StableBackpackGrid({
               >
                 <X size={10} />
               </button>
+
+              {canRotate && (
+
+                <button
+                  type="button"
+                  title="Rotate item"
+                  onMouseDown={(event) =>
+                    event.stopPropagation()
+                  }
+                  onClick={(event) => {
+
+                    event.stopPropagation()
+
+                    rotateInstance(
+                      placement.key,
+                    )
+                  }}
+                  className="absolute bottom-1 right-1 z-40 flex h-7 w-7 items-center justify-center border border-amber-500/60 bg-black/85 text-amber-400 transition hover:bg-amber-500 hover:text-black"
+                >
+                  <RotateCw
+                    size={13}
+                  />
+                </button>
+
+              )}
 
             </div>
           )
