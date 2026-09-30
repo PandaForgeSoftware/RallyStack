@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 
 import WardogsItemImage from './WardogsItemImage'
+import StableBackpackGrid from './StableBackpackGrid'
 
 const money =
   (value) =>
@@ -1106,11 +1107,11 @@ function BackpackPackingView({
                                                       {
                                                         footprint.width
                                                       }
-                                                      ×
+                                                      Ã—
                                                       {
                                                         footprint.height
                                                       }
-                                                      {' • '}
+                                                      {' â€¢ '}
                                                       {
                                                         money(
                                                           item.price,
@@ -1203,177 +1204,14 @@ function BackpackPackingView({
 
               <div className="mt-8 flex flex-1 items-start justify-center">
 
-                <div
-                  className="relative grid gap-[4px] border border-white/10 bg-black/60 p-3"
-                  style={{
-                    gridTemplateColumns:
-                      `repeat(${backpack.columns}, 74px)`,
-
-                    gridTemplateRows:
-                      `repeat(${backpack.rows}, 74px)`,
-                  }}
-                >
-
-                  {Array.from({
-                    length:
-                      backpack.columns *
-                      backpack.rows,
-                  }).map(
-                    (
-                      _,
-                      index,
-                    ) => {
-
-                      const row =
-                        Math.floor(
-                          index /
-                          backpack.columns,
-                        )
-
-                      const column =
-                        index %
-                        backpack.columns
-
-                      const blocked =
-                        (
-                          backpack.blocked ||
-                          []
-                        ).includes(
-                          index,
-                        )
-
-                      return (
-                        <div
-                          key={
-                            `cell-${index}`
-                          }
-                          onDragOver={(event) => {
-
-                            if (
-                              !blocked
-                            ) {
-
-                              event.preventDefault()
-                            }
-                          }}
-                          onDrop={(event) => {
-
-                            event.preventDefault()
-
-                            if (
-                              blocked ||
-                              !draggingKey
-                            ) {
-                              return
-                            }
-
-                            moveInstance(
-                              draggingKey,
-                              row,
-                              column,
-                            )
-
-                            setDraggingKey(
-                              null,
-                            )
-                          }}
-                          className={[
-                            'h-[74px] w-[74px] border',
-                            blocked
-                              ? 'border-transparent bg-transparent'
-                              : draggingKey
-                                ? 'border-amber-500/25 bg-amber-500/[0.03]'
-                                : 'border-white/10 bg-[#15191b]',
-                          ].join(' ')}
-                        />
-                      )
-                    },
-                  )}
-
-                  {layout
-                    .placements
-                    .map(
-                      (
-                        placement,
-                      ) => (
-                        <div
-                          key={
-                            placement.key
-                          }
-                          title={
-                            placement
-                              .item
-                              .name
-                          }
-                          draggable
-                          onDragStart={() => {
-
-                            setDraggingKey(
-                              placement.key,
-                            )
-
-                            setError('')
-                          }}
-                          onDragEnd={() =>
-                            setDraggingKey(
-                              null,
-                            )
-                          }
-                          style={{
-                            gridColumn:
-                              `${placement.column + 1} / span ${placement.width}`,
-
-                            gridRow:
-                              `${placement.row + 1} / span ${placement.height}`,
-
-                            width:
-                              `${placement.width * 74 + (placement.width - 1) * 4}px`,
-
-                            height:
-                              `${placement.height * 74 + (placement.height - 1) * 4}px`,
-                          }}
-                          className={[
-                            'relative z-20 cursor-grab overflow-hidden border bg-[#111416] active:cursor-grabbing',
-                            draggingKey ===
-                            placement.key
-                              ? 'border-amber-300 opacity-60'
-                              : 'border-amber-500/50',
-                          ].join(' ')}
-                        >
-
-                          <WardogsItemImage
-                            item={
-                              placement.item
-                            }
-                            className="absolute inset-[5px]"
-                            imageClassName="p-1"
-                          />
-
-                          <div className="pointer-events-none absolute left-1 top-1 bg-emerald-400 px-1.5 py-0.5 text-[7px] font-black text-black">
-                            {money(
-                              placement
-                                .item
-                                .price,
-                            )}
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              removeInstance(
-                                placement,
-                              )
-                            }
-                            className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center bg-red-500 text-black"
-                          >
-                            <X size={10} />
-                          </button>
-
-                        </div>
-                      ),
-                    )}
-
-                </div>
+                <StableBackpackGrid
+                  backpack={backpack}
+                  placements={layout.placements}
+                  draggingKey={draggingKey}
+                  setDraggingKey={setDraggingKey}
+                  moveInstance={moveInstance}
+                  removeInstance={removeInstance}
+                />
 
               </div>
 
@@ -1381,15 +1219,18 @@ function BackpackPackingView({
 
               <div className="mt-8 flex flex-1 items-center justify-center">
 
-                <div className="text-center">
+                <div className="border border-white/10 bg-black/40 px-12 py-10 text-center">
 
                   <div className="text-4xl font-black text-white">
                     {layout.usedCells}
-                    /
-                    {backpack.capacity}
+
+                    <span className="text-stone-600">
+                      {' / '}
+                      {backpack.capacity}
+                    </span>
                   </div>
 
-                  <div className="mt-2 text-[9px] text-stone-600">
+                  <div className="mt-2 text-[9px] font-black tracking-[0.16em] text-stone-600">
                     CELLS USED
                   </div>
 
