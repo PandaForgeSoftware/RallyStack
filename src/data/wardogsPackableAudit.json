@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T13:04:29.709Z",
+  "generatedAt": "2026-09-30T14:51:45.741Z",
   "source": "WARDOGS LAB",
   "sourceUrls": [
     "https://wardogslab.com/en/database/category/medical",
@@ -8,19 +8,19 @@
     "https://wardogslab.com/en/database/category/ammunition",
     "https://wardogslab.com/en/database/category/attachments"
   ],
-  "discoveredCandidates": 111,
+  "discoveredCandidates": 259,
   "packableItems": 93,
   "categoryCounts": {
     "MEDICAL": 8,
     "MAGAZINES": 53,
-    "GRENADES": 12,
-    "TACTICAL": 4,
-    "BUILDING": 4,
+    "TACTICAL": 10,
+    "BUILDING": 6,
     "RECON": 3,
-    "VEHICLE": 9
+    "VEHICLE": 9,
+    "PARACHUTES": 2,
+    "MISC": 2
   },
   "unknownPrice": [
-    "Gold Frag Grenade",
     "AT4 Mag",
     "G60 Extended Magazine",
     "G60 Magazine",
@@ -33,11 +33,10 @@
     "SKS Extended Mag",
     "SKS Internal Magazine",
     "STANAG Extended Magazine",
-    "SV98 Extended Magazine"
+    "SV98 Extended Magazine",
+    "Gold Frag Grenade"
   ],
   "unknownWeight": [
-    "Wrench",
-    "Gold Frag Grenade",
     "AMP-9 20 RND Magazine",
     "AT4 Mag",
     "G60 Extended Magazine",
@@ -54,25 +53,15 @@
     "STANAG Extended Magazine",
     "SV98 Extended Magazine",
     "Enox",
+    "Gold Frag Grenade",
     "122mm HE Rocket",
     "155mm HE Shell",
-    "30mm HE Cannon"
+    "30mm HE Cannon",
+    "Wrench"
   ],
   "unknownStack": [
-    "Heavy Drill",
-    "Light Drill",
-    "Wrench",
-    "Gold Frag Grenade",
-    "Improvised Explosive Device",
-    "M18 Signal Grenade: Alert",
-    "M18 Signal Grenade: Damaged Vehicle",
-    "M18 Signal Grenade: Friendly",
-    "M18 Signal Grenade: Hostile",
     "M18 Signal Grenade: Landing Zone",
     "M18 Signal Grenade: Supply Request",
-    "M18 Smoke Grenade: Black",
-    "M67 Frag Grenade",
-    "Remote Detonator",
     "AK74 30 RND Magazine",
     "AK74 60 RND Magazine",
     "AK74 75 RND Drum Magazine",
@@ -130,14 +119,26 @@
     "Enox",
     "Field Resuscitator",
     "Medical Bag",
+    "Battery",
+    "High Capacity Battery",
+    "Basic Parachute",
+    "Sport Parachute",
     "Binoculars",
     "Infrared Range Finder",
     "Range Finder",
-    "Basic Parachute",
+    "Gold Frag Grenade",
+    "Improvised Explosive Device",
+    "M18 Signal Grenade: Alert",
+    "M18 Signal Grenade: Damaged Vehicle",
+    "M18 Signal Grenade: Friendly",
+    "M18 Signal Grenade: Hostile",
+    "M18 Smoke Grenade: Black",
+    "M67 Frag Grenade",
+    "Remote Detonator",
     "Fuel Can",
-    "Sport Parachute",
-    "Battery",
-    "High Capacity Battery"
+    "Heavy Drill",
+    "Light Drill",
+    "Wrench"
   ],
   "missingImage": [],
   "skipped": [
@@ -178,16 +179,15 @@
     },
     {
       "skipped": true,
-      "reason": "No verified inventory footprint",
+      "reason": "Not a RallyStack backpack category",
       "name": "Drill Rig",
-      "category": "BUILDING",
       "url": "https://wardogslab.com/en/database/drill-rig"
     },
     {
       "skipped": true,
       "reason": "No verified inventory footprint",
       "name": "Halligan Bar",
-      "category": "TACTICAL",
+      "category": "MISC",
       "url": "https://wardogslab.com/en/database/halligan-bar"
     },
     {
@@ -220,16 +220,14 @@
     },
     {
       "skipped": true,
-      "reason": "No verified inventory footprint",
+      "reason": "Not a RallyStack backpack category",
       "name": "Mortars",
-      "category": "TACTICAL",
       "url": "https://wardogslab.com/en/database/mortars"
     },
     {
       "skipped": true,
-      "reason": "No verified inventory footprint",
+      "reason": "Not a RallyStack backpack category",
       "name": "Repair Station",
-      "category": "BUILDING",
       "url": "https://wardogslab.com/en/database/repair-station"
     },
     {
@@ -249,8 +247,896 @@
     {
       "skipped": true,
       "reason": "Not a RallyStack backpack category",
+      "name": ".308 Win",
+      "url": "https://wardogslab.com/en/database/308-win"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".308 Win Armor Piercing (AP)",
+      "url": "https://wardogslab.com/en/database/308-win-armor-piercing-ap"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".308 Win Flesh Damage (HP)",
+      "url": "https://wardogslab.com/en/database/308-win-flesh-damage-hp"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".308 Win Standard (FMJ)",
+      "url": "https://wardogslab.com/en/database/308-win-standard-fmj"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".338",
+      "url": "https://wardogslab.com/en/database/338"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".338 AP",
+      "url": "https://wardogslab.com/en/database/338-ap"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".338 HP",
+      "url": "https://wardogslab.com/en/database/338-hp"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".45 ACP Armor Piercing (AP)",
+      "url": "https://wardogslab.com/en/database/45-acp-armor-piercing-ap"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".45 ACP Flesh Damage (HP)",
+      "url": "https://wardogslab.com/en/database/45-acp-flesh-damage-hp"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".45 ACP Standard (FMJ)",
+      "url": "https://wardogslab.com/en/database/45-acp"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".45 Colt Armor Piercing (AP)",
+      "url": "https://wardogslab.com/en/database/45-colt-armor-piercing-ap"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".45 Colt Flesh Damage (HP)",
+      "url": "https://wardogslab.com/en/database/45-colt-flesh-damage-hp"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".45 Colt Standard (FMJ)",
+      "url": "https://wardogslab.com/en/database/45-colt"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".50Cal Standard (FMJ)",
+      "url": "https://wardogslab.com/en/database/50cal-standard-fmj"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "12g",
+      "url": "https://wardogslab.com/en/database/12g"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "12g 7mm Buckshot",
+      "url": "https://wardogslab.com/en/database/12g-7mm-buckshot"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "12g Rifled Slug",
+      "url": "https://wardogslab.com/en/database/12g-rifled-slug"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "155mm Expensive (SB)",
+      "url": "https://wardogslab.com/en/database/155mm-expensive-sb"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "155mm Standard (SB)",
+      "url": "https://wardogslab.com/en/database/155mm-standard-sb"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "5.45mm Armor Piercing (AP)",
+      "url": "https://wardogslab.com/en/database/5-45mm-armor-piercing-ap"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "5.45mm Flesh Damage (HP)",
+      "url": "https://wardogslab.com/en/database/5-45mm-flesh-damage-hp"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "5.45mm Standard (FMJ)",
+      "url": "https://wardogslab.com/en/database/5-45mm-standard-fmj"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "5.56mm Armor Piercing (AP)",
+      "url": "https://wardogslab.com/en/database/5-56mm-armor-piercing-ap"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "5.56mm Flesh Damage (HP)",
+      "url": "https://wardogslab.com/en/database/5-56mm-flesh-damage-hp"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "5.56mm Standard (FMJ)",
+      "url": "https://wardogslab.com/en/database/5-56mm-standard-fmj"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "50AE Armor Piercing (AP)",
+      "url": "https://wardogslab.com/en/database/50ae-armor-piercing-ap"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "50AE Flesh Damage (HP)",
+      "url": "https://wardogslab.com/en/database/50ae-flesh-damage-hp"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "50AE Standard (FMJ)",
+      "url": "https://wardogslab.com/en/database/50ae"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "7.62mm Armor Piercing (AP)",
+      "url": "https://wardogslab.com/en/database/7-62mm-armor-piercing-ap"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "7.62mm Flesh Damage (HP)",
+      "url": "https://wardogslab.com/en/database/7-62mm-flesh-damage-hp"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "7.62mm Standard (FMJ)",
+      "url": "https://wardogslab.com/en/database/7-62mm-standard-fmj"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "7.62x51mm Armor Piercing (AP)",
+      "url": "https://wardogslab.com/en/database/7-62x51mm-armor-piercing-ap"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "7.62x51mm Standard (FMJ)",
+      "url": "https://wardogslab.com/en/database/7-62x51mm"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "762x51mm Flesh Damage (HP)",
+      "url": "https://wardogslab.com/en/database/762x51mm-flesh-damage-hp"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "7.62x54mm Armor Piercing (AP)",
+      "url": "https://wardogslab.com/en/database/7-62x54mm-armor-piercing-ap"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "7.62x54mm Flesh Damage (HP)",
+      "url": "https://wardogslab.com/en/database/7-62x54mm-flesh-damage-hp"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "7.62x54mm Standard (FMJ)",
+      "url": "https://wardogslab.com/en/database/7-62x54mm-standard-fmj"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "81mm",
+      "url": "https://wardogslab.com/en/database/81mm"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "9mm Armor Piercing (AP)",
+      "url": "https://wardogslab.com/en/database/9mm-armor-piercing-ap"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "9mm Flesh Damage (HP)",
+      "url": "https://wardogslab.com/en/database/9mm-flesh-damage-hp"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "9mm Standard (FMJ)",
+      "url": "https://wardogslab.com/en/database/9mm-standard-fmj"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Broadhead Arrow",
+      "url": "https://wardogslab.com/en/database/broadhead-arrow"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Rambo Explosive Arrow",
+      "url": "https://wardogslab.com/en/database/rambo-explosive-arrow"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "20x102mm",
+      "url": "https://wardogslab.com/en/database/20x102mm"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "40mm",
+      "url": "https://wardogslab.com/en/database/40mm"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "72mm",
+      "url": "https://wardogslab.com/en/database/72mm"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "84mm",
+      "url": "https://wardogslab.com/en/database/84mm"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "93mm",
+      "url": "https://wardogslab.com/en/database/93mm"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Stringray",
+      "url": "https://wardogslab.com/en/database/stringray"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
       "name": "Battery Charge",
       "url": "https://wardogslab.com/en/database/battery-charge"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "AK74 Barrel",
+      "url": "https://wardogslab.com/en/database/ak74-barrel"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "45° Angled Foregrip",
+      "url": "https://wardogslab.com/en/database/45-angled-foregrip"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "AFG Angled Foregrip",
+      "url": "https://wardogslab.com/en/database/afg-angled-foregrip"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Angled Tactical Foregrip",
+      "url": "https://wardogslab.com/en/database/angled-tactical-foregrip"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "CQR Tactical Front Rail Grip",
+      "url": "https://wardogslab.com/en/database/cqr-tactical-front-rail-grip"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "M249 Bipod",
+      "url": "https://wardogslab.com/en/database/m249-bipod"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Mini Angled Foregrip",
+      "url": "https://wardogslab.com/en/database/mini-angled-foregrip"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "PKM Bipod",
+      "url": "https://wardogslab.com/en/database/pkm-bipod"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Pro Tilt Bipod",
+      "url": "https://wardogslab.com/en/database/pro-tilt-bipod"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "RK6 Tactical Foregrip",
+      "url": "https://wardogslab.com/en/database/rk6-tactical-foregrip"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "RVG Vertical Foregrip",
+      "url": "https://wardogslab.com/en/database/rvg-vertical-foregrip"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Rubberized Ergonomic Foregrip",
+      "url": "https://wardogslab.com/en/database/rubberized-ergonomic-foregrip"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "SKS Bipod",
+      "url": "https://wardogslab.com/en/database/sks-bipod"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "SV98 Bipod",
+      "url": "https://wardogslab.com/en/database/sv98-bipod"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "SVD Bipod",
+      "url": "https://wardogslab.com/en/database/svd-bipod"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Shift Foregrip",
+      "url": "https://wardogslab.com/en/database/shift-foregrip"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "TDG Vertical Foregrip",
+      "url": "https://wardogslab.com/en/database/tdg-vertical-foregrip"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "AK74 Handguard",
+      "url": "https://wardogslab.com/en/database/ak74-handguard"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Zenit Handguard",
+      "url": "https://wardogslab.com/en/database/zenit-handguard"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".45 ACP Pistol Compensator",
+      "url": "https://wardogslab.com/en/database/45-acp-pistol-compensator"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": ".50 Cal Heavy Suppressor",
+      "url": "https://wardogslab.com/en/database/50-cal-heavy-suppressor"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "12 Gauge Suppressor",
+      "url": "https://wardogslab.com/en/database/12-gauge-suppressor"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "3 Prong Flash Hider",
+      "url": "https://wardogslab.com/en/database/3-prong-flash-hider"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "3-Chamber Brake",
+      "url": "https://wardogslab.com/en/database/3-chamber-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "AMP-9 9x19 Suppressor",
+      "url": "https://wardogslab.com/en/database/amp-9-9x19-suppressor"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "AMP-9 Tactical Flash Hider",
+      "url": "https://wardogslab.com/en/database/amp-9-tactical-flash-hider"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "AR Multi-Caliber Suppressor",
+      "url": "https://wardogslab.com/en/database/ar-multi-caliber-suppressor"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "AX50 .50 Cal Muzzle Brake",
+      "url": "https://wardogslab.com/en/database/ax50-50-cal-muzzle-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "BMR-308 Flash Hider",
+      "url": "https://wardogslab.com/en/database/bmr-308-flash-hider"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "BMR-308 Suppressor",
+      "url": "https://wardogslab.com/en/database/bmr-308-suppressor"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Ballista Brake",
+      "url": "https://wardogslab.com/en/database/ballista-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Basic Muzzle",
+      "url": "https://wardogslab.com/en/database/basic-muzzle"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Birdcage Flash Hider",
+      "url": "https://wardogslab.com/en/database/birdcage-flash-hider"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "CQB 74 Brake",
+      "url": "https://wardogslab.com/en/database/cqb-74-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Constrictor Brake",
+      "url": "https://wardogslab.com/en/database/constrictor-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "DTK-1 Brake",
+      "url": "https://wardogslab.com/en/database/dtk-1-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Deadeye Flash Hider",
+      "url": "https://wardogslab.com/en/database/deadeye-flash-hider"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Dual Port Brake",
+      "url": "https://wardogslab.com/en/database/dual-port-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Eclipse Flash Hider",
+      "url": "https://wardogslab.com/en/database/eclipse-flash-hider"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "FAL Flash Hider",
+      "url": "https://wardogslab.com/en/database/fal-flash-hider"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Flow-Through .308 Suppressor",
+      "url": "https://wardogslab.com/en/database/flow-through-308-suppressor"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Full Choke",
+      "url": "https://wardogslab.com/en/database/full-choke"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "GOL Multi-Caliber Suppressor",
+      "url": "https://wardogslab.com/en/database/gol-multi-caliber-suppressor"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Ghost LITE Muzzle Brake",
+      "url": "https://wardogslab.com/en/database/ghost-lite-muzzle-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Hexagon 762 Suppressor",
+      "url": "https://wardogslab.com/en/database/hexagon-762-suppressor"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Hexagon Brake",
+      "url": "https://wardogslab.com/en/database/hexagon-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Improved Cylinder Choke",
+      "url": "https://wardogslab.com/en/database/improved-cylinder-choke"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "M500 Sabre Brake",
+      "url": "https://wardogslab.com/en/database/m500-sabre-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "MP5 Flash Hider",
+      "url": "https://wardogslab.com/en/database/mp5-flash-hider"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Orpheus Max Brake",
+      "url": "https://wardogslab.com/en/database/orpheus-max-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "PBS-4 Suppressor",
+      "url": "https://wardogslab.com/en/database/pbs-4-suppressor"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "PP-19 Vityaz Flash Hider",
+      "url": "https://wardogslab.com/en/database/pp-19-vityaz-flash-hider"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "PP-19-01 Vityaz 9x19 Suppressor",
+      "url": "https://wardogslab.com/en/database/pp-19-01-vityaz-9x19-suppressor"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "QD-5 Suppressor",
+      "url": "https://wardogslab.com/en/database/qd-5-suppressor"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "RC-556 Suppressor",
+      "url": "https://wardogslab.com/en/database/rc-556-suppressor"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "SG Multi-Caliber Suppressor",
+      "url": "https://wardogslab.com/en/database/sg-multi-caliber-suppressor"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "SRVV Brake",
+      "url": "https://wardogslab.com/en/database/srvv-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "STRELIX Suppressor",
+      "url": "https://wardogslab.com/en/database/strelix-suppressor"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "SVD 7.62x54R Brake",
+      "url": "https://wardogslab.com/en/database/svd-7-62x54r-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Slicktap Brake",
+      "url": "https://wardogslab.com/en/database/slicktap-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Slotted Flash Hider",
+      "url": "https://wardogslab.com/en/database/slotted-flash-hider"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Sniper Muzzle",
+      "url": "https://wardogslab.com/en/database/sniper-muzzle"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Super-45 Flash Hider",
+      "url": "https://wardogslab.com/en/database/super-45-flash-hider"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Suppressor T8L1 Scout",
+      "url": "https://wardogslab.com/en/database/suppressor-t8l1-scout"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "TGP-A Suppressor 5.45",
+      "url": "https://wardogslab.com/en/database/tgp-a-suppressor-5-45"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Three Port Brake",
+      "url": "https://wardogslab.com/en/database/three-port-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "TopComp Brake",
+      "url": "https://wardogslab.com/en/database/topcomp-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Tread Brake",
+      "url": "https://wardogslab.com/en/database/tread-brake"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "2.5x Combat Optic",
+      "url": "https://wardogslab.com/en/database/2-5x-combat-optic"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "3x Tactical Prism Scope",
+      "url": "https://wardogslab.com/en/database/3x-tactical-prism-scope"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "3x-6x LPVO Short Dot",
+      "url": "https://wardogslab.com/en/database/3x-6x-lpvo-short-dot"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "4x Combat Prism Scope with Reflex",
+      "url": "https://wardogslab.com/en/database/4x-combat-prism-scope-with-reflex"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "6-10x Scope MOA",
+      "url": "https://wardogslab.com/en/database/6-10x-scope-moa"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "6-10x Scope MRAD",
+      "url": "https://wardogslab.com/en/database/6-10x-scope-mrad"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "6x Marksman Scope + Reflex",
+      "url": "https://wardogslab.com/en/database/6x-marksman-scope-reflex"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "6x Precision Rifle Scope",
+      "url": "https://wardogslab.com/en/database/6x-precision-rifle-scope"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "CGM4 Scope",
+      "url": "https://wardogslab.com/en/database/cgm4-scope"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "CQ-2x Prism Combat Scope",
+      "url": "https://wardogslab.com/en/database/cq-2x-prism-combat-scope"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Compact T-2 Red Dot",
+      "url": "https://wardogslab.com/en/database/compact-t-2-red-dot"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Four Reticle Reflex",
+      "url": "https://wardogslab.com/en/database/four-reticle-reflex"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Frontier 2.5x-10x Precision Scope",
+      "url": "https://wardogslab.com/en/database/frontier-2-5x-10x-precision-scope"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Holographic Sight",
+      "url": "https://wardogslab.com/en/database/holographic-sight"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Kobra Reflex",
+      "url": "https://wardogslab.com/en/database/kobra-reflex"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "MMGL Sight",
+      "url": "https://wardogslab.com/en/database/mmgl-sight"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Mini Reflex Sight",
+      "url": "https://wardogslab.com/en/database/mini-reflex-sight"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "OKP 7 Reflex",
+      "url": "https://wardogslab.com/en/database/okp-7-reflex"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "PGO-7",
+      "url": "https://wardogslab.com/en/database/pgo-7"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Tricon 1.5x Compact Prism Scope",
+      "url": "https://wardogslab.com/en/database/tricon-1-5x-compact-prism-scope"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Vektor Frenix-X Micro Reflex Sight",
+      "url": "https://wardogslab.com/en/database/vektor-frenix-x-micro-reflex-sight"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "10x",
+      "url": "https://wardogslab.com/en/database/10x"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "4X Hybrid",
+      "url": "https://wardogslab.com/en/database/4x-hybrid"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "AK74 Grip",
+      "url": "https://wardogslab.com/en/database/ak74-grip"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "AK74 Grip",
+      "url": "https://wardogslab.com/en/database/ak74-grip-2"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "AK74 Receiver",
+      "url": "https://wardogslab.com/en/database/ak74-receiver"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Hybrid Grip Pod",
+      "url": "https://wardogslab.com/en/database/hybrid-grip-pod"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Spectr 4x",
+      "url": "https://wardogslab.com/en/database/spectr-4x"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Spitfire 3X",
+      "url": "https://wardogslab.com/en/database/spitfire-3x"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "AK74 Stock",
+      "url": "https://wardogslab.com/en/database/ak74-stock"
+    },
+    {
+      "skipped": true,
+      "reason": "Not a RallyStack backpack category",
+      "name": "Zenit Stock",
+      "url": "https://wardogslab.com/en/database/zenit-stock"
     }
   ]
 }

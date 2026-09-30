@@ -1,4 +1,4 @@
-import fs from 'node:fs/promises'
+﻿import fs from 'node:fs/promises'
 import path from 'node:path'
 
 const root =
@@ -30,6 +30,9 @@ const assetFolder =
 
 const USER_AGENT =
   'RallyStack-Community-Loadout-Builder/2.0'
+
+const WARDOGS_FIELD_MANUAL =
+  'https://www.wardogs-companion.com/items/?group=gear&sort=category'
 
 const sources = [
   {
@@ -297,30 +300,233 @@ function extractImagePath(
   return null
 }
 
+function detectManualCategory(
+  rowText,
+) {
+
+  if (
+    /\bVehicle kit\b/i.test(
+      rowText,
+    )
+  ) {
+    return 'VEHICLE'
+  }
+
+  if (
+    /\bMiscellaneous\b/i.test(
+      rowText,
+    )
+  ) {
+    return 'MISC'
+  }
+
+  if (
+    /\bParachute\b/i.test(
+      rowText,
+    )
+  ) {
+    return 'PARACHUTES'
+  }
+
+  if (
+    /\bBuilding\b/i.test(
+      rowText,
+    )
+  ) {
+    return 'BUILDING'
+  }
+
+  if (
+    /\bTactical\b/i.test(
+      rowText,
+    )
+  ) {
+    return 'TACTICAL'
+  }
+
+  if (
+    /\bMedical\b/i.test(
+      rowText,
+    )
+  ) {
+    return 'MEDICAL'
+  }
+
+  if (
+    /\bRecon\b/i.test(
+      rowText,
+    )
+  ) {
+    return 'RECON'
+  }
+
+  return null
+}
+
+async function loadFieldManualCategories() {
+
+  console.log(
+    'Reading WARDOGS Field Manual categories...',
+  )
+
+  const html =
+    await fetchText(
+      WARDOGS_FIELD_MANUAL,
+    )
+
+  const categories =
+    new Map()
+
+  for (
+    const row of
+    html.matchAll(
+      /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi,
+    )
+  ) {
+
+    const rowHtml =
+      row[1]
+
+    const rowText =
+      plainText(
+        rowHtml,
+      )
+
+    const category =
+      detectManualCategory(
+        rowText,
+      )
+
+    if (
+      !category
+    ) {
+      continue
+    }
+
+    for (
+      const anchor of
+      rowHtml.matchAll(
+        /<a\b[^>]*href=["'][^"']*\/items\/[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi,
+      )
+    ) {
+
+      const name =
+        plainText(
+          anchor[1],
+        )
+
+      if (
+        !name
+      ) {
+        continue
+      }
+
+      categories.set(
+        normaliseName(
+          name,
+        ),
+        category,
+      )
+    }
+  }
+
+  if (
+    categories.size <
+    20
+  ) {
+
+    throw new Error(
+      'Field Manual parser returned too few records. Sync stopped.',
+    )
+  }
+
+  console.log(
+    `Field Manual classified names: ${categories.size}`,
+  )
+
+  return categories
+}
 function classifyItem({
   source,
   cardText,
   name,
+  pageText,
 }) {
 
-  const text =
-    `${cardText} ${name}`
+  /*
+   * Researched WARDOGS edge cases.
+   * Categories only. No price/weight/size values invented.
+   */
+  const edgeKey =
+    normaliseName(
+      name,
+    )
+
+  if (
+    edgeKey === 'drillrig' ||
+    edgeKey === 'mortars' ||
+    edgeKey === 'repairstation'
+  ) {
+    return null
+  }
+
+  if (
+    edgeKey === 'smallhammer'
+  ) {
+    return 'BUILDING'
+  }
+
+  if (
+    edgeKey === 'spottedscope'
+  ) {
+    return 'RECON'
+  }
+
+
+  /*
+   * Primary authority:
+   * current WARDOGS Field Manual.
+   */
+
+  const manual =
+    manualCategories.get(
+      normaliseName(
+        name,
+      ),
+    )
+
+  if (
+    manual
+  ) {
+    return manual
+  }
+
+  const evidence =
+    `${cardText || ''} ${pageText || ''}`
 
   if (
     source ===
     'medical'
   ) {
-
     return 'MEDICAL'
   }
+
+  /*
+   * Field Manual has already had first chance,
+   * so Building signal grenades are handled above.
+   */
 
   if (
     source ===
     'throwables'
   ) {
-
-    return 'GRENADES'
+    return 'TACTICAL'
   }
+
+  /*
+   * Magazines exist under both WARDOGS LAB
+   * Ammunition and Attachments.
+   */
 
   if (
     source ===
@@ -328,11 +534,10 @@ function classifyItem({
   ) {
 
     if (
-      /magazines/i.test(
-        text,
+      /\bMagazines\b/i.test(
+        evidence,
       )
     ) {
-
       return 'MAGAZINES'
     }
 
@@ -345,52 +550,39 @@ function classifyItem({
   ) {
 
     if (
-      /magazines/i.test(
-        text,
-      ) ||
-      /magazine|drum magazine|rnd box/i.test(
-        name,
+      /\bMagazines\b/i.test(
+        evidence,
       )
     ) {
-
       return 'MAGAZINES'
     }
 
     if (
-      /vehicle\s*&\s*heavy/i.test(
-        text,
+      /Vehicle\s*&\s*Heavy/i.test(
+        evidence,
       )
     ) {
-
       return 'VEHICLE'
     }
 
-    if (
-      /build supplies/i.test(
-        name,
-      )
-    ) {
-
-      return 'BUILDING'
-    }
+    /*
+     * A Supplies subtype should have matched the
+     * Field Manual. If it did not, stop rather
+     * than silently putting it somewhere invented.
+     */
 
     if (
-      /fuel supplies|mechanical supplies|high capacity battery|^battery$/i.test(
-        name,
+      /\bSupplies\b/i.test(
+        evidence,
       )
     ) {
-
-      return 'VEHICLE'
+      return 'UNRESOLVED'
     }
 
-    if (
-      /ammo supplies/i.test(
-        name,
-      )
-    ) {
-
-      return 'TACTICAL'
-    }
+    /*
+     * Ordinary ammunition belongs in Loose Ammo,
+     * not this packable gear catalogue.
+     */
 
     return null
   }
@@ -401,83 +593,60 @@ function classifyItem({
   ) {
 
     if (
-      /recon/i.test(
-        cardText,
-      ) ||
-      /range finder|monocular|spotted scope|ir goggles/i.test(
-        name,
+      /\bRecon\b/i.test(
+        evidence,
       )
     ) {
-
       return 'RECON'
     }
 
     if (
-      /repair tool/i.test(
-        cardText,
-      ) ||
-      /drill|hammer|wrench|repair station/i.test(
-        name,
+      /\bVehicle kit\b|\bRepair Tool\b/i.test(
+        evidence,
       )
     ) {
-
-      return 'BUILDING'
+      return 'VEHICLE'
     }
 
-    return 'TACTICAL'
+    if (
+      /\bParachute\b|\bTraversal\b/i.test(
+        evidence,
+      )
+    ) {
+      return 'PARACHUTES'
+    }
+
+    if (
+      /\bMiscellaneous\b/i.test(
+        evidence,
+      )
+    ) {
+      return 'MISC'
+    }
+
+    return 'UNRESOLVED'
   }
 
-  return null
+  return 'UNRESOLVED'
 }
 
 function keepCard({
   source,
-  cardText,
 }) {
 
-  if (
-    source ===
-      'medical' ||
-    source ===
-      'throwables' ||
-    source ===
-      'equipment'
-  ) {
-
-    return true
-  }
-
-  if (
-    source ===
-    'attachments'
-  ) {
-
-    return /magazines/i.test(
-      cardText,
-    )
-  }
-
-  if (
-    source ===
-    'ammunition'
-  ) {
-
-    return (
-      /magazines/i.test(
-        cardText,
-      ) ||
-      /vehicle\s*&\s*heavy/i.test(
-        cardText,
-      ) ||
-      /Build Supplies|Fuel Supplies|Mechanical Supplies|Ammo Supplies|Battery/i.test(
-        cardText,
-      )
-    )
-  }
-
-  return false
+  return [
+    'medical',
+    'throwables',
+    'equipment',
+    'ammunition',
+    'attachments',
+  ].includes(
+    source,
+  )
 }
 
+const manualCategories =
+  await loadFieldManualCategories()
 const medicalIds = {
   'emergency-resuscitator':
     'medical-emergency-resuscitator',
@@ -761,7 +930,34 @@ const rawItems =
               candidate.cardText,
 
             name,
+
+            pageText:
+              text,
           })
+
+        if (
+          category ===
+          'UNRESOLVED'
+        ) {
+
+          return {
+            skipped:
+              true,
+
+            unresolved:
+              true,
+
+            reason:
+              'Authoritative WARDOGS category unresolved',
+
+            name,
+
+            source:
+              candidate.source,
+
+            url,
+          }
+        }
 
         if (
           !category
@@ -792,7 +988,7 @@ const rawItems =
 
         const inventoryMatch =
           text.match(
-            /Inventory\s*(\d+)\s*[×x]\s*(\d+)/i,
+            /Inventory\s*(\d+)\s*(?:\u00d7|x)\s*(\d+)/i,
           )
 
         const stackMatch =
@@ -1071,6 +1267,35 @@ const rawItems =
     },
   )
 
+const unresolvedCategories =
+  rawItems.filter(
+    (result) =>
+      result.unresolved,
+  )
+
+if (
+  unresolvedCategories.length
+) {
+
+  console.log('')
+  console.log(
+    'UNRESOLVED WARDOGS CATEGORIES:',
+  )
+
+  for (
+    const item of
+    unresolvedCategories
+  ) {
+
+    console.log(
+      `  ${item.name} [${item.source}]`,
+    )
+  }
+
+  throw new Error(
+    'WARDOGS category research incomplete. Generated data was not written.',
+  )
+}
 /* ============================================================
    DEDUPE DUPLICATE / PLACEHOLDER RECORDS
    ============================================================ */
@@ -1176,6 +1401,55 @@ const items =
         right.name,
       ),
   )
+
+/* RALLYSTACK_SAFE_CATALOGUE_GATE */
+const requiredMinimums = {
+  MEDICAL: 8,
+  MAGAZINES: 53,
+  TACTICAL: 10,
+  BUILDING: 6,
+  RECON: 3,
+  VEHICLE: 9,
+  PARACHUTES: 2,
+  MISC: 2,
+}
+
+if (
+  items.length <
+  93
+) {
+  throw new Error(
+    `Refusing catalogue write: only ${items.length} items generated.`,
+  )
+}
+
+for (
+  const [category, minimum] of
+  Object.entries(
+    requiredMinimums,
+  )
+) {
+
+  const actual =
+    items.filter(
+      (item) =>
+        item.packCategory ===
+        category,
+    ).length
+
+  if (
+    actual <
+    minimum
+  ) {
+    throw new Error(
+      `Refusing catalogue write: ${category}=${actual}, minimum=${minimum}.`,
+    )
+  }
+}
+
+console.log(
+  `Validated packable catalogue: ${items.length} items`,
+)
 
 /* ============================================================
    WRITE DATA
@@ -1328,11 +1602,12 @@ const categoryCounts =
     [
       'MEDICAL',
       'MAGAZINES',
-      'GRENADES',
       'TACTICAL',
       'BUILDING',
       'RECON',
       'VEHICLE',
+      'PARACHUTES',
+      'MISC',
     ].map(
       (category) => [
         category,

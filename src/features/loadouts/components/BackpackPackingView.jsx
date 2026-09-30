@@ -29,11 +29,12 @@ const categories = [
   'MEDICAL',
   'LOOSE AMMO',
   'MAGAZINES',
-  'GRENADES',
   'TACTICAL',
   'BUILDING',
   'RECON',
   'VEHICLE',
+  'PARACHUTES',
+  'MISC',
 ]
 
 function getFootprint(
@@ -1806,11 +1807,12 @@ const [
                           ) : [
                               'MEDICAL',
                               'MAGAZINES',
-                              'GRENADES',
                               'TACTICAL',
                               'BUILDING',
                               'RECON',
                               'VEHICLE',
+                              'PARACHUTES',
+                              'MISC',
                             ].includes(
                               entry,
                             ) ? (
