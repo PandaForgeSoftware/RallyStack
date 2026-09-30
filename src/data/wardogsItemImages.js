@@ -86,4 +86,5 @@ export const itemImages = {
   'medical-field-resuscitator': '/wardogs/items/medical-field-resuscitator.webp',
   'medical-ifak': '/wardogs/items/medical-ifak.webp',
   'medical-medical-bag': '/wardogs/items/medical-medical-bag.webp',
+  'medical-emergency-resuscitator': '/wardogs/items/medical-emergency-resuscitator.png',
 }
