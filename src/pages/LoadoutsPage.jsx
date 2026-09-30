@@ -22,6 +22,8 @@ import {
   looseAmmo,
   weapons,
 } from '../data/wardogsLoadoutData'
+import BackpackPackingView from '../features/loadouts/components/BackpackPackingView'
+import WardogsItemImage from '../features/loadouts/components/WardogsItemImage'
 
 const money = (value) =>
   `$${Number(value || 0).toLocaleString()}`
@@ -1023,6 +1025,30 @@ function LoadoutsPage() {
       )
     }
 
+  if (
+    activeTab === 'builder' &&
+    builderView === 'backpack'
+  ) {
+    return (
+      <BackpackPackingView
+        backpack={selectedBackpack}
+        looseAmmo={looseAmmo}
+        packedAmmo={packedAmmo}
+        equippedCalibres={equippedCalibres}
+        changeAmmoStacks={changeAmmoStacks}
+        equipmentValue={equipmentValue}
+        contentsValue={contentsValue}
+        totalValue={totalValue}
+        knownWeight={knownWeight}
+        totalRounds={totalRounds}
+        onBack={() =>
+          setBuilderView(
+            'operator',
+          )
+        }
+      />
+    )
+  }
   const renderWeaponCatalogue =
     () => (
       <>
@@ -1068,15 +1094,11 @@ function LoadoutsPage() {
                 className="cursor-pointer border border-white/8 bg-[#111416] p-4 transition hover:border-amber-500/30"
               >
 
-                <div className="mb-4 flex h-24 items-center justify-center border border-white/6 bg-black/20">
-
-                  <Crosshair
-                    size={34}
-                    strokeWidth={1}
-                    className="text-stone-700"
-                  />
-
-                </div>
+                <WardogsItemImage
+                  item={item}
+                  className="mb-4 h-28 w-full border border-white/6"
+                  imageClassName="p-3"
+                />
 
                 <div className="flex items-start justify-between gap-4">
 
@@ -1199,15 +1221,11 @@ function LoadoutsPage() {
               ].join(' ')}
             >
 
-              <div className="mb-4 flex h-24 items-center justify-center border border-white/6 bg-black/20">
-
-                <Backpack
-                  size={40}
-                  strokeWidth={1}
-                  className="text-stone-700"
+              <WardogsItemImage
+                  item={item}
+                  className="mb-4 h-28 w-full border border-white/6"
+                  imageClassName="p-3"
                 />
-
-              </div>
 
               <div className="flex items-start justify-between gap-4">
 
