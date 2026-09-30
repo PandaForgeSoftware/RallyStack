@@ -17,6 +17,26 @@ const CELL_GAP =
 const GRID_PADDING =
   12
 
+function getArtworkScale(
+  item,
+) {
+
+  if (
+    item?.type ===
+    'loose_ammo'
+  ) {
+    return 0.68
+  }
+
+  if (
+    item?.calibre
+  ) {
+    return 0.72
+  }
+
+  return 0.86
+}
+
 function StableBackpackGrid({
   backpack,
   placements,
@@ -33,39 +53,27 @@ function StableBackpackGrid({
     return null
   }
 
-  const gridWidth =
+  const width =
+    backpack.columns *
+      CELL_SIZE +
     (
-      backpack.columns *
-      CELL_SIZE
-    ) +
-    (
-      (
-        backpack.columns -
-        1
-      ) *
-      CELL_GAP
-    )
+      backpack.columns -
+      1
+    ) *
+      CELL_GAP +
+    GRID_PADDING *
+      2
 
-  const gridHeight =
+  const height =
+    backpack.rows *
+      CELL_SIZE +
     (
-      backpack.rows *
-      CELL_SIZE
-    ) +
-    (
-      (
-        backpack.rows -
-        1
-      ) *
-      CELL_GAP
-    )
-
-  const containerWidth =
-    gridWidth +
-    GRID_PADDING * 2
-
-  const containerHeight =
-    gridHeight +
-    GRID_PADDING * 2
+      backpack.rows -
+      1
+    ) *
+      CELL_GAP +
+    GRID_PADDING *
+      2
 
   const blocked =
     new Set(
@@ -75,17 +83,17 @@ function StableBackpackGrid({
 
   return (
     <div
-      className="relative shrink-0 border border-white/10 bg-black/70"
+      className="relative shrink-0 border border-white/10 bg-[#080a0b]"
       style={{
         width:
-          `${containerWidth}px`,
+          `${width}px`,
 
         height:
-          `${containerHeight}px`,
+          `${height}px`,
       }}
     >
 
-      {/* Permanent backpack cells */}
+      {/* PERMANENT BAG CELLS */}
 
       {Array.from({
         length:
@@ -110,22 +118,6 @@ function StableBackpackGrid({
           const disabled =
             blocked.has(
               index,
-            )
-
-          const left =
-            GRID_PADDING +
-            column *
-            (
-              CELL_SIZE +
-              CELL_GAP
-            )
-
-          const top =
-            GRID_PADDING +
-            row *
-            (
-              CELL_SIZE +
-              CELL_GAP
             )
 
           return (
@@ -161,19 +153,33 @@ function StableBackpackGrid({
                 )
               }}
               className={[
-                'absolute border transition',
+                'absolute border',
                 disabled
                   ? 'border-transparent bg-transparent'
                   : draggingKey
-                    ? 'border-amber-500/30 bg-amber-500/[0.035]'
-                    : 'border-white/10 bg-[#15191b]',
+                    ? 'border-amber-500/30 bg-amber-500/[0.025]'
+                    : 'border-[#303638] bg-[#15191b]',
               ].join(' ')}
               style={{
                 left:
-                  `${left}px`,
+                  `${
+                    GRID_PADDING +
+                    column *
+                      (
+                        CELL_SIZE +
+                        CELL_GAP
+                      )
+                  }px`,
 
                 top:
-                  `${top}px`,
+                  `${
+                    GRID_PADDING +
+                    row *
+                      (
+                        CELL_SIZE +
+                        CELL_GAP
+                      )
+                  }px`,
 
                 width:
                   `${CELL_SIZE}px`,
@@ -186,58 +192,51 @@ function StableBackpackGrid({
         },
       )}
 
-      {/* Packed items are a completely separate overlay */}
+      {/* PACKED ITEMS */}
 
       {placements.map(
         (
           placement,
         ) => {
 
-          const width =
+          const itemWidth =
+            placement.width *
+              CELL_SIZE +
             (
-              placement.width *
-              CELL_SIZE
-            ) +
-            (
-              (
-                placement.width -
-                1
-              ) *
+              placement.width -
+              1
+            ) *
               CELL_GAP
-            )
 
-          const height =
+          const itemHeight =
+            placement.height *
+              CELL_SIZE +
             (
-              placement.height *
-              CELL_SIZE
-            ) +
-            (
-              (
-                placement.height -
-                1
-              ) *
+              placement.height -
+              1
+            ) *
               CELL_GAP
-            )
 
           const left =
             GRID_PADDING +
             placement.column *
-            (
-              CELL_SIZE +
-              CELL_GAP
-            )
+              (
+                CELL_SIZE +
+                CELL_GAP
+              )
 
           const top =
             GRID_PADDING +
             placement.row *
-            (
-              CELL_SIZE +
-              CELL_GAP
-            )
+              (
+                CELL_SIZE +
+                CELL_GAP
+              )
 
-          const isDragging =
-            draggingKey ===
-            placement.key
+          const imageScale =
+            getArtworkScale(
+              placement.item,
+            )
 
           return (
             <div
@@ -255,12 +254,6 @@ function StableBackpackGrid({
                   null,
                 )
               }
-              className={[
-                'absolute z-20 cursor-grab overflow-hidden border bg-[#101314] active:cursor-grabbing',
-                isDragging
-                  ? 'border-amber-200 opacity-60'
-                  : 'border-amber-500/55',
-              ].join(' ')}
               style={{
                 left:
                   `${left}px`,
@@ -269,31 +262,59 @@ function StableBackpackGrid({
                   `${top}px`,
 
                 width:
-                  `${width}px`,
+                  `${itemWidth}px`,
 
                 height:
-                  `${height}px`,
+                  `${itemHeight}px`,
               }}
+              className={[
+                'absolute z-20 cursor-grab overflow-hidden bg-[#101314] active:cursor-grabbing',
+                draggingKey ===
+                placement.key
+                  ? 'outline outline-1 outline-amber-200 opacity-60'
+                  : 'outline outline-1 outline-amber-500/60',
+              ].join(' ')}
             >
 
               <WardogsItemImage
                 item={
                   placement.item
                 }
-                className="pointer-events-none absolute inset-[5px]"
-                imageClassName="p-1"
+                className="pointer-events-none absolute inset-0"
+                imageStyle={{
+                  width:
+                    '100%',
+
+                  height:
+                    '100%',
+
+                  objectFit:
+                    'contain',
+
+                  objectPosition:
+                    'center',
+
+                  transform:
+                    `scale(${imageScale})`,
+
+                  transformOrigin:
+                    'center',
+                }}
               />
 
-              <div className="pointer-events-none absolute left-1 top-1 z-30 bg-emerald-400 px-1.5 py-0.5 text-[7px] font-black text-black">
+              <div className="pointer-events-none absolute left-1 top-1 z-30 bg-emerald-400 px-1.5 py-0.5 text-[7px] font-black leading-none text-black">
+
                 {money(
                   placement
                     .item
                     .price,
                 )}
+
               </div>
 
               <button
                 type="button"
+                title="Remove from backpack"
                 onClick={() =>
                   removeInstance(
                     placement,

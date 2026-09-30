@@ -15,11 +15,12 @@ function WardogsItemImage({
   item,
   className = '',
   imageClassName = '',
+  imageStyle = null,
 }) {
 
   const [
-    failedSources,
-    setFailedSources,
+    failed,
+    setFailed,
   ] =
     useState([])
 
@@ -31,7 +32,7 @@ function WardogsItemImage({
           return []
         }
 
-        const values = [
+        const ids = [
           item.id,
         ]
 
@@ -41,7 +42,7 @@ function WardogsItemImage({
           )
         ) {
 
-          values.push(
+          ids.push(
             item.id.slice(
               0,
               -2,
@@ -49,7 +50,7 @@ function WardogsItemImage({
           )
         }
 
-        return values
+        return ids
           .map(
             (id) =>
               itemImages[id],
@@ -61,16 +62,16 @@ function WardogsItemImage({
 
   const source =
     candidates.find(
-      (candidate) =>
-        !failedSources.includes(
-          candidate,
+      (value) =>
+        !failed.includes(
+          value,
         ),
     )
 
   return (
     <div
       className={[
-        'relative flex items-center justify-center overflow-hidden',
+        'relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden',
         className,
       ].join(' ')}
     >
@@ -81,19 +82,23 @@ function WardogsItemImage({
           src={source}
           alt={
             item?.name ||
-            'WARDOGS item'
+            'Item'
           }
           draggable="false"
           onError={() =>
-            setFailedSources(
+            setFailed(
               (current) => [
                 ...current,
                 source,
               ],
             )
           }
+          style={
+            imageStyle ||
+            undefined
+          }
           className={[
-            'block h-full w-full object-contain',
+            'block h-full w-full object-contain object-center',
             imageClassName,
           ].join(' ')}
         />
@@ -101,7 +106,7 @@ function WardogsItemImage({
       ) : (
 
         <Package
-          size={30}
+          size={28}
           strokeWidth={1}
           className="text-stone-700"
         />
