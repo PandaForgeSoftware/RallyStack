@@ -1,4 +1,4 @@
-﻿import { NavLink } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import {
   Bell,
   LogOut,
@@ -13,7 +13,7 @@ import { supabase } from '../../lib/supabase'
 const navItems = [
   { label: 'HOME', path: '/' },
   { label: 'LOADOUTS', path: '/loadouts' },
-  { label: 'FIND PLAYERS', path: '/find-players' },
+  { label: 'LFG', path: '/find-players' },
   { label: 'SQUADS', path: '/squads' },
   { label: 'ARMORY', path: '/armory' },
   { label: 'DEALS', path: '/deals' },

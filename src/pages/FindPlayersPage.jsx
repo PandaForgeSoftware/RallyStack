@@ -400,7 +400,7 @@ function FindPlayersPage() {
     setActiveTab,
   ] =
     useState(
-      'players',
+      'groups',
     )
 
   const [
@@ -1108,11 +1108,11 @@ function FindPlayersPage() {
               </div>
 
               <h1 className="text-4xl font-black tracking-tight text-white md:text-5xl">
-                FIND PLAYERS
+                RALLYSTACK LFG
               </h1>
 
               <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-500">
-                Find RallyStack players currently looking to play and browse live groups created through Discord.
+                Find an active group, see who's looking to play, and jump straight into Discord.
               </p>
             </div>
 
@@ -1215,39 +1215,6 @@ function FindPlayersPage() {
               type="button"
               onClick={() =>
                 setActiveTab(
-                  'players',
-                )
-              }
-              className={[
-                'relative flex h-16 items-center gap-2 text-xs font-black tracking-wider',
-                activeTab ===
-                  'players'
-                  ? 'text-white'
-                  : 'text-stone-600 hover:text-stone-300',
-              ].join(
-                ' ',
-              )}
-            >
-              <UserRoundSearch
-                size={16}
-              />
-
-              PLAYERS
-
-              <span className="ml-1 text-[9px] text-emerald-400">
-                {livePlayerCount}
-              </span>
-
-              {activeTab ===
-                'players' && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-amber-500" />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                setActiveTab(
                   'groups',
                 )
               }
@@ -1273,6 +1240,39 @@ function FindPlayersPage() {
 
               {activeTab ===
                 'groups' && (
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-amber-500" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setActiveTab(
+                  'players',
+                )
+              }
+              className={[
+                'relative flex h-16 items-center gap-2 text-xs font-black tracking-wider',
+                activeTab ===
+                  'players'
+                  ? 'text-white'
+                  : 'text-stone-600 hover:text-stone-300',
+              ].join(
+                ' ',
+              )}
+            >
+              <UserRoundSearch
+                size={16}
+              />
+
+              PLAYERS
+
+              <span className="ml-1 text-[9px] text-emerald-400">
+                {livePlayerCount}
+              </span>
+
+              {activeTab ===
+                'players' && (
                 <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-amber-500" />
               )}
             </button>
