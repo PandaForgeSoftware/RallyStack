@@ -264,6 +264,15 @@ function StableBackpackGrid({
                 }
               />
 
+              {/* STACK ROUNDS */}
+              <div className="pointer-events-none absolute bottom-1 left-1 z-30 border border-white/10 bg-black/85 px-1.5 py-1 text-[8px] font-black leading-none text-white">
+                {placement.rounds}
+                <span className="text-stone-500">
+                  {' / '}
+                  {placement.maxStack}
+                </span>
+              </div>
+
               <div className="pointer-events-none absolute left-1 top-1 z-30 bg-emerald-400 px-1.5 py-0.5 text-[7px] font-black leading-none text-black">
 
                 {money(

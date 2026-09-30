@@ -22,6 +22,10 @@ import {
   looseAmmo,
   weapons,
 } from '../data/wardogsLoadoutData'
+
+import {
+  ammoStackRules,
+} from '../data/wardogsAmmoStackRules'
 import BackpackPackingView from '../features/loadouts/components/BackpackPackingView'
 import WardogsItemImage from '../features/loadouts/components/WardogsItemImage'
 
@@ -781,31 +785,89 @@ function LoadoutsPage() {
           .map(
             ([
               id,
-              stacks,
+              roundCount,
             ]) => {
 
-              const ammo =
+              const item =
                 looseAmmo.find(
-                  (item) =>
-                    item.id ===
+                  (candidate) =>
+                    candidate.id ===
                     id,
                 )
 
-              if (!ammo) {
+              if (!item) {
                 return null
               }
 
+              const rule =
+                ammoStackRules[
+                  id
+                ] || {
+                  purchaseQuantity: 1,
+                  maxStack:
+                    Math.max(
+                      1,
+                      Number(
+                        item.stack ||
+                        1,
+                      ),
+                    ),
+                }
+
+              const rounds =
+                Math.max(
+                  0,
+                  Number(
+                    roundCount ||
+                    0,
+                  ),
+                )
+
+              const purchaseQuantity =
+                Math.max(
+                  1,
+                  Number(
+                    rule.purchaseQuantity ||
+                    1,
+                  ),
+                )
+
+              const maxStack =
+                Math.max(
+                  purchaseQuantity,
+                  Number(
+                    rule.maxStack ||
+                    purchaseQuantity,
+                  ),
+                )
+
               return {
-                ...ammo,
-                stacks,
-                rounds:
-                  ammo.stack *
-                  stacks,
+                ...item,
+
+                rounds,
+
+                purchaseQuantity,
+
+                maxStack,
+
+                purchases:
+                  Math.ceil(
+                    rounds /
+                    purchaseQuantity,
+                  ),
+
+                physicalStacks:
+                  Math.ceil(
+                    rounds /
+                    maxStack,
+                  ),
               }
             },
           )
           .filter(Boolean),
-      [packedAmmo],
+      [
+        packedAmmo,
+      ],
     )
 
   const equipmentValue =
@@ -844,9 +906,9 @@ function LoadoutsPage() {
             (
               Number(
                 item.price ||
-                  0,
+                0,
               ) *
-              item.stacks
+              item.purchases
             ),
           0,
         ),
@@ -899,7 +961,7 @@ function LoadoutsPage() {
         item,
       ) =>
         total +
-        item.stacks,
+        item.physicalStacks,
       0,
     )
 
@@ -987,10 +1049,10 @@ function LoadoutsPage() {
       )
     }
 
-  const changeAmmoStacks =
+  const changeAmmoRounds =
     (
       id,
-      difference,
+      differenceRounds,
     ) => {
 
       setPackedAmmo(
@@ -999,11 +1061,16 @@ function LoadoutsPage() {
           const next =
             Math.max(
               0,
-              (
-                current[id] ||
-                0
+              Number(
+                current[
+                  id
+                ] ||
+                0,
               ) +
-                difference,
+              Number(
+                differenceRounds ||
+                0,
+              ),
             )
 
           const updated = {
@@ -1013,10 +1080,16 @@ function LoadoutsPage() {
           if (
             next === 0
           ) {
-            delete updated[id]
+
+            delete updated[
+              id
+            ]
           }
           else {
-            updated[id] =
+
+            updated[
+              id
+            ] =
               next
           }
 
@@ -1035,7 +1108,7 @@ function LoadoutsPage() {
         looseAmmo={looseAmmo}
         packedAmmo={packedAmmo}
         equippedCalibres={equippedCalibres}
-        changeAmmoStacks={changeAmmoStacks}
+        changeAmmoRounds={changeAmmoRounds}
         equipmentValue={equipmentValue}
         contentsValue={contentsValue}
         totalValue={totalValue}

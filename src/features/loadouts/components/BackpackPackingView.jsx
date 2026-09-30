@@ -14,6 +14,10 @@ import {
 } from 'lucide-react'
 
 import WardogsItemImage from './WardogsItemImage'
+
+import {
+  ammoStackRules,
+} from '../../../data/wardogsAmmoStackRules'
 import StableBackpackGrid from './StableBackpackGrid'
 
 const money =
@@ -113,6 +117,40 @@ function getFootprint(
   }
 }
 
+function getAmmoRule(
+  item,
+) {
+
+  const rule =
+    ammoStackRules[
+      item.id
+    ] || {}
+
+  const purchaseQuantity =
+    Math.max(
+      1,
+      Number(
+        rule.purchaseQuantity ||
+        1,
+      ),
+    )
+
+  const maxStack =
+    Math.max(
+      purchaseQuantity,
+      Number(
+        rule.maxStack ||
+        item.stack ||
+        purchaseQuantity,
+      ),
+    )
+
+  return {
+    purchaseQuantity,
+    maxStack,
+  }
+}
+
 function makeInstances(
   items,
   packed,
@@ -126,7 +164,7 @@ function makeInstances(
   ).forEach(
     ([
       itemId,
-      quantity,
+      roundCount,
     ]) => {
 
       const item =
@@ -140,11 +178,43 @@ function makeInstances(
         return
       }
 
+      const {
+        purchaseQuantity,
+        maxStack,
+      } =
+        getAmmoRule(
+          item,
+        )
+
+      const totalRounds =
+        Math.max(
+          0,
+          Number(
+            roundCount ||
+            0,
+          ),
+        )
+
+      const physicalStacks =
+        Math.ceil(
+          totalRounds /
+          maxStack,
+        )
+
       for (
         let index = 0;
-        index < quantity;
+        index <
+        physicalStacks;
         index += 1
       ) {
+
+        const rounds =
+          Math.min(
+            maxStack,
+            totalRounds -
+              index *
+              maxStack,
+          )
 
         const key =
           `${item.id}-${index}`
@@ -165,6 +235,12 @@ function makeInstances(
           key,
 
           item,
+
+          rounds,
+
+          maxStack,
+
+          purchaseQuantity,
 
           rotated,
 
@@ -539,7 +615,7 @@ function BackpackPackingView({
   looseAmmo,
   packedAmmo,
   equippedCalibres,
-  changeAmmoStacks,
+  changeAmmoRounds,
   equipmentValue,
   contentsValue,
   totalValue,
@@ -762,47 +838,82 @@ const [
   const tryAdd =
     (item) => {
 
+      const {
+        purchaseQuantity,
+        maxStack,
+      } =
+        getAmmoRule(
+          item,
+        )
+
+      const currentRounds =
+        Math.max(
+          0,
+          Number(
+            packedAmmo[
+              item.id
+            ] ||
+            0,
+          ),
+        )
+
+      const nextRounds =
+        currentRounds +
+        purchaseQuantity
+
+      const currentPhysicalStacks =
+        Math.ceil(
+          currentRounds /
+          maxStack,
+        )
+
+      const nextPhysicalStacks =
+        Math.ceil(
+          nextRounds /
+          maxStack,
+        )
+
       const nextPacked = {
         ...packedAmmo,
 
         [item.id]:
-          (
-            packedAmmo[
-              item.id
-            ] ||
-            0
-          ) +
-          1,
+          nextRounds,
       }
 
-      const nextInstances =
-        makeInstances(
-          looseAmmo,
-          nextPacked,
-          rotations,
-        )
+      if (
+        nextPhysicalStacks >
+        currentPhysicalStacks
+      ) {
 
-      const test =
-        buildLayout(
-          backpack,
-          nextInstances,
-          positions,
-        )
+        const nextInstances =
+          makeInstances(
+            looseAmmo,
+            nextPacked,
+            rotations,
+          )
 
-      if (!test.fits) {
+        const test =
+          buildLayout(
+            backpack,
+            nextInstances,
+            positions,
+          )
 
-        setError(
-          `${item.name} will not fit.`,
-        )
+        if (!test.fits) {
 
-        return
+          setError(
+            `${item.name} needs another ${getFootprint(item).width}x${getFootprint(item).height} space, but the backpack is full.`,
+          )
+
+          return
+        }
       }
 
       setError('')
 
-      changeAmmoStacks(
+      changeAmmoRounds(
         item.id,
-        1,
+        purchaseQuantity,
       )
     }
 
@@ -838,11 +949,15 @@ const [
           return next
         },
       )
-      changeAmmoStacks(
+
+      changeAmmoRounds(
         placement
           .item
           .id,
-        -1,
+        -Number(
+          placement.rounds ||
+          0,
+        ),
       )
 
       setError('')
