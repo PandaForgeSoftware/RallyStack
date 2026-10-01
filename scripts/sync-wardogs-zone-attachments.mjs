@@ -261,7 +261,18 @@ function typeFromText(
 
 function normaliseType(
   type,
+  name = '',
 ) {
+
+  if (
+    type ===
+      'Other' &&
+    /\bReceiver\b/i.test(
+      name,
+    )
+  ) {
+    return 'RECEIVER'
+  }
 
   const map = {
     Muzzle:
@@ -792,6 +803,7 @@ const rawItems =
           type:
             normaliseType(
               rawType,
+              name,
             ),
           sourceType:
             rawType,
@@ -953,6 +965,10 @@ const loadoutSlotLabels = [
   [
     'TRIGGER',
     /Trigger/i,
+  ],
+  [
+    'RECEIVER',
+    /Receiver/i,
   ],
   [
     'GRIP',
@@ -1173,6 +1189,8 @@ const slotForAttachmentType = {
     'DUST_COVER',
   TRIGGER:
     'TRIGGER',
+  RECEIVER:
+    'RECEIVER',
 }
 
 const rejectedFits = []
