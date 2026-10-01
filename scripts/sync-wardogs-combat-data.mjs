@@ -29,6 +29,15 @@ const assetFolder =
 const ATTACHMENTS_URL =
   'https://wardogslab.com/en/database/category/attachments'
 
+const ARMOR_URL =
+  'https://wardogslab.com/en/database/category/armor'
+
+const STORAGE_URL =
+  'https://wardogslab.com/en/database/category/storage'
+
+const AMMUNITION_URL =
+  'https://wardogslab.com/en/database/category/ammunition'
+
 const USER_AGENT =
   'RallyStack-Community-Loadout-Builder/3.0'
 
@@ -254,48 +263,112 @@ function extractImagePath(
 
 function attachmentType(
   text,
+  name = '',
 ) {
 
-  const checks = [
-    [
-      'MAGAZINE',
-      /\bMagazines\b/i,
-    ],
-    [
-      'OPTIC',
-      /\bOptics\b/i,
-    ],
-    [
-      'MUZZLE',
-      /\bMuzzles\b/i,
-    ],
-    [
-      'FOREGRIP',
-      /\bForegrips\b/i,
-    ],
-    [
-      'HANDGUARD',
-      /\bHandguards\b/i,
-    ],
-    [
-      'BARREL',
-      /\bBarrels\b/i,
-    ],
-    [
-      'OTHER',
-      /\bOther\b/i,
-    ],
-  ]
+  if (
+    /\bStocks\b/i.test(
+      text,
+    )
+  ) {
+    return 'STOCK'
+  }
 
-  return (
-    checks.find(
-      ([, matcher]) =>
-        matcher.test(
-          text,
-        ),
-    )?.[0] ||
-    'OTHER'
-  )
+  if (
+    /\bHandguards\b/i.test(
+      text,
+    )
+  ) {
+    return 'HANDGUARD'
+  }
+
+  if (
+    /\bBarrels\b/i.test(
+      text,
+    )
+  ) {
+    return 'BARREL'
+  }
+
+  if (
+    /\bForegrips\b/i.test(
+      text,
+    )
+  ) {
+    return 'FOREGRIP'
+  }
+
+  if (
+    /\bMagazines\b/i.test(
+      text,
+    )
+  ) {
+    return 'MAGAZINE'
+  }
+
+  if (
+    /\bMuzzles\b/i.test(
+      text,
+    )
+  ) {
+    return 'MUZZLE'
+  }
+
+  if (
+    /\bOptics\b/i.test(
+      text,
+    )
+  ) {
+    return 'OPTIC'
+  }
+
+  /*
+   * WARDOGS LAB currently groups several real
+   * attachment positions under "Other". Split
+   * those by the actual item name so RallyStack
+   * does not lose selectable slots.
+   */
+  if (
+    /\bReceiver\b/i.test(
+      name,
+    )
+  ) {
+    return 'RECEIVER'
+  }
+
+  if (
+    /\bStock\b/i.test(
+      name,
+    )
+  ) {
+    return 'STOCK'
+  }
+
+  if (
+    /\bGrip Pod\b/i.test(
+      name,
+    )
+  ) {
+    return 'FOREGRIP'
+  }
+
+  if (
+    /\bGrip\b/i.test(
+      name,
+    )
+  ) {
+    return 'GRIP'
+  }
+
+  if (
+    /Scope|Spectr|Spitfire|Hybrid/i.test(
+      name,
+    )
+  ) {
+    return 'OPTIC'
+  }
+
+  return 'OTHER'
 }
 
 function compatibilitySegment(
@@ -671,6 +744,7 @@ const attachmentResults =
           type:
             attachmentType(
               `${candidate.cardText} ${text}`,
+              name,
             ),
           price,
           weight,
@@ -927,6 +1001,434 @@ const weaponLiveData =
     ),
   )
 
+async function readCatalogue(
+  url,
+  minimum,
+) {
+
+  const html =
+    await fetchText(
+      url,
+    )
+
+  const map =
+    new Map()
+
+  for (
+    const match of
+    html.matchAll(
+      /<a\b[^>]*href=["'](?<href>(?:https:\/\/wardogslab\.com)?\/en\/database\/(?!category\/)[^"'?#]+)["'][^>]*>(?<body>[\s\S]*?)<\/a>/gi,
+    )
+  ) {
+
+    let href =
+      match.groups?.href
+
+    if (!href) {
+      continue
+    }
+
+    href =
+      href.replace(
+        'https://wardogslab.com',
+        '',
+      )
+
+    map.set(
+      href,
+      {
+        href,
+        cardText:
+          plainText(
+            match.groups?.body,
+          ),
+      },
+    )
+  }
+
+  const values =
+    Array.from(
+      map.values(),
+    )
+
+  if (
+    values.length <
+    minimum
+  ) {
+
+    throw new Error(
+      `Catalogue ${url} returned only ${values.length} records.`,
+    )
+  }
+
+  return values
+}
+
+async function readSimpleItems({
+  url,
+  minimum,
+  idPrefix,
+  classify,
+}) {
+
+  const candidates =
+    await readCatalogue(
+      url,
+      minimum,
+    )
+
+  return (
+    await mapLimit(
+      candidates,
+      7,
+      async (
+        candidate,
+      ) => {
+
+        const sourceUrl =
+          `https://wardogslab.com${candidate.href}`
+
+        try {
+
+          const html =
+            await fetchText(
+              sourceUrl,
+            )
+
+          const text =
+            plainText(
+              html,
+            )
+
+          const h1 =
+            html.match(
+              /<h1[^>]*>([\s\S]*?)<\/h1>/i,
+            )
+
+          const name =
+            h1
+              ? plainText(
+                  h1[1],
+                )
+              : null
+
+          if (!name) {
+            return null
+          }
+
+          const type =
+            classify(
+              candidate.cardText,
+              text,
+              name,
+            )
+
+          if (!type) {
+            return null
+          }
+
+          const inventory =
+            text.match(
+              /Inventory\s*(\d+)\s*(?:×|x)\s*(\d+)/i,
+            )
+
+          const unlock =
+            text.match(
+              /Unlock\s*(Career|Infantry|Medic|Recon|Support|Driver|Pilot)?\s*(?:lvl\.?\s*)?(\d+)?\s*(?:·\s*\$([\d,]+)\s*to unlock)?/i,
+            )
+
+          const slug =
+            candidate.href
+              .split(
+                '/',
+              )
+              .filter(Boolean)
+              .at(-1)
+
+          const id =
+            `${idPrefix}-${safeSlug(
+              slug,
+            )}`
+
+          const imagePath =
+            extractImagePath(
+              html,
+            )
+
+          let image =
+            null
+
+          if (
+            imagePath
+          ) {
+
+            const fileName =
+              `${id}.webp`
+
+            const output =
+              path.join(
+                assetFolder,
+                fileName,
+              )
+
+            try {
+
+              await downloadFile(
+                `https://wardogslab.com${imagePath}`,
+                output,
+              )
+
+              image =
+                `/wardogs/items/${fileName}`
+            }
+            catch {
+
+              image =
+                null
+            }
+          }
+
+          return {
+            id,
+            name,
+            type,
+            price:
+              safeNumber(
+                text.match(
+                  /Price per life\s*\$([\d,]+)/i,
+                ),
+              ),
+            weight:
+              safeNumber(
+                text.match(
+                  /Weight\s*([\d.]+)\s*kg/i,
+                ),
+              ),
+            inventoryWidth:
+              inventory
+                ? Number(
+                    inventory[1],
+                  )
+                : null,
+            inventoryHeight:
+              inventory
+                ? Number(
+                    inventory[2],
+                  )
+                : null,
+            unlockTrack:
+              unlock?.[1] ||
+              null,
+            unlockLevel:
+              unlock?.[2]
+                ? Number(
+                    unlock[2],
+                  )
+                : null,
+            unlockCost:
+              unlock?.[3]
+                ? Number(
+                    unlock[3]
+                      .replaceAll(
+                        ',',
+                        '',
+                      ),
+                  )
+                : null,
+            sourceUrl,
+            image,
+          }
+        }
+        catch {
+          return null
+        }
+      },
+    )
+  ).filter(Boolean)
+}
+
+console.log('')
+console.log(
+  'Reading armour and carry gear...',
+)
+
+const gearItems =
+  [
+    ...await readSimpleItems({
+      url:
+        ARMOR_URL,
+      minimum:
+        10,
+      idPrefix:
+        'gear',
+      classify:
+        (
+          cardText,
+          text,
+          name,
+        ) => {
+
+          const evidence =
+            `${cardText} ${text}`
+
+          if (
+            /\bHelmets\b/i.test(
+              evidence,
+            )
+          ) {
+            return 'HELMET'
+          }
+
+          if (
+            /\bBody Armour\b/i.test(
+              evidence,
+            )
+          ) {
+            return 'ARMOR'
+          }
+
+          return null
+        },
+    }),
+    ...await readSimpleItems({
+      url:
+        STORAGE_URL,
+      minimum:
+        18,
+      idPrefix:
+        'gear',
+      classify:
+        (
+          cardText,
+          text,
+          name,
+        ) => {
+
+          if (
+            /Tac Vest/i.test(
+              name,
+            )
+          ) {
+            return 'VEST'
+          }
+
+          if (
+            /Backpack|^Pouch$/i.test(
+              name,
+            )
+          ) {
+            return 'BACKPACK'
+          }
+
+          return null
+        },
+    }),
+  ].map(
+    (item) => ({
+      ...item,
+      armorLevel:
+        safeNumber(
+          item.name.match(
+            /Level\s*(\d+)/i,
+          ),
+        ),
+      capacity:
+        (
+          item.inventoryWidth &&
+          item.inventoryHeight
+        )
+          ? (
+              item.inventoryWidth *
+              item.inventoryHeight
+            )
+          : null,
+    }),
+  )
+
+console.log(
+  `Gear items parsed: ${gearItems.length}`,
+)
+
+if (
+  gearItems.filter(
+    (item) =>
+      item.type ===
+      'HELMET',
+  ).length <
+    5 ||
+  gearItems.filter(
+    (item) =>
+      item.type ===
+      'ARMOR',
+  ).length <
+    5 ||
+  gearItems.filter(
+    (item) =>
+      item.type ===
+      'VEST',
+  ).length <
+    3
+) {
+
+  throw new Error(
+    'Armour/storage parser returned too few selectable gear records.',
+  )
+}
+
+console.log('')
+console.log(
+  'Reading ammunition weights and prices...',
+)
+
+const ammunitionItems =
+  await readSimpleItems({
+    url:
+      AMMUNITION_URL,
+    minimum:
+      90,
+    idPrefix:
+      'ammo-live',
+    classify:
+      (
+        cardText,
+        text,
+        name,
+      ) => {
+
+        const evidence =
+          `${cardText} ${text}`
+
+        if (
+          /\bMagazines\b|Vehicle\s*&\s*Heavy|Supplies/i.test(
+            evidence,
+          )
+        ) {
+          return null
+        }
+
+        return 'AMMUNITION'
+      },
+  })
+
+console.log(
+  `Ammunition items parsed: ${ammunitionItems.length}`,
+)
+
+const normalisedAmmunition =
+  Object.fromEntries(
+    ammunitionItems.map(
+      (item) => [
+        item.name
+          .toLowerCase()
+          .replace(
+            /[^a-z0-9]+/g,
+            '',
+          ),
+        item,
+      ],
+    ),
+  )
+
 const output =
   `/*
  * Auto-generated by:
@@ -945,6 +1447,10 @@ export const combatDataMeta = ${JSON.stringify(
         attachmentItems.length,
       weaponCount:
         successfulWeapons.length,
+      gearCount:
+        gearItems.length,
+      ammunitionCount:
+        ammunitionItems.length,
       source:
         'WARDOGS LAB',
     },
@@ -963,6 +1469,24 @@ export const weaponLiveData = ${JSON.stringify(
     null,
     2,
   )}
+
+export const gearItems = ${JSON.stringify(
+    gearItems,
+    null,
+    2,
+  )}
+
+export const ammunitionItems = ${JSON.stringify(
+    ammunitionItems,
+    null,
+    2,
+  )}
+
+export const ammunitionByName = ${JSON.stringify(
+    normalisedAmmunition,
+    null,
+    2,
+  )}
 `
 
 const audit = {
@@ -973,6 +1497,10 @@ const audit = {
     attachmentItems.length,
   weaponCount:
     successfulWeapons.length,
+  gearCount:
+    gearItems.length,
+  ammunitionCount:
+    ammunitionItems.length,
   attachmentUnknownPrice:
     attachmentItems
       .filter(
@@ -1043,6 +1571,12 @@ console.log(
 )
 console.log(
   `WEAPONS         ${successfulWeapons.length}/${weapons.length}`,
+)
+console.log(
+  `GEAR            ${gearItems.length}`,
+)
+console.log(
+  `AMMUNITION      ${ammunitionItems.length}`,
 )
 console.log(
   `UNKNOWN PRICE   ${audit.attachmentUnknownPrice.length}`,
