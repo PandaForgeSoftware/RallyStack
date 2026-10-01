@@ -10,3 +10,5 @@ export const zoneAttachmentMeta = {
 }
 
 export const zoneAttachmentItems = []
+
+export const zoneWeaponData = {}
