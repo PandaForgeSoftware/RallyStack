@@ -265,17 +265,53 @@ function categoryFromText(
   text,
 ) {
 
+  const mappings = [
+    [
+      'Armor',
+      /\bArmor\b|\bArmour\b/i,
+    ],
+    [
+      'Storage',
+      /\bStorage\b/i,
+    ],
+    [
+      'Throwables',
+      /\bThrowable\b|\bThrowables\b/i,
+    ],
+    [
+      'Medical',
+      /\bMedical\b/i,
+    ],
+    [
+      'Utility',
+      /\bUtility\b/i,
+    ],
+    [
+      'Supplies',
+      /\bSupply Item\b|\bSupplies\b/i,
+    ],
+    [
+      'Deployables',
+      /\bDeployable\b|\bDeployables\b/i,
+    ],
+    [
+      'Melee',
+      /\bMelee\b/i,
+    ],
+    [
+      'Explosives',
+      /\bExplosive\b|\bExplosives\b/i,
+    ],
+  ]
+
   return (
-    CATEGORIES.find(
-      (category) =>
-        new RegExp(
-          `\\b${category}\\b`,
-          'i',
-        ).test(
+    mappings.find(
+      ([, matcher]) =>
+        matcher.test(
           text,
         ),
-    ) ||
-    null
+    )?.[0] ||
+    'Other'
   )
 }
 
@@ -378,6 +414,26 @@ function fallbackSlotFromName(
   }
 
   return null
+}
+
+function isEquipmentPage(
+  html,
+) {
+
+  const title =
+    plainText(
+      String(
+        html ||
+        '',
+      ).match(
+        /<title[^>]*>([\s\S]*?)<\/title>/i,
+      )?.[1] ||
+      '',
+    )
+
+  return /:\s*WARDOGS\s+(?:Armor|Storage|Throwable|Medical Item|Utility Item|Supply Item|Deployable|Melee(?: Item)?|Explosive(?: Item)?)\s+Stats\s*&\s*Price/i.test(
+    title,
+  )
 }
 
 async function mapLimit(
@@ -616,30 +672,18 @@ const hiddenResults =
           return null
         }
 
-        const parsedSlot =
-          parseSlot(
-            text,
-          ) ||
-          fallbackSlotFromName(
-            name,
+        if (
+          !isEquipmentPage(
+            html,
           )
+        ) {
+          return null
+        }
 
         const pageCategory =
           categoryFromText(
             text,
           )
-
-        const equipmentSignal =
-          parsedSlot ||
-          /(?:Equipment|Armor|Armour|Storage|Throwable|Explosive|Medical|Utility|Suppl(?:y|ies)|Deployable|Melee|Backpack|Vest|Helmet|Parachute|Repair Tool|Range Finder|Binoculars|Monocular|Hammer|Wrench|Drill)/i.test(
-            `${pageCategory || ''} ${text}`,
-          )
-
-        if (
-          !equipmentSignal
-        ) {
-          return null
-        }
 
         return {
           href,
@@ -740,6 +784,14 @@ const results =
           return null
         }
 
+        if (
+          !isEquipmentPage(
+            html,
+          )
+        ) {
+          return null
+        }
+
         const parsedSlot =
           parseSlot(
             text,
@@ -753,18 +805,6 @@ const results =
             text,
           ) ||
           candidate.category
-
-        const equipmentSignal =
-          parsedSlot ||
-          /(?:Equipment|Armor|Armour|Storage|Throwable|Medical|Utility|Supply|Deployable|Melee|Backpack|Vest|Helmet|Parachute)/i.test(
-            `${pageCategory} ${text}`,
-          )
-
-        if (
-          !equipmentSignal
-        ) {
-          return null
-        }
 
         const id =
           `zone-equipment-${safeSlug(
