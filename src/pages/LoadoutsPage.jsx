@@ -1596,60 +1596,45 @@ const [
         return
       }
 
-      const rule =
-        ammoStackRules[
-          item.id
-        ] || {}
-
-      const purchaseQuantity =
-        Math.max(
-          1,
-          Number(
-            rule.purchaseQuantity ||
-            item.stack ||
-            1,
-          ),
-        )
-
       const currentLoaded =
         weaponAmmo[
           weaponSlot
         ]
 
-      const currentlyLoadedRounds =
+      const sameAmmoLoaded =
         currentLoaded?.item?.id ===
-          item.id
+        item.id
+
+      const currentlyLoadedRounds =
+        sameAmmoLoaded
           ? Number(
               currentLoaded.rounds ||
               0,
             )
           : 0
 
-      const magazineSpace =
-        Math.max(
-          0,
-          capacity -
-          currentlyLoadedRounds,
-        )
-
-      const roundsToMagazine =
-        Math.min(
-          magazineSpace,
-          purchaseQuantity,
-        )
-
-      const roundsToPack =
-        purchaseQuantity -
-        roundsToMagazine
-
+      /*
+       * Ammo flow:
+       * - choosing an ammo type loads the weapon magazine to full first
+       * - once the magazine is full, "add more" creates spare ammo for the backpack
+       *
+       * This keeps weapon ammo separate from carried reserve ammo.
+       */
       if (
-        roundsToPack >
-        0 &&
-        !selectedBackpack
+        currentlyLoadedRounds <
+        capacity
       ) {
 
-        setBuilderNotice(
-          `The ${capacity}-round magazine will fill first, but ${roundsToPack} rounds would be left over. Equip a backpack for the spare ammunition.`
+        setWeaponAmmo(
+          (current) => ({
+            ...current,
+            [weaponSlot]: {
+              item,
+              rounds:
+                capacity,
+              capacity,
+            },
+          }),
         )
 
         setAmmoPicker(
@@ -1660,90 +1645,95 @@ const [
       }
 
       if (
-        roundsToPack >
-        0
+        !selectedBackpack
       ) {
 
-        const existingPackRounds =
-          Number(
-            packedAmmo[
-              item.id
-            ] ||
-            0,
-          )
+        setBuilderNotice(
+          'Your magazine is already full. Equip a backpack before adding spare ammunition.'
+        )
 
-        const maxStack =
-          Math.max(
-            1,
-            Number(
-              rule.maxStack ||
-              item.stack ||
-              1,
-            ),
-          )
+        setAmmoPicker(
+          null,
+        )
 
-        const beforeStacks =
-          Math.ceil(
-            existingPackRounds /
-            maxStack,
-          )
-
-        const afterStacks =
-          Math.ceil(
-            (
-              existingPackRounds +
-              roundsToPack
-            ) /
-            maxStack,
-          )
-
-        const extraCells =
-          Math.max(
-            0,
-            afterStacks -
-            beforeStacks,
-          )
-
-        if (
-          extraCells >
-          freePackCells
-        ) {
-
-          setBuilderNotice(
-            `Your ${selectedBackpack.name} does not have enough free space for the ${roundsToPack} spare rounds. Free a backpack cell or choose a larger pack.`
-          )
-
-          setAmmoPicker(
-            null,
-          )
-
-          return
-        }
+        return
       }
 
-      setWeaponAmmo(
-        (current) => ({
-          ...current,
-          [weaponSlot]: {
-            item,
-            rounds:
-              currentlyLoadedRounds +
-              roundsToMagazine,
-            capacity,
-          },
-        }),
-      )
+      const rule =
+        ammoStackRules[
+          item.id
+        ] || {}
+
+      const reserveQuantity =
+        Math.max(
+          1,
+          Number(
+            rule.purchaseQuantity ||
+            item.stack ||
+            1,
+          ),
+        )
+
+      const existingPackRounds =
+        Number(
+          packedAmmo[
+            item.id
+          ] ||
+          0,
+        )
+
+      const maxStack =
+        Math.max(
+          1,
+          Number(
+            rule.maxStack ||
+            item.stack ||
+            1,
+          ),
+        )
+
+      const beforeStacks =
+        Math.ceil(
+          existingPackRounds /
+          maxStack,
+        )
+
+      const afterStacks =
+        Math.ceil(
+          (
+            existingPackRounds +
+            reserveQuantity
+          ) /
+          maxStack,
+        )
+
+      const extraCells =
+        Math.max(
+          0,
+          afterStacks -
+          beforeStacks,
+        )
 
       if (
-        roundsToPack >
-        0
+        extraCells >
+        freePackCells
       ) {
 
-        changeAmmoRounds(
-          item.id,
-          roundsToPack,
+        setBuilderNotice(
+          `Your ${selectedBackpack.name} has no free space for more ${item.calibre} ammunition.`
         )
+
+        setAmmoPicker(
+          null,
+        )
+
+        return
       }
+
+      changeAmmoRounds(
+        item.id,
+        reserveQuantity,
+      )
 
       setAmmoPicker(
         null,
@@ -3859,7 +3849,7 @@ const [
             </p>
 
             {builderNotice?.includes(
-              'magazine'
+              'Select a magazine'
             ) ? (
 
               <button
