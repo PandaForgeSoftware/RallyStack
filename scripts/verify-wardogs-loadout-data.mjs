@@ -41,6 +41,8 @@ const slotForType = {
     'DUST_COVER',
   TRIGGER:
     'TRIGGER',
+  RECEIVER:
+    'RECEIVER',
 }
 
 const labByName =
