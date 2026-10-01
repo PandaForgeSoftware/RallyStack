@@ -4,6 +4,7 @@ const scripts = [
   'scripts/sync-wardogs-packable-items.mjs',
   'scripts/sync-wardogs-combat-data.mjs',
   'scripts/sync-wardogs-zone-attachments.mjs',
+  'scripts/verify-wardogs-loadout-data.mjs',
 ]
 
 function run(
