@@ -36,6 +36,9 @@ const LIST_URL =
 const WEAPONS_URL =
   'https://wardogs.zone/database/weapons'
 
+const SITEMAP_URL =
+  'https://wardogs.zone/sitemap.xml'
+
 const USER_AGENT =
   'RallyStack-Community-Loadout-Builder/4.0'
 
@@ -387,6 +390,167 @@ function databaseLinks(
   )
 }
 
+function isAttachmentPage(
+  html,
+) {
+
+  const title =
+    plainText(
+      String(
+        html ||
+        '',
+      ).match(
+        /<title[^>]*>([\s\S]*?)<\/title>/i,
+      )?.[1] ||
+      '',
+    )
+
+  return /:\s*WARDOGS\s+Attachment\s+Stats\s*&\s*Price/i.test(
+    title,
+  )
+}
+
+function inferAttachmentType(
+  text,
+  name,
+  href,
+) {
+
+  const explicit =
+    typeFromText(
+      text,
+    )
+
+  if (
+    explicit
+  ) {
+    return explicit
+  }
+
+  const slug =
+    href
+      .split(
+        '/',
+      )
+      .filter(Boolean)
+      .at(-1) ||
+    ''
+
+  if (
+    /^magz?_|magazine/i.test(
+      slug,
+    ) ||
+    /\bMagazine\b/i.test(
+      name,
+    )
+  ) {
+    return 'Magazine'
+  }
+
+  if (
+    /^(?:muzl|mzl)_/i.test(
+      slug,
+    ) ||
+    /Suppressor|Brake|Compensator|Muzzle|Flash Hider/i.test(
+      name,
+    )
+  ) {
+    return 'Muzzle'
+  }
+
+  if (
+    /^(?:sght|opt)_/i.test(
+      slug,
+    ) ||
+    /Scope|Sight|Red Dot|Holo|Holosight|Reflex|Spectr|Spitfire|ACOG|T-2/i.test(
+      name,
+    )
+  ) {
+    return /Canted/i.test(
+      name,
+    )
+      ? 'Canted Sight'
+      : 'Sight'
+  }
+
+  if (
+    /^(?:fgrp|fgp)_/i.test(
+      slug,
+    ) ||
+    /Foregrip|Bipod|Grip Pod|Angled Grip|Vertical Grip/i.test(
+      name,
+    )
+  ) {
+    return 'Underbarrel'
+  }
+
+  if (
+    /Handguard/i.test(
+      name,
+    )
+  ) {
+    return 'Handguard'
+  }
+
+  if (
+    /\bStock\b/i.test(
+      name,
+    )
+  ) {
+    return 'Stock'
+  }
+
+  if (
+    /\bBarrel\b/i.test(
+      name,
+    )
+  ) {
+    return 'Barrel'
+  }
+
+  if (
+    /Dust Cover/i.test(
+      name,
+    )
+  ) {
+    return 'Dust Cover'
+  }
+
+  if (
+    /Trigger/i.test(
+      name,
+    )
+  ) {
+    return 'Trigger'
+  }
+
+  if (
+    /Pistol Grip/i.test(
+      name,
+    )
+  ) {
+    return 'Pistol Grip'
+  }
+
+  if (
+    /\bGrip\b/i.test(
+      name,
+    )
+  ) {
+    return 'Grip'
+  }
+
+  if (
+    /Receiver/i.test(
+      name,
+    )
+  ) {
+    return 'Other'
+  }
+
+  return null
+}
+
 async function mapLimit(
   values,
   limit,
@@ -477,40 +641,162 @@ console.log(
 const attachmentCandidateMap =
   new Map()
 
-databaseLinks(
-  listing,
-).forEach(
-  (candidate) => {
-
-    const rawType =
-      typeFromText(
-        candidate.text,
-      )
-
-    if (
-      !rawType
-    ) {
-      return
-    }
-
-    attachmentCandidateMap.set(
-      candidate.href,
-      {
-        ...candidate,
-        rawType,
-      },
-    )
-  },
+console.log(
+  'Reading Wardogs Zone sitemap for current attachment detail pages...',
 )
+
+const sitemap =
+  await fetchText(
+    SITEMAP_URL,
+  )
+
+const detailRefs =
+  Array.from(
+    new Set(
+      Array.from(
+        sitemap.matchAll(
+          /https:\/\/wardogs\.zone\/database\/[a-z0-9_-]+/gi,
+        ),
+      ).map(
+        (match) =>
+          match[0]
+            .replace(
+              'https://wardogs.zone',
+              '',
+            ),
+      ),
+    ),
+  ).filter(
+    (href) =>
+      ![
+        '/database/weapons',
+        '/database/vehicles',
+        '/database/attachments',
+        '/database/ammo',
+        '/database/equipment',
+        '/database/compare',
+        '/database/skins',
+      ].includes(
+        href,
+      ),
+  )
+
+const discovered =
+  await mapLimit(
+    detailRefs,
+    14,
+    async (
+      href,
+    ) => {
+
+      try {
+
+        const html =
+          await fetchText(
+            `https://wardogs.zone${href}`,
+          )
+
+        if (
+          !isAttachmentPage(
+            html,
+          )
+        ) {
+          return null
+        }
+
+        const text =
+          plainText(
+            html,
+          )
+
+        const name =
+          plainText(
+            html.match(
+              /<h1[^>]*>([\s\S]*?)<\/h1>/i,
+            )?.[1] ||
+            '',
+          )
+
+        if (
+          !name
+        ) {
+          return null
+        }
+
+        const rawType =
+          inferAttachmentType(
+            text,
+            name,
+            href,
+          )
+
+        return {
+          href,
+          text:
+            name,
+          rawType,
+          html,
+          name,
+        }
+      }
+      catch {
+        return null
+      }
+    },
+  )
+
+discovered
+  .filter(Boolean)
+  .forEach(
+    (candidate) => {
+
+      attachmentCandidateMap.set(
+        candidate.href,
+        candidate,
+      )
+    },
+  )
 
 const attachmentCandidates =
   Array.from(
     attachmentCandidateMap.values(),
   )
 
+const unresolvedAttachmentTypes =
+  attachmentCandidates.filter(
+    (candidate) =>
+      !candidate.rawType,
+  )
+
 console.log(
   `Attachment records discovered: ${attachmentCandidates.length}`,
 )
+
+if (
+  unresolvedAttachmentTypes.length >
+  0
+) {
+
+  console.log(
+    'UNRESOLVED ATTACHMENT SLOT TYPES:',
+  )
+
+  unresolvedAttachmentTypes
+    .slice(
+      0,
+      40,
+    )
+    .forEach(
+      (candidate) =>
+        console.log(
+          `  ${candidate.name} [${candidate.href}]`,
+        ),
+    )
+
+  throw new Error(
+    `${unresolvedAttachmentTypes.length} current attachments have no verified gunsmith slot type. Existing generated data was not touched.`,
+  )
+}
 
 if (
   declaredAttachmentCount &&
@@ -519,7 +805,7 @@ if (
 ) {
 
   throw new Error(
-    `Wardogs Zone declares ${declaredAttachmentCount} attachments but ${attachmentCandidates.length} classified records were discovered. Existing generated data was not touched.`,
+    `Wardogs Zone declares ${declaredAttachmentCount} attachments but ${attachmentCandidates.length} attachment detail pages were discovered. Existing generated data was not touched.`,
   )
 }
 
@@ -530,7 +816,7 @@ if (
 ) {
 
   throw new Error(
-    'Wardogs Zone returned too few classified attachments. Existing generated data was not touched.',
+    'Wardogs Zone returned too few attachment detail pages. Existing generated data was not touched.',
   )
 }
 
@@ -667,6 +953,7 @@ const rawItems =
       try {
 
         const html =
+          candidate.html ||
           await fetchText(
             url,
           )
@@ -686,7 +973,8 @@ const rawItems =
             ? plainText(
                 h1[1],
               )
-            : null
+            : candidate.name ||
+              null
 
         const rawType =
           candidate.rawType
