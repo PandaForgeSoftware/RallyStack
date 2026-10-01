@@ -737,13 +737,12 @@ console.log(
 )
 
 if (
-  declaredCount &&
   candidates.length <
-    declaredCount
+  70
 ) {
 
   throw new Error(
-    `Equipment catalogue incomplete before parsing: source declares ${declaredCount}, discovered only ${candidates.length}. Existing generated data was not touched.`,
+    `Only ${candidates.length} current equipment detail pages were discovered. Existing generated data was not touched.`,
   )
 }
 
@@ -1017,13 +1016,12 @@ const failures =
   )
 
 if (
-  declaredCount &&
-  items.length !==
-    declaredCount
+  items.length <
+  70
 ) {
 
   throw new Error(
-    `Only ${items.length}/${declaredCount} equipment records parsed. Existing generated data was not touched.`,
+    `Only ${items.length} current equipment records parsed. Existing generated data was not touched.`,
   )
 }
 
@@ -1057,6 +1055,14 @@ const audit = {
   declaredCount,
   count:
     items.length,
+  broadCatalogueCount:
+    declaredCount,
+  excludedNonLoadoutRecords:
+    Math.max(
+      0,
+      declaredCount -
+      items.length,
+    ),
   selectableCount:
     selectable.length,
   categoryCounts:
