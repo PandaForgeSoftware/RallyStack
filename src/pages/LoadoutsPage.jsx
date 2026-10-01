@@ -171,6 +171,10 @@ function WeaponWorkbench({
   openAmmoPicker,
   clearAttachment,
   loadedAmmo,
+  reserveRounds,
+  reserveStep,
+  addReserve,
+  removeReserve,
 }) {
 
   const magazineCapacity =
@@ -441,66 +445,121 @@ function WeaponWorkbench({
 
             </div>
 
-            <button
-              type="button"
-              onClick={() =>
-                openAmmoPicker(
-                  weapon,
-                )
-              }
-              className="mt-3 flex w-full items-center gap-3 border border-white/10 bg-black/20 p-3 text-left transition hover:border-amber-500/30"
-            >
+            <div className="mt-3 border border-white/10 bg-black/20">
 
-              <div className="flex h-14 w-16 shrink-0 items-center justify-center border border-white/8 bg-[#111416]">
+              <button
+                type="button"
+                onClick={() =>
+                  openAmmoPicker(
+                    weapon,
+                  )
+                }
+                className="flex w-full items-center gap-3 p-3 text-left transition hover:bg-white/[0.02]"
+              >
 
-                {loadedAmmo?.item ? (
+                <div className="flex h-14 w-16 shrink-0 items-center justify-center border border-white/8 bg-[#111416]">
 
-                  <WardogsItemImage
-                    item={
-                      loadedAmmo.item
-                    }
-                    className="h-full w-full border-0 bg-transparent"
-                    imageClassName="p-1 object-contain"
-                  />
+                  {loadedAmmo?.item ? (
 
-                ) : (
+                    <WardogsItemImage
+                      item={
+                        loadedAmmo.item
+                      }
+                      className="h-full w-full border-0 bg-transparent"
+                      imageClassName="p-1 object-contain"
+                    />
 
-                  <Package
-                    size={24}
-                    strokeWidth={1}
-                    className="text-stone-700"
-                  />
+                  ) : (
 
-                )}
+                    <Package
+                      size={24}
+                      strokeWidth={1}
+                      className="text-stone-700"
+                    />
 
-              </div>
+                  )}
 
-              <div className="min-w-0 flex-1">
-
-                <div className="text-[7px] font-black tracking-[0.16em] text-stone-600">
-                  AMMUNITION
                 </div>
 
-                <div className="mt-1 truncate text-[9px] font-black text-white">
-                  {loadedAmmo?.item?.name ||
-                    `SELECT ${weapon.calibre} AMMO`}
+                <div className="min-w-0 flex-1">
+
+                  <div className="text-[7px] font-black tracking-[0.16em] text-stone-600">
+                    AMMUNITION
+                  </div>
+
+                  <div className="mt-1 truncate text-[9px] font-black text-white">
+                    {loadedAmmo?.item?.name ||
+                      `SELECT ${weapon.calibre} AMMO`}
+                  </div>
+
+                  <div className="mt-1 text-[7px] text-stone-600">
+                    {loadedAmmo
+                      ? `${loadedAmmo.rounds}/${loadedAmmo.capacity} LOADED`
+                      : 'MAGAZINE LOADS FIRST'}
+                  </div>
+
                 </div>
 
-                <div className="mt-1 text-[7px] text-stone-600">
+                <div className="text-right text-[8px] font-black text-amber-400">
                   {loadedAmmo
-                    ? `${loadedAmmo.rounds}/${loadedAmmo.capacity} LOADED`
-                    : 'MAGAZINE LOADS FIRST'}
+                    ? 'CHANGE'
+                    : 'SELECT'}
                 </div>
 
-              </div>
+              </button>
 
-              <div className="text-right text-[8px] font-black text-amber-400">
-                {loadedAmmo
-                  ? 'ADD MORE'
-                  : 'SELECT'}
-              </div>
+              {loadedAmmo && (
 
-            </button>
+                <div className="grid grid-cols-[auto_1fr_auto] items-center border-t border-white/8">
+
+                  <button
+                    type="button"
+                    disabled={
+                      reserveRounds <=
+                      0
+                    }
+                    onClick={
+                      removeReserve
+                    }
+                    className="flex h-12 w-14 items-center justify-center border-r border-white/8 text-stone-400 transition hover:text-white disabled:opacity-20"
+                    title={`Remove ${reserveStep} reserve rounds`}
+                  >
+                    <Minus size={14} />
+                  </button>
+
+                  <div className="px-3 text-center">
+
+                    <div className="text-[7px] font-black tracking-[0.15em] text-stone-600">
+                      RESERVE AMMO
+                    </div>
+
+                    <div className="mt-1 text-[11px] font-black text-white">
+                      {reserveRounds}{' '}
+                      ROUNDS
+                    </div>
+
+                    <div className="mt-0.5 text-[7px] text-stone-700">
+                      ADD / REMOVE IN {reserveStep}
+                    </div>
+
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={
+                      addReserve
+                    }
+                    className="flex h-12 w-14 items-center justify-center border-l border-white/8 bg-amber-500/[0.06] text-amber-400 transition hover:bg-amber-500 hover:text-black"
+                    title={`Add ${reserveStep} reserve rounds`}
+                  >
+                    <Plus size={14} />
+                  </button>
+
+                </div>
+
+              )}
+
+            </div>
 
             {magazine && (
 
@@ -743,6 +802,19 @@ const [
   ] =
     useState(null)
 
+
+  const [
+    bagPicker,
+    setBagPicker,
+  ] =
+    useState(false)
+
+  const [
+    pendingReserve,
+    setPendingReserve,
+  ] =
+    useState(null)
+
   const [
     weaponAttachments,
     setWeaponAttachments,
@@ -802,6 +874,40 @@ const [
       workbenchSlot
     ] ||
     null
+
+
+  const workbenchReserveRounds =
+    workbenchLoadedAmmo?.item
+      ? Number(
+          packedAmmo[
+            workbenchLoadedAmmo
+              .item.id
+          ] ||
+          0,
+        )
+      : 0
+
+  const workbenchReserveRule =
+    workbenchLoadedAmmo?.item
+      ? (
+          ammoStackRules[
+            workbenchLoadedAmmo
+              .item.id
+          ] || {}
+        )
+      : {}
+
+  const workbenchReserveStep =
+    Math.max(
+      1,
+      Number(
+        workbenchReserveRule
+          .purchaseQuantity ||
+        workbenchLoadedAmmo
+          ?.item?.stack ||
+        1,
+      ),
+    )
 
   const equippedWeapons =
     useMemo(
@@ -1410,6 +1516,18 @@ const [
       )
 
       if (
+        slot ===
+        'backpack'
+      ) {
+
+        setBagPicker(
+          true,
+        )
+
+        return
+      }
+
+      if (
         weaponSlots.has(
           slot,
         )
@@ -1770,6 +1888,136 @@ const [
       setSelectedItem(
         item,
       )
+
+      setBagPicker(
+        false,
+      )
+
+      if (
+        pendingReserve
+      ) {
+
+        changeAmmoRounds(
+          pendingReserve.item.id,
+          pendingReserve.amount,
+        )
+
+        setPendingReserve(
+          null,
+        )
+      }
+    }
+
+  const addWorkbenchReserve =
+    () => {
+
+      const ammo =
+        workbenchLoadedAmmo
+          ?.item
+
+      if (!ammo) {
+        return
+      }
+
+      if (
+        !selectedBackpack
+      ) {
+
+        setPendingReserve({
+          item:
+            ammo,
+          amount:
+            workbenchReserveStep,
+        })
+
+        setBagPicker(
+          true,
+        )
+
+        return
+      }
+
+      const rule =
+        ammoStackRules[
+          ammo.id
+        ] || {}
+
+      const existingRounds =
+        Number(
+          packedAmmo[
+            ammo.id
+          ] ||
+          0,
+        )
+
+      const maxStack =
+        Math.max(
+          1,
+          Number(
+            rule.maxStack ||
+            ammo.stack ||
+            workbenchReserveStep,
+          ),
+        )
+
+      const beforeStacks =
+        Math.ceil(
+          existingRounds /
+          maxStack,
+        )
+
+      const afterStacks =
+        Math.ceil(
+          (
+            existingRounds +
+            workbenchReserveStep
+          ) /
+          maxStack,
+        )
+
+      const extraCells =
+        Math.max(
+          0,
+          afterStacks -
+          beforeStacks,
+        )
+
+      if (
+        extraCells >
+        freePackCells
+      ) {
+
+        setBuilderNotice(
+          `Your ${selectedBackpack.name} has no free space for another ammo stack.`
+        )
+
+        return
+      }
+
+      changeAmmoRounds(
+        ammo.id,
+        workbenchReserveStep,
+      )
+    }
+
+  const removeWorkbenchReserve =
+    () => {
+
+      const ammo =
+        workbenchLoadedAmmo
+          ?.item
+
+      if (!ammo) {
+        return
+      }
+
+      changeAmmoRounds(
+        ammo.id,
+        -Math.min(
+          workbenchReserveStep,
+          workbenchReserveRounds,
+        ),
+      )
     }
 
   const openBackpack =
@@ -1779,8 +2027,8 @@ const [
         !selectedBackpack
       ) {
 
-        selectSlot(
-          'backpack',
+        setBagPicker(
+          true,
         )
 
         return
@@ -2285,7 +2533,55 @@ const [
         selectedSlot ===
         'backpack'
       ) {
-        return renderBackpackCatalogue()
+
+        return (
+          <div className="flex min-h-[360px] items-center justify-center p-5 text-center">
+
+            <div className="w-full max-w-sm">
+
+              {selectedBackpack ? (
+
+                <WardogsItemImage
+                  item={
+                    selectedBackpack
+                  }
+                  className="mx-auto h-32 w-40 border border-white/8 bg-black/20"
+                  imageClassName="p-3 object-contain"
+                />
+
+              ) : (
+
+                <Backpack
+                  size={44}
+                  strokeWidth={1}
+                  className="mx-auto text-stone-700"
+                />
+
+              )}
+
+              <div className="mt-4 text-lg font-black text-white">
+                {selectedBackpack?.name ||
+                  'NO BACKPACK EQUIPPED'}
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setBagPicker(
+                    true,
+                  )
+                }
+                className="mt-5 w-full bg-amber-500 px-4 py-3 text-[9px] font-black tracking-wider text-black"
+              >
+                {selectedBackpack
+                  ? 'CHANGE BACKPACK'
+                  : 'SELECT BACKPACK'}
+              </button>
+
+            </div>
+
+          </div>
+        )
       }
 
       return renderEmptyGear()
@@ -2926,6 +3222,18 @@ const [
                   }
                   loadedAmmo={
                     workbenchLoadedAmmo
+                  }
+                  reserveRounds={
+                    workbenchReserveRounds
+                  }
+                  reserveStep={
+                    workbenchReserveStep
+                  }
+                  addReserve={
+                    addWorkbenchReserve
+                  }
+                  removeReserve={
+                    removeWorkbenchReserve
                   }
                 />
 
@@ -3874,8 +4182,8 @@ const [
                     null,
                   )
 
-                  selectSlot(
-                    'backpack',
+                  setBagPicker(
+                    true,
                   )
                 }}
                 className="mt-5 bg-amber-500 px-5 py-3 text-[9px] font-black tracking-wider text-black"
@@ -3886,6 +4194,162 @@ const [
             )}
 
 
+
+          </div>
+
+        </div>
+
+      )}
+
+      {bagPicker && (
+
+        <div
+          className="fixed inset-0 z-[135] flex items-center justify-center bg-black/80 p-5 backdrop-blur-sm"
+          onMouseDown={(event) => {
+
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+
+              setBagPicker(
+                false,
+              )
+
+              setPendingReserve(
+                null,
+              )
+            }
+          }}
+        >
+
+          <div className="flex max-h-[88vh] w-full max-w-5xl flex-col border border-white/12 bg-[#0d0f10] shadow-2xl">
+
+            <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
+
+              <div>
+
+                <div className="text-[8px] font-black tracking-[0.18em] text-amber-500">
+                  CARRY
+                </div>
+
+                <div className="mt-1 text-xl font-black text-white">
+                  CHOOSE BACKPACK
+                </div>
+
+                <div className="mt-1 text-[9px] text-stone-600">
+                  {pendingReserve
+                    ? 'Choose a pack and the pending reserve ammo will be added automatically.'
+                    : 'Choose how much storage you want to carry.'}
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+
+                  setBagPicker(
+                    false,
+                  )
+
+                  setPendingReserve(
+                    null,
+                  )
+                }}
+                className="flex h-10 w-10 items-center justify-center border border-white/10 text-stone-500 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+
+            </div>
+
+            <div className="grid gap-3 overflow-y-auto p-4 sm:grid-cols-2 lg:grid-cols-3">
+
+              {backpacks.map(
+                (item) => (
+
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() =>
+                      equipBackpack(
+                        item,
+                      )
+                    }
+                    className={[
+                      'border p-4 text-left transition',
+                      selectedBackpackId ===
+                      item.id
+                        ? 'border-amber-500/50 bg-amber-500/[0.05]'
+                        : 'border-white/8 bg-[#111416] hover:border-amber-500/30',
+                    ].join(' ')}
+                  >
+
+                    <WardogsItemImage
+                      item={item}
+                      className="h-28 w-full border border-white/6 bg-black/20"
+                      imageClassName="p-3 object-contain"
+                    />
+
+                    <div className="mt-3 flex items-start justify-between gap-3">
+
+                      <div>
+
+                        <div className="text-[10px] font-black text-white">
+                          {item.name}
+                        </div>
+
+                        <div className="mt-1 text-[8px] text-stone-600">
+                          {item.capacity} CELLS
+                          {' / '}
+                          {item.weight} KG
+                        </div>
+
+                      </div>
+
+                      <div className="text-[10px] font-black text-amber-400">
+                        {money(
+                          item.price,
+                        )}
+                      </div>
+
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+
+                      <div className="border border-white/8 bg-black/20 p-2">
+
+                        <div className="text-[7px] text-stone-600">
+                          CAPACITY
+                        </div>
+
+                        <div className="mt-1 text-sm font-black text-white">
+                          {item.capacity}
+                        </div>
+
+                      </div>
+
+                      <div className="border border-white/8 bg-black/20 p-2">
+
+                        <div className="text-[7px] text-stone-600">
+                          SLINGS
+                        </div>
+
+                        <div className="mt-1 text-sm font-black text-white">
+                          {item.slings}
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                  </button>
+
+                ),
+              )}
+
+            </div>
 
           </div>
 
