@@ -16,6 +16,11 @@ import {
   zoneWeaponData,
 } from '../src/data/wardogsZoneAttachments.js'
 
+import {
+  zoneEquipmentItems,
+  zoneEquipmentMeta,
+} from '../src/data/wardogsZoneEquipment.js'
+
 const slotForType = {
   MAGAZINE:
     'MAGAZINE',
@@ -414,6 +419,136 @@ if (
   )
 }
 
+const equipmentSlotCounts =
+  Object.fromEntries(
+    [
+      'HELMET',
+      'ARMOR',
+      'VEST',
+      'BACKPACK',
+      'TRAVERSAL',
+      'SPECIALIST',
+    ].map(
+      (slot) => [
+        slot,
+        zoneEquipmentItems.filter(
+          (item) =>
+            item.slot ===
+            slot,
+        ).length,
+      ],
+    ),
+  )
+
+if (
+  zoneEquipmentItems.length <
+  90
+) {
+
+  fail(
+    `Equipment coverage incomplete: only ${zoneEquipmentItems.length} current equipment records.`,
+  )
+}
+
+if (
+  zoneEquipmentMeta
+    .declaredCount &&
+  zoneEquipmentItems.length !==
+    zoneEquipmentMeta
+      .declaredCount
+) {
+
+  fail(
+    `Equipment total mismatch: generated ${zoneEquipmentItems.length}, source declared ${zoneEquipmentMeta.declaredCount}.`,
+  )
+}
+
+for (
+  const slot of
+  [
+    'HELMET',
+    'ARMOR',
+    'VEST',
+    'BACKPACK',
+    'TRAVERSAL',
+    'SPECIALIST',
+  ]
+) {
+
+  if (
+    equipmentSlotCounts[
+      slot
+    ] ===
+    0
+  ) {
+
+    fail(
+      `No current WARDOGS equipment parsed for required loadout slot: ${slot}`,
+    )
+  }
+}
+
+if (
+  equipmentSlotCounts
+    .SPECIALIST <
+  8
+) {
+
+  fail(
+    `Specialist equipment coverage looks incomplete: ${equipmentSlotCounts.SPECIALIST} items.`,
+  )
+}
+
+for (
+  const item of
+  zoneEquipmentItems
+) {
+
+  if (
+    !item.slot
+  ) {
+    continue
+  }
+
+  if (
+    item.price ===
+    null
+  ) {
+
+    fail(
+      `Selectable equipment has no verified price: ${item.name}`,
+    )
+  }
+
+  if (
+    item.weight ===
+    null
+  ) {
+
+    fail(
+      `Selectable equipment has no verified weight: ${item.name}`,
+    )
+  }
+
+  if (
+    !item.image
+  ) {
+
+    fail(
+      `Selectable equipment has no artwork: ${item.name}`,
+    )
+  }
+
+  if (
+    !item.sourceUrl
+  ) {
+
+    fail(
+      `Selectable equipment has no source URL: ${item.name}`,
+    )
+  }
+}
+
 console.log('')
 console.log(
   '========================================',
@@ -426,6 +561,12 @@ console.log(
 )
 console.log(
   `WEAPONS          ${weaponDataCount}/${weapons.length}`,
+)
+console.log(
+  `EQUIPMENT        ${zoneEquipmentItems.length}`,
+)
+console.log(
+  `SPECIALIST       ${equipmentSlotCounts.SPECIALIST}`,
 )
 console.log(
   `ATTACHMENTS      ${zoneAttachmentItems.length}`,
