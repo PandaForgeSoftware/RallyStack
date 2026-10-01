@@ -168,6 +168,7 @@ function WeaponWorkbench({
   selectSlot,
   magazine,
   openMagazinePicker,
+  openAmmoPicker,
   clearAttachment,
 }) {
 
@@ -439,6 +440,34 @@ function WeaponWorkbench({
 
             </div>
 
+            <button
+              type="button"
+              onClick={() =>
+                openAmmoPicker(
+                  weapon,
+                )
+              }
+              className="mt-3 flex w-full items-center justify-between border border-white/10 bg-black/20 p-3 text-left transition hover:border-amber-500/30"
+            >
+
+              <div>
+
+                <div className="text-[7px] font-black tracking-[0.16em] text-stone-600">
+                  AMMUNITION
+                </div>
+
+                <div className="mt-1 text-[9px] font-black text-white">
+                  SELECT {weapon.calibre} AMMO
+                </div>
+
+              </div>
+
+              <div className="text-[8px] font-black text-amber-400">
+                ADD TO PACK
+              </div>
+
+            </button>
+
             {magazine && (
 
               <div className="mt-2 flex items-center gap-3 border border-white/8 bg-black/20 p-3">
@@ -658,6 +687,25 @@ const [
   const [
     attachmentPicker,
     setAttachmentPicker,
+  ] =
+    useState(null)
+
+
+  const [
+    weaponPicker,
+    setWeaponPicker,
+  ] =
+    useState(null)
+
+  const [
+    ammoPicker,
+    setAmmoPicker,
+  ] =
+    useState(null)
+
+  const [
+    builderNotice,
+    setBuilderNotice,
   ] =
     useState(null)
 
@@ -1250,6 +1298,17 @@ const [
       setBuilderView(
         'operator',
       )
+
+      if (
+        weaponSlots.has(
+          slot,
+        )
+      ) {
+
+        setWeaponPicker({
+          slot,
+        })
+      }
     }
 
   const equipWeapon =
@@ -1273,6 +1332,10 @@ const [
 
       setSelectedItem(
         item,
+      )
+
+      setWeaponPicker(
+        null,
       )
     }
 
@@ -1340,6 +1403,65 @@ const [
               null,
           },
         }),
+      )
+    }
+
+  const openAmmoPicker =
+    (weapon) => {
+
+      if (!weapon) {
+        return
+      }
+
+      if (
+        !selectedBackpack
+      ) {
+
+        setBuilderNotice(
+          'Equip a backpack before adding ammunition. Ammo needs somewhere to go.'
+        )
+
+        return
+      }
+
+      const options =
+        looseAmmo.filter(
+          (item) =>
+            item.calibre ===
+            weapon.calibre,
+        )
+
+      setAmmoPicker({
+        weapon,
+        options,
+      })
+    }
+
+  const addAmmoFromPicker =
+    (item) => {
+
+      const rule =
+        ammoStackRules[
+          item.id
+        ] || {}
+
+      const quantity =
+        Math.max(
+          1,
+          Number(
+            rule.purchaseQuantity ||
+            item.stack ||
+            1,
+          ),
+        )
+
+      changeAmmoRounds(
+        item.id,
+        quantity,
+      )
+
+      setAmmoPicker(
+        null,
       )
     }
 
@@ -1815,7 +1937,65 @@ const [
           selectedSlot,
         )
       ) {
-        return renderWeaponCatalogue()
+
+        const currentWeapon =
+          equipped[
+            selectedSlot
+          ]
+
+        return (
+          <div className="flex min-h-[360px] items-center justify-center p-5 text-center">
+
+            <div className="w-full max-w-sm">
+
+              {currentWeapon ? (
+
+                <WardogsItemImage
+                  item={
+                    currentWeapon
+                  }
+                  className="mx-auto h-32 w-full border border-white/8 bg-black/20"
+                  imageClassName="p-3 object-contain"
+                />
+
+              ) : (
+
+                <Crosshair
+                  size={44}
+                  strokeWidth={1}
+                  className="mx-auto text-stone-700"
+                />
+
+              )}
+
+              <div className="mt-4 text-lg font-black text-white">
+                {currentWeapon?.name ||
+                  'NO WEAPON EQUIPPED'}
+              </div>
+
+              <div className="mt-2 text-[9px] text-stone-600">
+                Weapon selection now opens in a dedicated popout.
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setWeaponPicker({
+                    slot:
+                      selectedSlot,
+                  })
+                }
+                className="mt-5 w-full bg-amber-500 px-4 py-3 text-[9px] font-black tracking-wider text-black"
+              >
+                {currentWeapon
+                  ? 'CHANGE WEAPON'
+                  : 'SELECT WEAPON'}
+              </button>
+
+            </div>
+
+          </div>
+        )
       }
 
       if (
@@ -2455,6 +2635,9 @@ const [
                   openMagazinePicker={
                     openMagazinePicker
                   }
+                  openAmmoPicker={
+                    openAmmoPicker
+                  }
                   clearAttachment={
                     clearAttachment
                   }
@@ -2810,39 +2993,45 @@ const [
                     {selectedSlotDefinition?.description}
                   </div>
 
-                  <div className="mt-4 flex h-11 items-center gap-3 border border-white/8 bg-black/20 px-3">
+                  {!weaponSlots.has(
+                    selectedSlot,
+                  ) && (
 
-                    <Search
-                      size={15}
-                      className="text-stone-600"
-                    />
+                    <div className="mt-4 flex h-11 items-center gap-3 border border-white/8 bg-black/20 px-3">
 
-                    <input
-                      value={query}
-                      onChange={(event) =>
-                        setQuery(
-                          event.target.value,
-                        )
-                      }
-                      placeholder="Search compatible equipment..."
-                      className="w-full bg-transparent text-xs text-white outline-none placeholder:text-stone-700"
-                    />
-
-                    {query && (
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setQuery('')
-                        }
+                      <Search
+                        size={15}
                         className="text-stone-600"
-                      >
-                        <X size={14} />
-                      </button>
+                      />
 
-                    )}
+                      <input
+                        value={query}
+                        onChange={(event) =>
+                          setQuery(
+                            event.target.value,
+                          )
+                        }
+                        placeholder="Search compatible equipment..."
+                        className="w-full bg-transparent text-xs text-white outline-none placeholder:text-stone-700"
+                      />
 
-                  </div>
+                      {query && (
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setQuery('')
+                          }
+                          className="text-stone-600"
+                        >
+                          <X size={14} />
+                        </button>
+
+                      )}
+
+                    </div>
+
+                  )}
 
                 </div>
 
@@ -3351,6 +3540,250 @@ const [
           )}
 
         </>
+      )}
+
+      {builderNotice && (
+
+        <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/80 p-5 backdrop-blur-sm">
+
+          <div className="w-full max-w-md border border-amber-500/30 bg-[#0d0f10] p-6 text-center">
+
+            <Backpack
+              size={38}
+              strokeWidth={1.2}
+              className="mx-auto text-amber-500"
+            />
+
+            <div className="mt-4 text-xl font-black text-white">
+              BACKPACK REQUIRED
+            </div>
+
+            <p className="mt-2 text-xs leading-5 text-stone-500">
+              {builderNotice}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+
+                setBuilderNotice(
+                  null,
+                )
+
+                selectSlot(
+                  'backpack',
+                )
+              }}
+              className="mt-5 bg-amber-500 px-5 py-3 text-[9px] font-black tracking-wider text-black"
+            >
+              SELECT BACKPACK
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setBuilderNotice(
+                  null,
+                )
+              }
+              className="mt-3 block w-full text-[8px] font-black text-stone-600"
+            >
+              CLOSE
+            </button>
+
+          </div>
+
+        </div>
+
+      )}
+
+      {weaponPicker && (
+
+        <div
+          className="fixed inset-0 z-[130] flex items-center justify-center bg-black/80 p-5 backdrop-blur-sm"
+          onMouseDown={(event) => {
+
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              setWeaponPicker(
+                null,
+              )
+            }
+          }}
+        >
+
+          <div className="flex max-h-[88vh] w-full max-w-6xl flex-col border border-white/12 bg-[#0d0f10] shadow-2xl">
+
+            <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
+
+              <div>
+
+                <div className="text-[8px] font-black tracking-[0.18em] text-amber-500">
+                  {slots.find(
+                    (item) =>
+                      item.id ===
+                      weaponPicker.slot,
+                  )?.title}
+                </div>
+
+                <div className="mt-1 text-xl font-black text-white">
+                  SELECT WEAPON
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setWeaponPicker(
+                    null,
+                  )
+                }
+                className="flex h-10 w-10 items-center justify-center border border-white/10 text-stone-500 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+
+            </div>
+
+            <div className="overflow-y-auto p-4">
+
+              {renderWeaponCatalogue()}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+      {ammoPicker && (
+
+        <div
+          className="fixed inset-0 z-[130] flex items-center justify-center bg-black/80 p-5 backdrop-blur-sm"
+          onMouseDown={(event) => {
+
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              setAmmoPicker(
+                null,
+              )
+            }
+          }}
+        >
+
+          <div className="w-full max-w-4xl border border-white/12 bg-[#0d0f10] shadow-2xl">
+
+            <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
+
+              <div>
+
+                <div className="text-[8px] font-black tracking-[0.18em] text-amber-500">
+                  {ammoPicker.weapon.name}
+                </div>
+
+                <div className="mt-1 text-xl font-black text-white">
+                  {ammoPicker.weapon.calibre} AMMUNITION
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setAmmoPicker(
+                    null,
+                  )
+                }
+                className="flex h-10 w-10 items-center justify-center border border-white/10 text-stone-500 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+
+            </div>
+
+            <div className="grid max-h-[600px] gap-2 overflow-y-auto p-4 md:grid-cols-2">
+
+              {ammoPicker.options.map(
+                (item) => {
+
+                  const rule =
+                    ammoStackRules[
+                      item.id
+                    ] || {}
+
+                  const quantity =
+                    Math.max(
+                      1,
+                      Number(
+                        rule.purchaseQuantity ||
+                        item.stack ||
+                        1,
+                      ),
+                    )
+
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() =>
+                        addAmmoFromPicker(
+                          item,
+                        )
+                      }
+                      className="border border-white/8 bg-[#121516] p-4 text-left transition hover:border-amber-500/35"
+                    >
+
+                      <div className="flex items-start justify-between gap-4">
+
+                        <div>
+
+                          <div className="text-[10px] font-black text-white">
+                            {item.name}
+                          </div>
+
+                          <div className="mt-1 text-[8px] text-stone-600">
+                            DAMAGE {item.damage ?? '—'}
+                            {' / '}
+                            SPEED {item.speed ?? '—'}
+                            {' / '}
+                            PEN {item.penetration ?? '—'}
+                          </div>
+
+                        </div>
+
+                        <div className="text-right">
+
+                          <div className="text-[10px] font-black text-amber-400">
+                            {money(
+                              item.price,
+                            )}
+                          </div>
+
+                          <div className="mt-1 text-[7px] text-stone-600">
+                            +{quantity} ROUNDS
+                          </div>
+
+                        </div>
+
+                      </div>
+
+                    </button>
+                  )
+                },
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+
       )}
 
       {attachmentPicker && (
