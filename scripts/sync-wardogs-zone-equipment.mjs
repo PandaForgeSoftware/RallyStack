@@ -469,29 +469,56 @@ const declaredCount =
 const candidateMap =
   new Map()
 
-databaseLinks(
-  listing,
-).forEach(
-  (entry) => {
+function addCandidates(
+  html,
+  fallbackCategory = 'Other',
+) {
 
-    /*
-     * Do not drop an equipment record merely because
-     * the listing card wording changed. The item page
-     * itself is the authority for its slot and stats.
-     */
-    candidateMap.set(
-      entry.href,
-      {
-        ...entry,
-        category:
-          categoryFromText(
-            entry.text,
-          ) ||
-          'Other',
-      },
-    )
-  },
+  databaseLinks(
+    html,
+  ).forEach(
+    (entry) => {
+
+      candidateMap.set(
+        entry.href,
+        {
+          ...entry,
+          category:
+            categoryFromText(
+              entry.text,
+            ) ||
+            fallbackCategory,
+        },
+      )
+    },
+  )
+}
+
+addCandidates(
+  listing,
 )
+
+console.log(
+  'Reading equipment category pages...',
+)
+
+for (
+  const category of
+  CATEGORIES
+) {
+
+  const categoryHtml =
+    await fetchText(
+      `${LIST_URL}?c=${encodeURIComponent(
+        category,
+      )}`,
+    )
+
+  addCandidates(
+    categoryHtml,
+    category,
+  )
+}
 
 const candidates =
   Array.from(
@@ -502,7 +529,7 @@ console.log(
   `Source declares ${declaredCount || 'unknown'} equipment records`,
 )
 console.log(
-  `Equipment records discovered: ${candidates.length}`,
+  `Equipment records discovered across all categories: ${candidates.length}`,
 )
 
 if (
