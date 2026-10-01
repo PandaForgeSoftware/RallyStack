@@ -144,6 +144,13 @@ const magazineCatalogue =
       'MAGAZINES',
   )
 
+const traversalItems =
+  packableItems.filter(
+    (item) =>
+      item.packCategory ===
+      'PARACHUTES',
+  )
+
 const getMagazineOptions =
   (weapon) => {
 
@@ -319,6 +326,28 @@ function WeaponWorkbench({
       0,
     )
 
+  const attachmentEffects =
+    equippedAttachmentList
+      .flatMap(
+        (item) =>
+          item.effects ||
+          [],
+      )
+
+  const opticMagnification =
+    attachments?.optic
+      ?.magnification ||
+    null
+
+  const hasEffect =
+    (pattern) =>
+      attachmentEffects.some(
+        (effect) =>
+          pattern.test(
+            effect,
+          ),
+      )
+
   if (!weapon) {
 
     return (
@@ -405,6 +434,66 @@ function WeaponWorkbench({
       liveStats.effectiveRange == null
         ? '—'
         : `${liveStats.effectiveRange} M`,
+    ],
+    [
+      'ADS ZOOM',
+      opticMagnification
+        ? `${opticMagnification}×`
+        : liveStats.adsZoom == null
+          ? '—'
+          : `${liveStats.adsZoom}×`,
+      opticMagnification
+        ? 'FROM OPTIC'
+        : null,
+    ],
+    [
+      'ADS TIME',
+      liveStats.adsTime == null
+        ? '—'
+        : `${liveStats.adsTime}S`,
+      hasEffect(
+        /ADS speed improvements/i,
+      )
+        ? 'IMPROVED BY ATTACHMENT'
+        : null,
+    ],
+    [
+      'RECOIL',
+      hasEffect(
+        /recoil reduction/i,
+      )
+        ? 'IMPROVED'
+        : 'BASE',
+      attachmentEffects
+        .filter(
+          (effect) =>
+            /recoil/i.test(
+              effect,
+            ),
+        )
+        .join(
+          ' • ',
+        ) ||
+        null,
+    ],
+    [
+      'SPREAD',
+      hasEffect(
+        /spread reduction/i,
+      )
+        ? 'IMPROVED'
+        : 'BASE',
+      attachmentEffects
+        .filter(
+          (effect) =>
+            /spread/i.test(
+              effect,
+            ),
+        )
+        .join(
+          ' • ',
+        ) ||
+        null,
     ],
     [
       'MAG CAPACITY',
@@ -775,6 +864,47 @@ function WeaponWorkbench({
 
           </div>
 
+          {attachmentEffects.length >
+            0 && (
+
+            <div className="mt-4 border border-white/8 bg-[#111416] p-3">
+
+              <div className="text-[9px] font-black tracking-[0.14em] text-amber-500">
+                ATTACHMENT EFFECTS
+              </div>
+
+              <div className="mt-3 space-y-2">
+
+                {attachmentEffects.map(
+                  (
+                    effect,
+                    index,
+                  ) => (
+
+                    <div
+                      key={
+                        `${effect}-${index}`
+                      }
+                      className="text-[10px] leading-4 text-stone-300"
+                    >
+                      • {effect}
+                    </div>
+
+                  ),
+                )}
+
+              </div>
+
+              <div className="mt-3 text-[9px] leading-4 text-stone-600">
+                WARDOGS currently describes several attachment effects qualitatively rather than with exact percentages. RallyStack does not invent numeric modifiers.
+              </div>
+
+            </div>
+
+          )}
+
+          </div>
+
         </aside>
 
       </div>
@@ -842,6 +972,18 @@ function LoadoutsPage() {
     setSelectedBackpackId,
   ] =
     useState(null)
+
+  const [
+    selectedTraversalId,
+    setSelectedTraversalId,
+  ] =
+    useState(null)
+
+  const [
+    traversalPicker,
+    setTraversalPicker,
+  ] =
+    useState(false)
 
   const [
     packedAmmo,
@@ -920,6 +1062,14 @@ const [
       (item) =>
         item.id ===
         selectedBackpackId,
+    ) ||
+    null
+
+  const selectedTraversal =
+    traversalItems.find(
+      (item) =>
+        item.id ===
+        selectedTraversalId,
     ) ||
     null
 
@@ -1300,6 +1450,10 @@ const [
           Number(
             selectedBackpack?.price ||
               0,
+          ) +
+          Number(
+            selectedTraversal?.price ||
+              0,
           ),
         ) +
         equippedAttachmentItems.reduce(
@@ -1318,6 +1472,7 @@ const [
         equippedWeapons,
         equippedAttachmentItems,
         selectedBackpack,
+        selectedTraversal,
       ],
     )
 
@@ -1434,6 +1589,10 @@ const [
             Number(
               selectedBackpack?.weight ||
                 0,
+            ) +
+            Number(
+              selectedTraversal?.weight ||
+                0,
             ),
           ) +
           equippedAttachmentItems.reduce(
@@ -1469,6 +1628,7 @@ const [
         equippedWeapons,
         equippedAttachmentItems,
         selectedBackpack,
+        selectedTraversal,
         medicalRows,
       ],
     )
@@ -3392,20 +3552,20 @@ const [
 
                   </div>
 
-                  <div className="mt-4 grid grid-cols-3 gap-2">
+                  <div className="mt-4 grid grid-cols-2 gap-2">
 
                     <button
                       type="button"
                       onClick={() =>
-                        selectSlot(
-                          'backpack',
+                        setBagPicker(
+                          true,
                         )
                       }
                       className={[
-                        'group border bg-[#131617] p-2 text-left transition',
+                        'group border bg-[#131617] p-3 text-left transition',
                         selectedBackpack
                           ? 'border-white/10 hover:border-amber-500/30'
-                          : 'border-amber-500/25 hover:border-amber-500/50',
+                          : 'border-amber-500/35 hover:border-amber-500/60',
                       ].join(' ')}
                     >
 
@@ -3415,75 +3575,110 @@ const [
                           item={
                             selectedBackpack
                           }
-                          className="h-20 w-full border-0 bg-transparent"
+                          className="h-24 w-full border-0 bg-transparent"
                           imageClassName="p-1 object-contain"
                         />
 
                       ) : (
 
-                        <div className="flex h-20 items-center justify-center border border-dashed border-amber-500/20 text-amber-500/60">
+                        <div className="flex h-24 items-center justify-center border border-dashed border-amber-500/25 text-amber-500/60">
                           <Backpack
-                            size={30}
+                            size={34}
                             strokeWidth={1.2}
                           />
                         </div>
 
                       )}
 
-                      <div className="mt-2 truncate text-[8px] font-black text-white">
+                      <div className="mt-2 text-[10px] font-black text-white">
                         BACKPACK
                       </div>
 
-                      <div className={[
-                        'mt-1 truncate text-[7px]',
-                        selectedBackpack
-                          ? 'text-stone-600'
-                          : 'text-amber-500',
-                      ].join(' ')}
-                      >
+                      <div className="mt-1 truncate text-[9px] text-stone-500">
                         {selectedBackpack?.name ||
                           'SELECT A PACK'}
                       </div>
 
                     </button>
 
-                    <div className="border border-white/10 bg-[#131617] p-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setTraversalPicker(
+                          true,
+                        )
+                      }
+                      className={[
+                        'group border bg-[#131617] p-3 text-left transition',
+                        selectedTraversal
+                          ? 'border-white/10 hover:border-amber-500/30'
+                          : 'border-white/10 hover:border-amber-500/30',
+                      ].join(' ')}
+                    >
 
-                      <div className="flex h-20 items-center justify-center border border-dashed border-white/8 text-stone-700">
-                        <span className="text-3xl font-thin">
-                          ↟
-                        </span>
-                      </div>
+                      {selectedTraversal ? (
 
-                      <div className="mt-2 text-[8px] font-black text-white">
+                        <WardogsItemImage
+                          item={
+                            selectedTraversal
+                          }
+                          className="h-24 w-full border-0 bg-transparent"
+                          imageClassName="p-1 object-contain"
+                        />
+
+                      ) : (
+
+                        <div className="flex h-24 items-center justify-center border border-dashed border-white/10 text-stone-700">
+                          <span className="text-4xl font-thin">
+                            ↟
+                          </span>
+                        </div>
+
+                      )}
+
+                      <div className="mt-2 text-[10px] font-black text-white">
                         TRAVERSAL
                       </div>
 
-                      <div className="mt-1 text-[7px] text-stone-700">
-                        COMING NEXT
+                      <div className="mt-1 truncate text-[9px] text-stone-500">
+                        {selectedTraversal?.name ||
+                          'SELECT PARACHUTE'}
                       </div>
 
-                    </div>
-
-                    <div className="border border-white/10 bg-[#131617] p-2">
-
-                      <div className="flex h-20 items-center justify-center border border-dashed border-white/8 text-stone-700">
-                        <span className="text-2xl">
-                          ◫
-                        </span>
-                      </div>
-
-                      <div className="mt-2 text-[8px] font-black text-white">
-                        TRANSPORT
-                      </div>
-
-                      <div className="mt-1 text-[7px] text-stone-700">
-                        COMING NEXT
-                      </div>
-
-                    </div>
+                    </button>
 
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={
+                      openBackpack
+                    }
+                    className="mt-3 flex w-full items-center justify-between border border-amber-500/50 bg-amber-500 px-4 py-4 text-left text-black transition hover:bg-amber-400"
+                  >
+
+                    <div>
+
+                      <div className="text-[10px] font-black tracking-[0.14em]">
+                        {selectedBackpack
+                          ? 'OPEN BACKPACK'
+                          : 'CHOOSE BACKPACK'}
+                      </div>
+
+                      <div className="mt-1 text-[9px] font-bold opacity-70">
+                        {selectedBackpack
+                          ? 'PACK AMMO, MEDICAL AND GEAR'
+                          : 'A PACK IS REQUIRED FOR RESERVE ITEMS'}
+                      </div>
+
+                    </div>
+
+                    <Backpack
+                      size={22}
+                      strokeWidth={1.6}
+                    />
+
+                  </button>
 
                   <div className="mt-3 grid grid-cols-3 gap-2">
 
@@ -3567,7 +3762,7 @@ const [
 
                   </div>
 
-                  <div className="mt-4 grid grid-cols-3 gap-2">
+                  <div className="mt-4 grid grid-cols-2 gap-2">
 
                     {[
                       [
@@ -3597,6 +3792,11 @@ const [
                         selectedBackpack
                           ? `${selectedBackpack.capacity} CELLS`
                           : 'NONE',
+                      ],
+                      [
+                        'TRAVERSAL',
+                        selectedTraversal?.name ||
+                          'NONE',
                       ],
                     ].map(
                       ([
@@ -4315,6 +4515,133 @@ const [
             )}
 
 
+
+          </div>
+
+        </div>
+
+      )}
+
+      {traversalPicker && (
+
+        <div
+          className="fixed inset-0 z-[136] flex items-center justify-center bg-black/80 p-5 backdrop-blur-sm"
+          onMouseDown={(event) => {
+
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              setTraversalPicker(
+                false,
+              )
+            }
+          }}
+        >
+
+          <div className="w-full max-w-3xl border border-white/12 bg-[#0d0f10] shadow-2xl">
+
+            <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
+
+              <div>
+
+                <div className="text-[9px] font-black tracking-[0.16em] text-amber-500">
+                  CARRY
+                </div>
+
+                <div className="mt-1 text-xl font-black text-white">
+                  SELECT TRAVERSAL
+                </div>
+
+                <div className="mt-1 text-[10px] text-stone-500">
+                  Choose the parachute carried with this loadout.
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setTraversalPicker(
+                    false,
+                  )
+                }
+                className="flex h-10 w-10 items-center justify-center border border-white/10 text-stone-500 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+
+            </div>
+
+            <div className="grid gap-3 p-4 sm:grid-cols-2">
+
+              {traversalItems.map(
+                (item) => (
+
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+
+                      setSelectedTraversalId(
+                        item.id,
+                      )
+
+                      setTraversalPicker(
+                        false,
+                      )
+                    }}
+                    className={[
+                      'border p-4 text-left transition',
+                      selectedTraversalId ===
+                      item.id
+                        ? 'border-amber-500/50 bg-amber-500/[0.05]'
+                        : 'border-white/8 bg-[#111416] hover:border-amber-500/30',
+                    ].join(' ')}
+                  >
+
+                    <WardogsItemImage
+                      item={item}
+                      className="h-32 w-full border border-white/6 bg-black/20"
+                      imageClassName="p-3 object-contain"
+                    />
+
+                    <div className="mt-3 flex items-start justify-between gap-4">
+
+                      <div>
+
+                        <div className="text-[12px] font-black text-white">
+                          {item.name}
+                        </div>
+
+                        <div className="mt-1 text-[10px] text-stone-500">
+                          {item.weight == null
+                            ? 'WEIGHT ?'
+                            : `${Number(
+                                item.weight,
+                              ).toFixed(
+                                2,
+                              )} KG`}
+                        </div>
+
+                      </div>
+
+                      <div className="text-[12px] font-black text-amber-400">
+                        {item.price == null
+                          ? 'PRICE ?'
+                          : money(
+                              item.price,
+                            )}
+                      </div>
+
+                    </div>
+
+                  </button>
+
+                ),
+              )}
+
+            </div>
 
           </div>
 
