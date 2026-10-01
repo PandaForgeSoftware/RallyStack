@@ -1,0 +1,48 @@
+name: Sync WARDOGS game data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 5 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync WARDOGS data
+        run: node scripts/sync-wardogs-all.mjs
+
+      - name: Build RallyStack
+        run: npm run build
+
+      - name: Commit verified data changes
+        shell: bash
+        run: |
+          git config user.name "RallyStack Data Bot"
+          git config user.email "actions@users.noreply.github.com"
+
+          git add --             src/data/wardogsPackableData.js             src/data/wardogsPackableAudit.json             src/data/wardogsItemImages.js             src/data/wardogsCombatData.js             src/data/wardogsCombatAudit.json             src/data/wardogsZoneAttachments.js             public/wardogs/items
+
+          if git diff --cached --quiet; then
+            echo "No WARDOGS data changes detected."
+            exit 0
+          fi
+
+          git commit -m "Auto-update WARDOGS game data"
+          git push
