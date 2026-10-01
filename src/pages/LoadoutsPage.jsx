@@ -481,15 +481,7 @@ function WeaponWorkbench({
       ) =>
         total +
         Number(
-          (
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ) ||
+          item.price ||
             0,
         ),
       0,
@@ -1767,20 +1759,13 @@ const [
           ) =>
             total +
             Number(
-              (
-                weaponLiveData[
-                  item.id
-                ]?.price
-              ) ??
-              (
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ) ??
+              zoneWeaponData[
+                item.id
+              ]?.price ??
+              weaponLiveData[
+                item.id
+              ]?.price ??
+              item.price ??
               0,
             ),
           Number(
@@ -1798,15 +1783,7 @@ const [
             ) =>
               gearTotal +
               Number(
-                (
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ) ||
+                item.price ||
                   0,
               ),
             0,
@@ -1819,15 +1796,7 @@ const [
           ) =>
             total +
             Number(
-              (
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ) ||
+              item.price ||
                 0,
             ),
           0,
@@ -1893,15 +1862,7 @@ const [
               total +
               (
                 Number(
-                  (
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ) ||
+                  item.price ||
                   0,
                 ) *
                 Number(
@@ -1921,15 +1882,7 @@ const [
               total +
               (
                 Number(
-                  row.(
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ) ||
+                  row.item.price ||
                   0,
                 ) *
                 row.quantity
@@ -1987,15 +1940,7 @@ const [
             total +
             purchases *
               Number(
-                entry.(
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ) ||
+                entry.item.price ||
                   0,
               )
           )
@@ -2020,6 +1965,9 @@ const [
             ) =>
               total +
               Number(
+                zoneWeaponData[
+                  item.id
+                ]?.weight ??
                 weaponLiveData[
                   item.id
                 ]?.weight ??
@@ -3082,15 +3030,7 @@ const [
 
                   <div className="text-right text-sm font-black text-white">
                     {money(
-                      (
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ),
+                      item.price,
                     )}
                   </div>
 
@@ -3219,15 +3159,7 @@ const [
 
                 <div className="text-sm font-black text-amber-500">
                   {money(
-                    (
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ),
+                    item.price,
                   )}
                 </div>
 
@@ -3574,15 +3506,7 @@ const [
 
                   <div className="text-sm font-black text-amber-500">
                     {money(
-                      (
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ),
+                      item.price,
                     )}
                   </div>
 
@@ -5058,15 +4982,7 @@ const [
 
                                 <div className="text-xs font-black text-amber-500">
                                   {money(
-                                    (
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ) *
+                                    item.price *
                                     item.stacks,
                                   )}
                                 </div>
@@ -5336,26 +5252,10 @@ const [
                         </span>
 
                         <span className="font-black text-amber-400">
-                          {(
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ) == null
+                          {item.price == null
                             ? 'PRICE ?'
                             : money(
-                                (
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ),
+                                item.price,
                               )}
                         </span>
 
@@ -5487,26 +5387,10 @@ const [
                       </div>
 
                       <div className="text-[12px] font-black text-amber-400">
-                        {(
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ) == null
+                        {item.price == null
                           ? 'PRICE ?'
                           : money(
-                              (
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ),
+                              item.price,
                             )}
                       </div>
 
@@ -5634,15 +5518,7 @@ const [
 
                       <div className="text-[10px] font-black text-amber-400">
                         {money(
-                          (
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ),
+                          item.price,
                         )}
                       </div>
 
@@ -5861,15 +5737,7 @@ const [
 
                         <div className="text-[10px] font-black text-amber-400">
                           {money(
-                            (
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ),
+                            item.price,
                           )}
                         </div>
 
@@ -5984,26 +5852,10 @@ const [
                     </div>
 
                     <div className="text-right text-[10px] font-black text-amber-400">
-                      {(
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ) == null
+                      {item.price == null
                         ? 'PRICE ?'
                         : money(
-                            (
-                            zoneWeaponData[
-                              item.id
-                            ]?.price ??
-                            weaponLiveData[
-                              item.id
-                            ]?.price ??
-                            item.price
-                          ),
+                            item.price,
                           )}
                     </div>
 
