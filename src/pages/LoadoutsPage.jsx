@@ -45,6 +45,11 @@ import {
   zoneAttachmentMeta,
   zoneWeaponData,
 } from '../data/wardogsZoneAttachments'
+
+import {
+  zoneEquipmentItems,
+  zoneEquipmentMeta,
+} from '../data/wardogsZoneEquipment'
 import BackpackPackingView from '../features/loadouts/components/BackpackPackingView'
 import WardogsItemImage from '../features/loadouts/components/WardogsItemImage'
 
@@ -266,6 +271,79 @@ const traversalItems =
       'PARACHUTES',
   )
 
+const zoneEquipmentReady =
+  zoneEquipmentItems.length >
+  0
+
+const traversalOptions =
+  zoneEquipmentReady
+    ? zoneEquipmentItems.filter(
+        (item) =>
+          item.slot ===
+          'TRAVERSAL',
+      )
+    : traversalItems
+
+const specialistEquipmentOptions =
+  zoneEquipmentReady
+    ? zoneEquipmentItems
+        .filter(
+          (item) =>
+            item.slot ===
+            'SPECIALIST',
+        )
+        .map(
+          (item) => ({
+            ...item,
+            slot:
+              'specialist',
+            kind:
+              'specialist_equipment',
+            category:
+              item.category ||
+              'SPECIALIST',
+            calibre:
+              '',
+            damage:
+              null,
+            rpm:
+              null,
+          }),
+        )
+    : []
+
+const operatorGearOptions =
+  zoneEquipmentReady
+    ? zoneEquipmentItems.filter(
+        (item) =>
+          [
+            'HELMET',
+            'ARMOR',
+            'VEST',
+          ].includes(
+            item.slot,
+          ),
+      )
+    : gearItems.map(
+        (item) => ({
+          ...item,
+          slot:
+            item.type ===
+              'HELMET'
+              ? 'HELMET'
+              : item.type ===
+                  'ARMOR'
+                ? 'ARMOR'
+                : item.type ===
+                    'VEST'
+                  ? 'VEST'
+                  : null,
+        }),
+      ).filter(
+        (item) =>
+          item.slot,
+      )
+
 const backpackOptions =
   backpacks
     .filter(
@@ -276,7 +354,16 @@ const backpackOptions =
     .map(
       (item) => {
 
-        const synced =
+        const zoneSynced =
+          zoneEquipmentItems.find(
+            (gear) =>
+              gear.slot ===
+                'BACKPACK' &&
+              gear.name ===
+                item.name,
+          )
+
+        const labSynced =
           gearItems.find(
             (gear) =>
               gear.type ===
@@ -284,6 +371,10 @@ const backpackOptions =
               gear.name ===
                 item.name,
           )
+
+        const synced =
+          zoneSynced ||
+          labSynced
 
         return {
           ...item,
@@ -831,6 +922,120 @@ function WeaponWorkbench({
           </p>
 
         </div>
+
+      </div>
+    )
+  }
+
+  const actualWeapon =
+    weapons.some(
+      (candidate) =>
+        candidate.id ===
+        weapon.id,
+    )
+
+  if (
+    !actualWeapon
+  ) {
+
+    return (
+      <div className="grid min-h-[700px] xl:grid-cols-[minmax(0,1fr)_230px]">
+
+        <section className="flex flex-col justify-center p-6">
+
+          <div className="text-[10px] font-black tracking-[0.18em] text-amber-500">
+            SPECIALIST EQUIPMENT
+          </div>
+
+          <WardogsItemImage
+            item={weapon}
+            className="mt-5 h-64 w-full border border-white/8 bg-black/20"
+            imageClassName="p-6 object-contain"
+          />
+
+          <div className="mt-5 text-2xl font-black text-white">
+            {weapon.name}
+          </div>
+
+          <div className="mt-2 text-[11px] font-black tracking-wider text-amber-500">
+            {String(
+              weapon.category ||
+              'SPECIALIST',
+            ).replaceAll(
+              '_',
+              ' ',
+            )}
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-3">
+
+            <div className="border border-white/8 bg-[#111416] p-4">
+              <div className="text-[9px] font-black tracking-wider text-stone-600">
+                WEIGHT
+              </div>
+              <div className="mt-2 text-lg font-black text-white">
+                {weapon.weight == null
+                  ? '—'
+                  : `${Number(
+                      weapon.weight,
+                    ).toFixed(
+                      2,
+                    )} KG`}
+              </div>
+            </div>
+
+            <div className="border border-white/8 bg-[#111416] p-4">
+              <div className="text-[9px] font-black tracking-wider text-stone-600">
+                PRICE
+              </div>
+              <div className="mt-2 text-lg font-black text-amber-400">
+                {weapon.price == null
+                  ? '—'
+                  : money(
+                      weapon.price,
+                    )}
+              </div>
+            </div>
+
+          </div>
+
+          <div className="mt-4 border border-white/8 bg-black/20 p-4 text-[10px] leading-5 text-stone-500">
+            This item occupies the WARDOGS Specialist slot. Weapon-only attachment and ammunition controls are hidden because they do not apply to this equipment.
+          </div>
+
+        </section>
+
+        <aside className="border-l border-white/8 bg-black/15 p-4">
+
+          <div className="text-[10px] font-black tracking-[0.16em] text-amber-500">
+            LOADOUT DATA
+          </div>
+
+          <div className="mt-4 space-y-2">
+
+            <div className="border border-white/8 bg-[#111416] p-3">
+              <div className="text-[9px] font-black text-stone-600">
+                SLOT
+              </div>
+              <div className="mt-1 text-sm font-black text-white">
+                SPECIALIST
+              </div>
+            </div>
+
+            <div className="border border-white/8 bg-[#111416] p-3">
+              <div className="text-[9px] font-black text-stone-600">
+                UNLOCK
+              </div>
+              <div className="mt-1 text-sm font-black text-white">
+                {weapon.unlockLevel == null
+                  ? '—'
+                  : `${weapon.unlockTrack || 'LEVEL'} ${weapon.unlockLevel}`}
+              </div>
+            </div>
+
+          </div>
+
+        </aside>
 
       </div>
     )
@@ -1609,7 +1814,7 @@ const [
     null
 
   const selectedTraversal =
-    traversalItems.find(
+    traversalOptions.find(
       (item) =>
         item.id ===
         selectedTraversalId,
@@ -1721,10 +1926,38 @@ const [
           equipped.primary,
           equipped.sidearm,
           equipped.specialist,
-        ].filter(Boolean),
+        ].filter(
+          (item) =>
+            item &&
+            weapons.some(
+              (weapon) =>
+                weapon.id ===
+                item.id,
+            ),
+        ),
       [
         equipped.primary,
         equipped.sidearm,
+        equipped.specialist,
+      ],
+    )
+
+  const equippedSpecialistGear =
+    useMemo(
+      () =>
+        (
+          equipped.specialist &&
+          !weapons.some(
+            (weapon) =>
+              weapon.id ===
+              equipped.specialist.id,
+          )
+        )
+          ? [
+              equipped.specialist,
+            ]
+          : [],
+      [
         equipped.specialist,
       ],
     )
@@ -1787,11 +2020,24 @@ const [
           return []
         }
 
-        return weapons.filter(
-          (item) =>
-            item.slot ===
-            selectedSlot,
-        )
+        const weaponOptions =
+          weapons.filter(
+            (item) =>
+              item.slot ===
+              selectedSlot,
+          )
+
+        if (
+          selectedSlot !==
+          'specialist'
+        ) {
+          return weaponOptions
+        }
+
+        return [
+          ...weaponOptions,
+          ...specialistEquipmentOptions,
+        ]
       },
       [selectedSlot],
     )
@@ -1838,7 +2084,10 @@ const [
               item.category
                 .toLowerCase()
                 .includes(needle) ||
-              item.calibre
+              String(
+                item.calibre ||
+                '',
+              )
                 .toLowerCase()
                 .includes(needle)
 
@@ -2061,6 +2310,18 @@ const [
                   0,
               ),
             0,
+          ) +
+          equippedSpecialistGear.reduce(
+            (
+              specialistTotal,
+              item,
+            ) =>
+              specialistTotal +
+              Number(
+                item.price ||
+                  0,
+              ),
+            0,
           ),
         ) +
         equippedAttachmentItems.reduce(
@@ -2078,6 +2339,7 @@ const [
       [
         equippedWeapons,
         equippedGearItems,
+        equippedSpecialistGear,
         equippedAttachmentItems,
         selectedBackpack,
         selectedTraversal,
@@ -2267,6 +2529,18 @@ const [
                     0,
                 ),
               0,
+            ) +
+            equippedSpecialistGear.reduce(
+              (
+                total,
+                item,
+              ) =>
+                total +
+                Number(
+                  item.weight ||
+                    0,
+                ),
+              0,
             ),
           ) +
           equippedAttachmentItems.reduce(
@@ -2371,6 +2645,7 @@ const [
       [
         equippedWeapons,
         equippedGearItems,
+        equippedSpecialistGear,
         equippedAttachmentItems,
         selectedBackpack,
         selectedTraversal,
@@ -3390,7 +3665,15 @@ const [
                     </div>
 
                     <div className="mt-1 text-xs font-black text-white">
-                      {item.damage ??
+                      {(
+                        zoneWeaponData[
+                          item.id
+                        ]?.damage ??
+                        weaponLiveData[
+                          item.id
+                        ]?.damage ??
+                        item.damage
+                      ) ??
                         '—'}
                     </div>
                   </div>
@@ -3401,7 +3684,15 @@ const [
                     </div>
 
                     <div className="mt-1 text-xs font-black text-white">
-                      {item.rpm ??
+                      {(
+                        zoneWeaponData[
+                          item.id
+                        ]?.rpm ??
+                        weaponLiveData[
+                          item.id
+                        ]?.rpm ??
+                        item.rpm
+                      ) ??
                         '—'}
                     </div>
                   </div>
@@ -3412,7 +3703,13 @@ const [
                     </div>
 
                     <div className="mt-1 text-xs font-black text-white">
-                      {item.weight}
+                      {item.weight == null
+                        ? '—'
+                        : Number(
+                            item.weight,
+                          ).toFixed(
+                            2,
+                          )}
                     </div>
                   </div>
 
@@ -3432,7 +3729,13 @@ const [
                 <div className="mt-3 flex items-center justify-between">
 
                   <div className="text-[10px] font-black text-stone-400">
-                    {item.calibre}
+                    {item.calibre ||
+                      (
+                        item.kind ===
+                        'specialist_equipment'
+                          ? 'SPECIALIST ITEM'
+                          : '—'
+                      )}
                   </div>
 
                   <button
@@ -4065,7 +4368,7 @@ const [
             <div className="text-right text-[9px] font-bold tracking-wider text-stone-600">
 
               {zoneAttachmentMeta.syncedAt
-                    ? `${zoneAttachmentMeta.count} ATTACHMENTS • ${new Date(
+                    ? `${zoneAttachmentMeta.count} ATTACHMENTS • ${zoneEquipmentMeta.count || '—'} EQUIPMENT • ${new Date(
                         zoneAttachmentMeta.syncedAt,
                       ).toLocaleDateString()}`
                     : combatDataMeta.syncedAt
@@ -4388,11 +4691,11 @@ const [
                   <div>
 
                     <div className="text-xs font-black tracking-[0.18em] text-white">
-                      WEAPON WORKBENCH
+                      LOADOUT WORKBENCH
                     </div>
 
                     <div className="mt-1 text-[9px] text-stone-600">
-                      LIVE WEAPON STATS + VERIFIED ATTACHMENTS
+                      LIVE STATS + VERIFIED EQUIPMENT
                     </div>
 
                   </div>
@@ -5545,10 +5848,10 @@ const [
 
             <div className="grid gap-3 overflow-y-auto p-4 sm:grid-cols-2 lg:grid-cols-3">
 
-              {gearItems
+              {operatorGearOptions
                 .filter(
                   (item) =>
-                    item.type ===
+                    item.slot ===
                     (
                       gearPicker.slot ===
                         'armor'
@@ -5613,10 +5916,13 @@ const [
 
                       </div>
 
-                      {item.armorLevel && (
+                      {(item.protection != null ||
+                        item.armorLevel) && (
 
                         <div className="mt-3 border border-white/8 bg-black/20 p-2 text-[9px] font-black text-stone-400">
-                          PROTECTION LEVEL {item.armorLevel}
+                          {item.protection != null
+                            ? `PROTECTION ${item.protection}%`
+                            : `PROTECTION LEVEL ${item.armorLevel}`}
                         </div>
 
                       )}
@@ -5687,7 +5993,7 @@ const [
 
             <div className="grid gap-3 p-4 sm:grid-cols-2">
 
-              {traversalItems.map(
+              {traversalOptions.map(
                 (item) => (
 
                   <button
