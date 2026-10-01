@@ -25,6 +25,7 @@ import {
 
 import {
   medicalItems,
+  packableItems,
 } from '../data/wardogsPackableData'
 
 import {
@@ -107,6 +108,59 @@ const backpackCategories = [
   'VEHICLE',
 ]
 
+
+const magazineNameMatchers = {
+  ak74: [/^AK74 /i],
+  amp9: [/^AMP-9 /i],
+  amr50: [/^AMR 50 /i],
+  deagle: [/^Deagle /i],
+  fal: [/^FAL /i],
+  galil: [/^Galil /i],
+  ggx17: [/^GGX /i, /^Glock 17 /i],
+  ggx18: [/^GGX /i, /^Glock 17 /i],
+  judge: [/^Judge /i],
+  m1911: [/^M1911 /i],
+  m249: [/^M249 /i],
+  m4: [/^M4 /i, /^STANAG /i],
+  mp5: [/^MP5 /i],
+  pkm: [/^PKM /i],
+  pp19: [/^PP-19 /i],
+  sks: [/^SKS /i],
+  super45: [/^Super-45 /i],
+  sv98: [/^SV98 /i],
+  svd: [/^SVD /i],
+}
+
+const magazineCatalogue =
+  packableItems.filter(
+    (item) =>
+      item.packCategory ===
+      'MAGAZINES',
+  )
+
+const getMagazineOptions =
+  (weapon) => {
+
+    if (!weapon) {
+      return []
+    }
+
+    const matchers =
+      magazineNameMatchers[
+        weapon.id
+      ] || []
+
+    return magazineCatalogue.filter(
+      (item) =>
+        matchers.some(
+          (matcher) =>
+            matcher.test(
+              item.name,
+            ),
+        ),
+    )
+  }
+
 function OperatorFigure({
   selectedSlot,
   selectSlot,
@@ -121,277 +175,12 @@ function OperatorFigure({
   ] =
     useState('front')
 
-  const slotClass =
-    (slot) =>
-      [
-        'absolute z-20 border px-3 py-2 text-left transition',
-        selectedSlot === slot
-          ? 'border-amber-500 bg-amber-500/[0.10]'
-          : 'border-white/10 bg-[#0d1012]/95 hover:border-amber-500/40',
-      ].join(' ')
-
   return (
-    <div className="relative mx-auto h-[700px] w-full max-w-[590px] overflow-hidden">
+    <div className="relative mx-auto min-h-[700px] w-full max-w-[620px] overflow-hidden">
 
-      <div className="absolute inset-x-[14%] top-[4%] bottom-[2%] bg-[radial-gradient(ellipse_at_center,rgba(245,158,11,0.08),transparent_65%)]" />
+      <div className="pointer-events-none absolute inset-x-[18%] top-[6%] bottom-[5%] bg-[radial-gradient(ellipse_at_center,rgba(245,158,11,0.10),transparent_68%)]" />
 
-      <div className="absolute left-1/2 top-10 z-10 h-[620px] w-[310px] -translate-x-1/2">
-
-        <svg
-          viewBox="0 0 300 620"
-          className="h-full w-full"
-        >
-
-          <defs>
-
-            <linearGradient
-              id="body"
-              x1="0"
-              y1="0"
-              x2="1"
-              y2="1"
-            >
-              <stop
-                offset="0%"
-                stopColor="#24292b"
-              />
-
-              <stop
-                offset="100%"
-                stopColor="#101315"
-              />
-            </linearGradient>
-
-            <linearGradient
-              id="gear"
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="1"
-            >
-              <stop
-                offset="0%"
-                stopColor="#282e30"
-              />
-
-              <stop
-                offset="100%"
-                stopColor="#15191b"
-              />
-            </linearGradient>
-
-          </defs>
-
-          <ellipse
-            cx="150"
-            cy="606"
-            rx="100"
-            ry="10"
-            fill="rgba(0,0,0,.45)"
-          />
-
-          <path
-            d="M111 70 Q150 35 189 70 L187 113 Q173 137 150 139 Q127 137 113 113 Z"
-            fill="#15191b"
-            stroke={
-              selectedSlot === 'helmet'
-                ? '#f59e0b'
-                : '#343a3d'
-            }
-            strokeWidth="3"
-          />
-
-          <path
-            d="M120 75 Q150 45 180 75 L178 88 L122 88 Z"
-            fill="#24292b"
-          />
-
-          <path
-            d="M132 136 L168 136 L178 163 L122 163 Z"
-            fill="#15191b"
-          />
-
-          <path
-            d="M87 165 Q150 135 213 165 L231 300 Q194 326 150 329 Q106 326 69 300 Z"
-            fill="url(#body)"
-            stroke={
-              selectedSlot === 'armor'
-                ? '#f59e0b'
-                : '#303639'
-            }
-            strokeWidth="3"
-          />
-
-          <path
-            d="M105 176 L195 176 L207 271 Q179 289 150 291 Q121 289 93 271 Z"
-            fill="url(#gear)"
-            stroke={
-              selectedSlot === 'vest'
-                ? '#f59e0b'
-                : '#343a3d'
-            }
-            strokeWidth="3"
-          />
-
-          <path
-            d="M112 192 L188 192"
-            stroke="#41484b"
-            strokeWidth="3"
-          />
-
-          <path
-            d="M109 217 L191 217"
-            stroke="#41484b"
-            strokeWidth="3"
-          />
-
-          <rect
-            x="112"
-            y="233"
-            width="34"
-            height="31"
-            rx="3"
-            fill="#111416"
-            stroke="#3a4144"
-          />
-
-          <rect
-            x="154"
-            y="233"
-            width="34"
-            height="31"
-            rx="3"
-            fill="#111416"
-            stroke="#3a4144"
-          />
-
-          <path
-            d="M81 173 Q52 188 43 236 L30 350 Q32 365 46 367 Q59 366 64 350 L85 245 L101 205 Z"
-            fill="url(#body)"
-            stroke="#303639"
-            strokeWidth="3"
-          />
-
-          <path
-            d="M219 173 Q248 188 257 236 L270 350 Q268 365 254 367 Q241 366 236 350 L215 245 L199 205 Z"
-            fill="url(#body)"
-            stroke="#303639"
-            strokeWidth="3"
-          />
-
-          <path
-            d="M91 296 L209 296 L218 359 L82 359 Z"
-            fill="#171b1d"
-            stroke="#303639"
-            strokeWidth="3"
-          />
-
-          <rect
-            x="197"
-            y="308"
-            width="30"
-            height="52"
-            rx="4"
-            fill="#111416"
-            stroke={
-              selectedSlot === 'sidearm'
-                ? '#f59e0b'
-                : '#363d40'
-            }
-            strokeWidth="3"
-          />
-
-          <path
-            d="M92 358 L144 358 L137 587 L82 587 L72 540 Z"
-            fill="url(#body)"
-            stroke="#303639"
-            strokeWidth="3"
-          />
-
-          <path
-            d="M156 358 L208 358 L228 540 L218 587 L163 587 Z"
-            fill="url(#body)"
-            stroke="#303639"
-            strokeWidth="3"
-          />
-
-          <path
-            d="M75 586 L140 586 L136 607 L61 607 Q60 595 75 586 Z"
-            fill="#101315"
-            stroke="#303639"
-            strokeWidth="3"
-          />
-
-          <path
-            d="M160 586 L225 586 Q240 595 239 607 L164 607 Z"
-            fill="#101315"
-            stroke="#303639"
-            strokeWidth="3"
-          />
-
-          <path
-            d="M60 207 L225 320"
-            stroke={
-              selectedSlot === 'primary'
-                ? '#f59e0b'
-                : '#444b4e'
-            }
-            strokeWidth="11"
-            strokeLinecap="round"
-          />
-
-          <path
-            d="M51 198 L89 211"
-            stroke="#1a1e20"
-            strokeWidth="18"
-            strokeLinecap="round"
-          />
-
-          <path
-            d="M211 303 L254 334"
-            stroke="#1a1e20"
-            strokeWidth="13"
-            strokeLinecap="round"
-          />
-
-          <path
-            d="M194 155 Q223 164 229 201 L219 274"
-            fill="none"
-            stroke={
-              selectedSlot === 'backpack'
-                ? '#f59e0b'
-                : '#343a3d'
-            }
-            strokeWidth="7"
-          />
-
-          <path
-            d="M106 155 Q77 164 71 201 L81 274"
-            fill="none"
-            stroke={
-              selectedSlot === 'backpack'
-                ? '#f59e0b'
-                : '#343a3d'
-            }
-            strokeWidth="7"
-          />
-
-          <path
-            d="M215 118 L248 72 L259 79 L228 129"
-            stroke={
-              selectedSlot === 'specialist'
-                ? '#f59e0b'
-                : '#3e4548'
-            }
-            strokeWidth="12"
-            strokeLinecap="round"
-          />
-
-        </svg>
-
-      </div>
-
-      <div className="absolute right-3 top-3 z-40 flex border border-white/10 bg-black/45 p-1">
+      <div className="absolute right-4 top-4 z-40 flex border border-white/10 bg-black/55 p-1">
         {[
           ['front', 'FRONT'],
           ['back', 'BACK'],
@@ -406,7 +195,7 @@ function OperatorFigure({
                 )
               }
               className={[
-                'px-3 py-2 text-[8px] font-black tracking-[0.14em] transition',
+                'px-4 py-2 text-[8px] font-black tracking-[0.14em]',
                 operatorView === id
                   ? 'bg-amber-500 text-black'
                   : 'text-stone-500 hover:text-white',
@@ -418,70 +207,155 @@ function OperatorFigure({
         )}
       </div>
 
-      {operatorView ===
-      'front' ? (
-        <>
-          {equipped.primary && (
-            <WardogsItemImage
-              item={
-                equipped.primary
-              }
-              className="pointer-events-none absolute left-1/2 top-[195px] z-30 h-24 w-[270px] -translate-x-1/2 rotate-[14deg] border-0 bg-transparent"
-              imageClassName="object-contain drop-shadow-[0_12px_20px_rgba(0,0,0,0.85)]"
-            />
-          )}
+      <div className="absolute left-1/2 top-8 z-10 h-[630px] w-[330px] -translate-x-1/2">
 
-          {equipped.sidearm && (
-            <WardogsItemImage
-              item={
-                equipped.sidearm
-              }
-              className="pointer-events-none absolute left-[57%] top-[355px] z-30 h-24 w-28 rotate-[72deg] border-0 bg-transparent"
-              imageClassName="object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.85)]"
-            />
-          )}
+        <svg
+          viewBox="0 0 320 700"
+          className="h-full w-full"
+          aria-label="Operator mannequin"
+        >
+          <defs>
+            <linearGradient
+              id="operatorBody"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
+              <stop offset="0%" stopColor="#272c2f" />
+              <stop offset="100%" stopColor="#101315" />
+            </linearGradient>
+            <linearGradient
+              id="operatorCloth"
+              x1="0"
+              y1="0"
+              x2="1"
+              y2="1"
+            >
+              <stop offset="0%" stopColor="#1e2325" />
+              <stop offset="100%" stopColor="#0c0f10" />
+            </linearGradient>
+          </defs>
 
-          {equipped.specialist && (
-            <WardogsItemImage
-              item={
-                equipped.specialist
-              }
-              className="pointer-events-none absolute left-[54%] top-[118px] z-20 h-28 w-40 -rotate-[24deg] border-0 bg-transparent opacity-90"
-              imageClassName="object-contain"
-            />
-          )}
-        </>
-      ) : (
-        <>
-          <WardogsItemImage
-            item={backpack}
-            className="pointer-events-none absolute left-1/2 top-[170px] z-30 h-[245px] w-[210px] -translate-x-1/2 border-0 bg-transparent"
-            imageClassName="object-contain drop-shadow-[0_16px_24px_rgba(0,0,0,0.9)]"
+          <ellipse
+            cx="160"
+            cy="680"
+            rx="92"
+            ry="12"
+            fill="rgba(0,0,0,.55)"
           />
 
-          {equipped.primary && (
+          <circle
+            cx="160"
+            cy="75"
+            r="43"
+            fill="url(#operatorBody)"
+            stroke={
+              selectedSlot === 'helmet'
+                ? '#f59e0b'
+                : '#353b3e'
+            }
+            strokeWidth="3"
+          />
+
+          <path
+            d="M130 116 C138 130 182 130 190 116 L199 155 L121 155 Z"
+            fill="#141819"
+          />
+
+          <path
+            d="M92 160 C118 136 202 136 228 160 L246 325 C220 346 195 355 160 355 C125 355 100 346 74 325 Z"
+            fill="url(#operatorCloth)"
+            stroke={
+              selectedSlot === 'armor'
+                ? '#f59e0b'
+                : '#33393c'
+            }
+            strokeWidth="3"
+          />
+
+          <path
+            d="M109 171 C128 159 192 159 211 171 L222 287 C204 303 185 311 160 311 C135 311 116 303 98 287 Z"
+            fill="#171b1d"
+            stroke={
+              selectedSlot === 'vest'
+                ? '#f59e0b'
+                : '#2f3538'
+            }
+            strokeWidth="3"
+          />
+
+          <path
+            d="M91 167 C60 181 48 209 43 257 L31 369 C33 389 49 395 63 379 L82 271 L104 207 Z"
+            fill="url(#operatorBody)"
+            stroke="#303638"
+            strokeWidth="3"
+          />
+
+          <path
+            d="M229 167 C260 181 272 209 277 257 L289 369 C287 389 271 395 257 379 L238 271 L216 207 Z"
+            fill="url(#operatorBody)"
+            stroke="#303638"
+            strokeWidth="3"
+          />
+
+          <path
+            d="M85 329 L235 329 L224 405 L96 405 Z"
+            fill="#141819"
+            stroke="#303638"
+            strokeWidth="3"
+          />
+
+          <path
+            d="M101 401 L154 401 L145 654 L82 654 L71 594 Z"
+            fill="url(#operatorBody)"
+            stroke="#303638"
+            strokeWidth="3"
+          />
+
+          <path
+            d="M166 401 L219 401 L249 594 L238 654 L175 654 Z"
+            fill="url(#operatorBody)"
+            stroke="#303638"
+            strokeWidth="3"
+          />
+        </svg>
+
+        {operatorView === 'front' ? (
+          <>
+            {equipped.primary && (
+              <WardogsItemImage
+                item={equipped.primary}
+                className="pointer-events-none absolute left-1/2 top-[225px] z-30 h-24 w-[280px] -translate-x-1/2 border-0 bg-transparent"
+                imageClassName="object-contain drop-shadow-[0_14px_24px_rgba(0,0,0,0.9)]"
+              />
+            )}
+
+            {equipped.sidearm && (
+              <WardogsItemImage
+                item={equipped.sidearm}
+                className="pointer-events-none absolute left-[61%] top-[385px] z-30 h-20 w-20 rotate-[78deg] border-0 bg-transparent"
+                imageClassName="object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.9)]"
+              />
+            )}
+          </>
+        ) : (
+          <>
             <WardogsItemImage
-              item={
-                equipped.primary
-              }
-              className="pointer-events-none absolute left-1/2 top-[190px] z-40 h-24 w-[280px] -translate-x-1/2 -rotate-[18deg] border-0 bg-transparent"
-              imageClassName="object-contain drop-shadow-[0_12px_20px_rgba(0,0,0,0.85)]"
+              item={backpack}
+              className="pointer-events-none absolute left-1/2 top-[170px] z-30 h-[250px] w-[220px] -translate-x-1/2 border-0 bg-transparent"
+              imageClassName="object-contain drop-shadow-[0_16px_28px_rgba(0,0,0,0.9)]"
             />
-          )}
-        </>
-      )}
 
-      <div className="pointer-events-none absolute bottom-[74px] left-1/2 z-40 -translate-x-1/2 border border-white/10 bg-black/60 px-4 py-2 text-center backdrop-blur-sm">
-        <div className="text-[7px] font-black tracking-[0.18em] text-stone-600">
-          OPERATOR PREVIEW
-        </div>
-
-        <div className="mt-1 text-[9px] font-black text-white">
-          {operatorView ===
-          'front'
-            ? 'EQUIPPED GEAR'
-            : backpack.name}
-        </div>
+            {equipped.primary && (
+              <WardogsItemImage
+                item={equipped.primary}
+                className="pointer-events-none absolute left-1/2 top-[235px] z-40 h-24 w-[285px] -translate-x-1/2 -rotate-[17deg] border-0 bg-transparent"
+                imageClassName="object-contain drop-shadow-[0_14px_24px_rgba(0,0,0,0.9)]"
+              />
+            )}
+          </>
+        )}
       </div>
 
       <button
@@ -489,130 +363,38 @@ function OperatorFigure({
         onClick={() =>
           selectSlot('helmet')
         }
-        className={`${slotClass('helmet')} left-1/2 top-0 w-40 -translate-x-1/2 text-center`}
-      >
-        <div className="text-[8px] font-black tracking-wider text-stone-600">
-          HELMET
-        </div>
-
-        <div className="mt-1 text-[10px] font-black text-white">
-          EMPTY
-        </div>
-      </button>
-
-      <button
-        type="button"
-        onClick={() =>
-          selectSlot('primary')
-        }
-        className={`${slotClass('primary')} left-0 top-[170px] w-40`}
-      >
-        <div className="text-[8px] font-black tracking-wider text-stone-600">
-          PRIMARY
-        </div>
-
-        <div className="mt-1 truncate text-[10px] font-black text-white">
-          {equipped.primary?.name ||
-            'EMPTY'}
-        </div>
-      </button>
-
-      <button
-        type="button"
-        onClick={() =>
-          selectSlot(
-            'specialist',
-          )
-        }
-        className={`${slotClass('specialist')} right-0 top-[145px] w-40`}
-      >
-        <div className="text-[8px] font-black tracking-wider text-stone-600">
-          SPECIALIST
-        </div>
-
-        <div className="mt-1 truncate text-[10px] font-black text-white">
-          {equipped.specialist?.name ||
-            'EMPTY'}
-        </div>
-      </button>
-
-      <button
-        type="button"
-        onClick={() =>
-          selectSlot('armor')
-        }
-        className={`${slotClass('armor')} left-0 top-[320px] w-36`}
-      >
-        <div className="text-[8px] font-black tracking-wider text-stone-600">
-          ARMOUR
-        </div>
-
-        <div className="mt-1 text-[10px] font-black text-white">
-          EMPTY
-        </div>
-      </button>
+        className="absolute left-1/2 top-[38px] z-30 h-20 w-24 -translate-x-1/2 rounded-full border border-transparent hover:border-amber-500/50"
+        aria-label="Select helmet"
+      />
 
       <button
         type="button"
         onClick={() =>
           selectSlot('vest')
         }
-        className={`${slotClass('vest')} right-0 top-[310px] w-40`}
-      >
-        <div className="text-[8px] font-black tracking-wider text-stone-600">
-          TACTICAL VEST
-        </div>
+        className="absolute left-1/2 top-[185px] z-30 h-36 w-40 -translate-x-1/2 border border-transparent hover:border-amber-500/40"
+        aria-label="Select tactical vest"
+      />
 
-        <div className="mt-1 text-[10px] font-black text-white">
-          EMPTY
-        </div>
-      </button>
+      <div className="absolute bottom-5 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2">
+        <button
+          type="button"
+          onClick={() =>
+            selectSlot('primary')
+          }
+          className="border border-white/10 bg-black/55 px-4 py-3 text-[8px] font-black tracking-[0.13em] text-white hover:border-amber-500/40"
+        >
+          {equipped.primary?.name || 'SELECT PRIMARY'}
+        </button>
 
-      <button
-        type="button"
-        onClick={() =>
-          selectSlot('sidearm')
-        }
-        className={`${slotClass('sidearm')} right-0 top-[430px] w-40`}
-      >
-        <div className="text-[8px] font-black tracking-wider text-stone-600">
-          SIDEARM
-        </div>
-
-        <div className="mt-1 truncate text-[10px] font-black text-white">
-          {equipped.sidearm?.name ||
-            'EMPTY'}
-        </div>
-      </button>
-
-      <button
-        type="button"
-        onClick={() =>
-          selectSlot('backpack')
-        }
-        className={`${slotClass('backpack')} left-0 top-[455px] w-40`}
-      >
-        <div className="text-[8px] font-black tracking-wider text-stone-600">
-          BACKPACK
-        </div>
-
-        <div className="mt-1 truncate text-[10px] font-black text-white">
-          {backpack.name}
-        </div>
-      </button>
-
-      <button
-        type="button"
-        onClick={
-          openBackpack
-        }
-        className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 border border-amber-500/40 bg-amber-500/[0.08] px-5 py-3 text-[9px] font-black tracking-[0.14em] text-amber-400 hover:bg-amber-500/[0.14]"
-      >
-        <Backpack size={15} />
-
-        OPEN BACKPACK
-      </button>
-
+        <button
+          type="button"
+          onClick={openBackpack}
+          className="border border-amber-500/35 bg-amber-500/[0.07] px-4 py-3 text-[8px] font-black tracking-[0.13em] text-amber-400 hover:bg-amber-500/[0.12]"
+        >
+          OPEN PACK
+        </button>
+      </div>
     </div>
   )
 }
@@ -696,6 +478,19 @@ const [
     setSelectedItem,
   ] =
     useState(null)
+
+
+  const [
+    attachmentPicker,
+    setAttachmentPicker,
+  ] =
+    useState(null)
+
+  const [
+    weaponAttachments,
+    setWeaponAttachments,
+  ] =
+    useState({})
 
   const selectedBackpack =
     backpacks.find(
@@ -1223,8 +1018,83 @@ const [
         }),
       )
 
+      setWeaponAttachments(
+        (current) => ({
+          ...current,
+          [selectedSlot]:
+            {},
+        }),
+      )
+
       setSelectedItem(
         item,
+      )
+    }
+
+  const openMagazinePicker =
+    (
+      weaponSlot,
+      weapon,
+    ) => {
+
+      const options =
+        getMagazineOptions(
+          weapon,
+        )
+
+      if (
+        options.length ===
+        0
+      ) {
+        return
+      }
+
+      setAttachmentPicker({
+        weaponSlot,
+        weapon,
+        options,
+      })
+    }
+
+  const equipAttachment =
+    (item) => {
+
+      if (!attachmentPicker) {
+        return
+      }
+
+      setWeaponAttachments(
+        (current) => ({
+          ...current,
+          [attachmentPicker.weaponSlot]: {
+            ...(current[
+              attachmentPicker.weaponSlot
+            ] || {}),
+            magazine:
+              item,
+          },
+        }),
+      )
+
+      setAttachmentPicker(
+        null,
+      )
+    }
+
+  const clearAttachment =
+    (weaponSlot) => {
+
+      setWeaponAttachments(
+        (current) => ({
+          ...current,
+          [weaponSlot]: {
+            ...(current[
+              weaponSlot
+            ] || {}),
+            magazine:
+              null,
+          },
+        }),
       )
     }
 
@@ -2236,19 +2106,111 @@ const [
                           )}
 
                           {weapon && (
+                            <>
+                              {getMagazineOptions(
+                                weapon,
+                              ).length >
+                              0 && (
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                clearWeapon(
-                                  slot.id,
-                                )
-                              }
-                              className="w-full border-t border-white/8 py-2 text-[8px] font-black tracking-wider text-red-400"
-                            >
-                              REMOVE
-                            </button>
+                                <div className="border-t border-white/8 p-2">
 
+                                  <div className="mb-2 text-[7px] font-black tracking-[0.16em] text-stone-600">
+                                    ATTACHMENTS
+                                  </div>
+
+                                  <div className="grid grid-cols-4 gap-1">
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        openMagazinePicker(
+                                          slot.id,
+                                          weapon,
+                                        )
+                                      }
+                                      className={[
+                                        'min-h-11 border px-2 py-2 text-[7px] font-black tracking-wider',
+                                        weaponAttachments[
+                                          slot.id
+                                        ]?.magazine
+                                          ? 'border-amber-500/45 bg-amber-500/[0.07] text-amber-400'
+                                          : 'border-white/10 bg-black/20 text-stone-400 hover:border-amber-500/30',
+                                      ].join(' ')}
+                                    >
+                                      MAG
+                                    </button>
+
+                                    {[
+                                      'OPTIC',
+                                      'MUZZLE',
+                                      'GRIP',
+                                    ].map(
+                                      (label) => (
+                                        <div
+                                          key={label}
+                                          className="flex min-h-11 items-center justify-center border border-white/6 bg-black/15 px-1 text-center text-[7px] font-black tracking-wider text-stone-800"
+                                        >
+                                          {label}
+                                        </div>
+                                      ),
+                                    )}
+
+                                  </div>
+
+                                  {weaponAttachments[
+                                    slot.id
+                                  ]?.magazine && (
+
+                                    <div className="mt-2 flex items-center justify-between border border-white/8 bg-black/25 p-2">
+
+                                      <div className="min-w-0 pr-2">
+
+                                        <div className="truncate text-[8px] font-black text-white">
+                                          {
+                                            weaponAttachments[
+                                              slot.id
+                                            ].magazine.name
+                                          }
+                                        </div>
+
+                                        <div className="mt-1 text-[7px] text-stone-600">
+                                          SELECTED MAG
+                                        </div>
+
+                                      </div>
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          clearAttachment(
+                                            slot.id,
+                                          )
+                                        }
+                                        className="text-[7px] font-black text-red-400"
+                                      >
+                                        REMOVE
+                                      </button>
+
+                                    </div>
+
+                                  )}
+
+                                </div>
+
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  clearWeapon(
+                                    slot.id,
+                                  )
+                                }
+                                className="w-full border-t border-white/8 py-2 text-[8px] font-black tracking-wider text-red-400"
+                              >
+                                REMOVE
+                              </button>
+                            </>
                           )}
 
                         </div>
@@ -3032,6 +2994,122 @@ const [
           )}
 
         </>
+      )}
+
+      {attachmentPicker && (
+
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-5 backdrop-blur-sm"
+          onMouseDown={(event) => {
+
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              setAttachmentPicker(
+                null,
+              )
+            }
+          }}
+        >
+
+          <div className="w-full max-w-3xl border border-white/12 bg-[#0d0f10] shadow-2xl">
+
+            <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
+
+              <div>
+
+                <div className="text-[8px] font-black tracking-[0.18em] text-amber-500">
+                  {attachmentPicker.weapon.name}
+                </div>
+
+                <div className="mt-1 text-xl font-black text-white">
+                  MAGAZINE
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setAttachmentPicker(
+                    null,
+                  )
+                }
+                className="flex h-10 w-10 items-center justify-center border border-white/10 text-stone-500 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+
+            </div>
+
+            <div className="grid max-h-[520px] gap-2 overflow-y-auto p-4 md:grid-cols-2">
+
+              {attachmentPicker.options.map(
+                (item) => (
+
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() =>
+                      equipAttachment(
+                        item,
+                      )
+                    }
+                    className="flex items-center gap-3 border border-white/8 bg-[#121516] p-3 text-left transition hover:border-amber-500/35"
+                  >
+
+                    <WardogsItemImage
+                      item={item}
+                      className="h-16 w-20 shrink-0 border border-white/8 bg-black/20"
+                      imageClassName="p-1 object-contain"
+                    />
+
+                    <div className="min-w-0 flex-1">
+
+                      <div className="truncate text-[10px] font-black text-white">
+                        {item.name}
+                      </div>
+
+                      <div className="mt-1 text-[8px] text-stone-600">
+                        {item.inventoryWidth}
+                        x
+                        {item.inventoryHeight}
+                        {' / '}
+                        {item.weight == null
+                          ? 'WEIGHT ?'
+                          : `${Number(
+                              item.weight,
+                            ).toFixed(
+                              2,
+                            )} KG`}
+                      </div>
+
+                    </div>
+
+                    <div className="text-right text-[10px] font-black text-amber-400">
+                      {item.price == null
+                        ? 'PRICE ?'
+                        : money(
+                            item.price,
+                          )}
+                    </div>
+
+                  </button>
+
+                ),
+              )}
+
+            </div>
+
+            <div className="border-t border-white/8 px-5 py-3 text-[8px] text-stone-600">
+              Showing verified magazine options currently available in the RallyStack catalogue.
+            </div>
+
+          </div>
+
+        </div>
+
       )}
 
     </main>
