@@ -40,18 +40,18 @@ const USER_AGENT =
   'RallyStack-Community-Loadout-Builder/4.0'
 
 const TYPES = [
+  'Canted Sight',
+  'Pistol Grip',
+  'Dust Cover',
+  'Underbarrel',
+  'Handguard',
+  'Magazine',
   'Muzzle',
   'Sight',
-  'Magazine',
-  'Handguard',
   'Stock',
-  'Underbarrel',
   'Barrel',
-  'Grip',
-  'Dust Cover',
   'Trigger',
-  'Pistol Grip',
-  'Canted Sight',
+  'Grip',
   'Other',
 ]
 
@@ -449,6 +449,20 @@ const listing =
     LIST_URL,
   )
 
+const declaredAttachmentCount =
+  Number(
+    plainText(
+      listing,
+    ).match(
+      /(\d+)\s+attachments\s+feed\s+the\s+gunsmith/i,
+    )?.[1] ||
+    0,
+  )
+
+console.log(
+  `Source declares ${declaredAttachmentCount || 'unknown'} current attachments`,
+)
+
 const attachmentCandidateMap =
   new Map()
 
@@ -488,12 +502,24 @@ console.log(
 )
 
 if (
-  attachmentCandidates.length <
-  200
+  declaredAttachmentCount &&
+  attachmentCandidates.length !==
+    declaredAttachmentCount
 ) {
 
   throw new Error(
-    'Wardogs Zone returned fewer than 200 classified attachments. Existing generated data was not touched.',
+    `Wardogs Zone declares ${declaredAttachmentCount} attachments but ${attachmentCandidates.length} classified records were discovered. Existing generated data was not touched.`,
+  )
+}
+
+if (
+  !declaredAttachmentCount &&
+  attachmentCandidates.length <
+    150
+) {
+
+  throw new Error(
+    'Wardogs Zone returned too few classified attachments. Existing generated data was not touched.',
   )
 }
 
@@ -506,6 +532,27 @@ const weaponListing =
   await fetchText(
     WEAPONS_URL,
   )
+
+const declaredWeaponCount =
+  Number(
+    plainText(
+      weaponListing,
+    ).match(
+      /(\d+)\s+weapons\s+across/i,
+    )?.[1] ||
+    0,
+  )
+
+if (
+  declaredWeaponCount &&
+  weapons.length !==
+    declaredWeaponCount
+) {
+
+  throw new Error(
+    `Current WARDOGS source declares ${declaredWeaponCount} weapons but RallyStack has ${weapons.length}. Update the weapon catalogue before writing compatibility data.`,
+  )
+}
 
 const weaponListingLinks =
   databaseLinks(
@@ -569,16 +616,25 @@ console.log(
 )
 
 if (
-  weaponPageById.size <
-  Math.max(
-    30,
-    weapons.length -
-      2,
-  )
+  weaponPageById.size !==
+  weapons.length
 ) {
 
+  const missing =
+    weapons
+      .filter(
+        (weapon) =>
+          !weaponPageById.has(
+            weapon.id,
+          ),
+      )
+      .map(
+        (weapon) =>
+          weapon.name,
+      )
+
   throw new Error(
-    'Too many RallyStack weapons could not be matched to current Wardogs Zone pages. Existing generated data was not touched.',
+    `Current WARDOGS weapon-page match incomplete: ${weaponPageById.size}/${weapons.length}. Missing: ${missing.join(', ')}. Existing generated data was not touched.`,
   )
 }
 
@@ -818,12 +874,24 @@ const items =
   rawItems.filter(Boolean)
 
 if (
-  items.length <
-  200
+  declaredAttachmentCount &&
+  items.length !==
+    declaredAttachmentCount
 ) {
 
   throw new Error(
-    `Only ${items.length} complete attachments parsed. Existing generated data was not touched.`,
+    `Only ${items.length}/${declaredAttachmentCount} current attachments parsed. Existing generated data was not touched.`,
+  )
+}
+
+if (
+  !declaredAttachmentCount &&
+  items.length <
+    150
+) {
+
+  throw new Error(
+    `Only ${items.length} attachments parsed. Existing generated data was not touched.`,
   )
 }
 
@@ -1372,9 +1440,11 @@ const compatibilityAudit = {
     'Wardogs Zone gunsmith / item-page fit graph',
   attachmentCount:
     items.length,
+  declaredAttachmentCount,
   attachmentTypeCounts,
   localWeapons:
     weapons.length,
+  declaredWeaponCount,
   weaponPagesMatched:
     weaponPageById.size,
   weaponPagesParsed:
@@ -1488,6 +1558,8 @@ export const zoneAttachmentMeta = ${JSON.stringify(
           .toISOString(),
       count:
         items.length,
+      declaredCount:
+        declaredAttachmentCount,
       source:
         'Wardogs Zone',
       compatibilitySource:
