@@ -50,12 +50,13 @@ function WardogsItemImage({
           )
         }
 
-        return ids
-          .map(
+        return [
+          item.image,
+          ...ids.map(
             (id) =>
               itemImages[id],
-          )
-          .filter(Boolean)
+          ),
+        ].filter(Boolean)
       },
       [item],
     )
