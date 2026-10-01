@@ -654,8 +654,10 @@ if (
 
 console.log('')
 console.log(
-  'Reading weapon compatibility...',
+  'Reading weapon compatibility and live handling stats...',
 )
+
+const zoneWeaponData = {}
 
 for (
   const weapon of
@@ -714,6 +716,96 @@ for (
     continue
   }
 
+  const loadout =
+    text.match(
+      /Loadout\s+\d+\s+SLOTS[\s\S]*?(?=Skins & Cosmetics|Compatible Ammunition|Other [A-Za-z ]+\s+\d+|Reference)/i,
+    )?.[0] ||
+    text
+
+  const baseDamage =
+    safeNumber(
+      text.match(
+        /point blank\s*·\s*([\d.]+)\s*base damage/i,
+      )?.[1],
+    )
+
+  zoneWeaponData[
+    weapon.id
+  ] = {
+    id:
+      weapon.id,
+    name:
+      weapon.name,
+    price:
+      safeNumber(
+        text.match(
+          /Economy\s*\$([\d,]+)\s*Cost/i,
+        )?.[1],
+      ),
+    weight:
+      safeNumber(
+        text.match(
+          /Weight\s*([\d.]+)\s*kg/i,
+        )?.[1],
+      ),
+    rpm:
+      safeNumber(
+        text.match(
+          /Fire Rate\s*([\d.]+)\s*RPM/i,
+        )?.[1],
+      ),
+    muzzleVelocity:
+      safeNumber(
+        text.match(
+          /Muzzle Velocity\s*([\d.]+)\s*m\/s/i,
+        )?.[1],
+      ),
+    effectiveRange:
+      safeNumber(
+        text.match(
+          /Effective Range\s*([\d.]+)\s*m/i,
+        )?.[1],
+      ),
+    baseSpread:
+      safeNumber(
+        text.match(
+          /Base Spread\s*([\d.]+)°/i,
+        )?.[1],
+      ),
+    damage:
+      baseDamage,
+    adsTime:
+      safeNumber(
+        loadout.match(
+          /ADS\s*([\d.]+)s/i,
+        )?.[1],
+      ),
+    adsZoom:
+      safeNumber(
+        loadout.match(
+          /Zoom\s*([\d.]+)x/i,
+        )?.[1],
+      ),
+    verticalRecoil:
+      safeNumber(
+        loadout.match(
+          /V Recoil\s*([\d.]+)%/i,
+        )?.[1],
+      ),
+    horizontalRecoil:
+      safeNumber(
+        loadout.match(
+          /H Recoil\s*([\d.]+)%/i,
+        )?.[1],
+      ),
+    spreadPct:
+      safeNumber(
+        loadout.match(
+          /Spread\s*([\d.]+)%/i,
+        )?.[1],
+      ),
+  }
+
   for (
     const item of
     items
@@ -762,6 +854,12 @@ export const zoneAttachmentItems = ${JSON.stringify(
     null,
     2,
   )}
+
+export const zoneWeaponData = ${JSON.stringify(
+    zoneWeaponData,
+    null,
+    2,
+  )}
 `
 
 await fs.writeFile(
@@ -791,4 +889,7 @@ console.log(
 )
 console.log(
   `WITH MODIFIERS  ${items.filter((item) => Object.values(item.modifiers).some((value) => value !== null)).length}`,
+)
+console.log(
+  `WEAPON STATS    ${Object.keys(zoneWeaponData).length}/${weapons.length}`,
 )
