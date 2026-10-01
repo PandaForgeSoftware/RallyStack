@@ -26,6 +26,7 @@ function StableBackpackGrid({
   moveInstance,
   rotateInstance,
   removeInstance,
+  increaseInstance,
 }) {
 
   if (
@@ -246,8 +247,14 @@ function StableBackpackGrid({
                 height:
                   `${itemHeight}px`,
               }}
+              onClick={() =>
+                increaseInstance(
+                  placement,
+                )
+              }
+              title="Click to add to this stack"
               className={[
-                'absolute z-20 cursor-grab overflow-hidden bg-[#101314] outline outline-1 active:cursor-grabbing',
+                'absolute z-20 cursor-pointer overflow-hidden bg-[#101314] outline outline-1 active:cursor-grabbing',
                 draggingKey ===
                 placement.key
                   ? 'outline-amber-200 opacity-60'
@@ -297,11 +304,17 @@ function StableBackpackGrid({
               <button
                 type="button"
                 title="Remove item"
-                onClick={() =>
+                onMouseDown={(event) =>
+                  event.stopPropagation()
+                }
+                onClick={(event) => {
+
+                  event.stopPropagation()
+
                   removeInstance(
                     placement,
                   )
-                }
+                }}
                 className="absolute right-1 top-1 z-40 flex h-5 w-5 items-center justify-center bg-red-500 text-black"
               >
                 <X size={10} />
