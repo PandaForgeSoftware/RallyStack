@@ -33,15 +33,121 @@ import {
 } from '../data/wardogsAmmoStackRules'
 
 import {
+  ammunitionByName,
   attachmentItems,
   combatDataMeta,
+  gearItems,
   weaponLiveData,
 } from '../data/wardogsCombatData'
+
+import {
+  zoneAttachmentItems,
+  zoneAttachmentMeta,
+} from '../data/wardogsZoneAttachments'
 import BackpackPackingView from '../features/loadouts/components/BackpackPackingView'
 import WardogsItemImage from '../features/loadouts/components/WardogsItemImage'
 
 const money = (value) =>
-  `$${Number(value || 0).toLocaleString()}`
+  `${Number(value || 0).toLocaleString()}`
+
+const normaliseDataName =
+  (value) =>
+    String(
+      value ||
+      '',
+    )
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9]+/g,
+        '',
+      )
+
+const weightBands = [
+  {
+    name:
+      'LIGHTEST',
+    min:
+      0,
+    max:
+      10,
+    movement:
+      'NO PENALTY',
+    ads:
+      'BASE ADS',
+    detail:
+      'Full movement and sprint.',
+  },
+  {
+    name:
+      'LIGHT',
+    min:
+      10,
+    max:
+      17,
+    movement:
+      '-5% MOVE',
+    ads:
+      'SLIGHT ADS PENALTY',
+    detail:
+      'Minor movement and stamina penalty.',
+  },
+  {
+    name:
+      'MEDIUM',
+    min:
+      17,
+    max:
+      27,
+    movement:
+      '-13% MOVE',
+    ads:
+      '+6% ADS',
+    detail:
+      'Noticeably slower with reduced stamina recovery.',
+  },
+  {
+    name:
+      'HEAVY',
+    min:
+      27,
+    max:
+      40,
+    movement:
+      '-20% MOVE',
+    ads:
+      '+15% ADS',
+    detail:
+      'Tactical sprint disabled.',
+  },
+  {
+    name:
+      'SUPER HEAVY',
+    min:
+      40,
+    max:
+      Infinity,
+    movement:
+      '-20% MOVE',
+    ads:
+      '+17% ADS',
+    detail:
+      'Sprint and tactical sprint disabled.',
+  },
+]
+
+const getWeightBand =
+  (weight) =>
+    weightBands.find(
+      (band) =>
+        weight >=
+          band.min &&
+        weight <
+          band.max,
+    ) ||
+    weightBands[
+      weightBands.length -
+      1
+    ]
 
 const slots = [
   {
@@ -100,6 +206,13 @@ const weaponSlots =
     'primary',
     'sidearm',
     'specialist',
+  ])
+
+const gearSlots =
+  new Set([
+    'helmet',
+    'armor',
+    'vest',
   ])
 
 const backpackCategories = [
@@ -175,14 +288,33 @@ const getMagazineOptions =
   }
 
 
-const attachmentSlotTypes = [
-  ['MAGAZINE', 'magazine'],
-  ['OPTIC', 'optic'],
-  ['MUZZLE', 'muzzle'],
-  ['FOREGRIP', 'foregrip'],
-  ['HANDGUARD', 'handguard'],
-  ['BARREL', 'barrel'],
+const attachmentTypeOrder = [
+  'MAGAZINE',
+  'OPTIC',
+  'CANTED_SIGHT',
+  'MUZZLE',
+  'FOREGRIP',
+  'GRIP',
+  'PISTOL_GRIP',
+  'HANDGUARD',
+  'BARREL',
+  'RECEIVER',
+  'STOCK',
+  'DUST_COVER',
+  'TRIGGER',
+  'OTHER',
 ]
+
+const attachmentKey =
+  (type) =>
+    type
+      .toLowerCase()
+
+const completeAttachmentItems =
+  zoneAttachmentItems.length >
+    0
+    ? zoneAttachmentItems
+    : attachmentItems
 
 const getAttachmentOptions =
   (
@@ -207,7 +339,7 @@ const getAttachmentOptions =
       )
 
     const synced =
-      attachmentItems.filter(
+      completeAttachmentItems.filter(
         (item) =>
           item.type ===
             type &&
@@ -348,6 +480,90 @@ function WeaponWorkbench({
           ),
       )
 
+  const zoneModifiers =
+    equippedAttachmentList
+      .map(
+        (item) =>
+          item.modifiers,
+      )
+      .filter(Boolean)
+
+  const modifierTotal =
+    (key) =>
+      zoneModifiers.reduce(
+        (
+          total,
+          modifier,
+        ) =>
+          total +
+          Number(
+            modifier?.[
+              key
+            ] ||
+            0,
+          ),
+        0,
+      )
+
+  const verticalRecoilPct =
+    modifierTotal(
+      'verticalRecoilPct',
+    )
+
+  const horizontalRecoilPct =
+    modifierTotal(
+      'horizontalRecoilPct',
+    )
+
+  const spreadPct =
+    modifierTotal(
+      'spreadPct',
+    )
+
+  const adsPct =
+    modifierTotal(
+      'adsPct',
+    )
+
+  const adsSecondsDelta =
+    modifierTotal(
+      'adsSeconds',
+    )
+
+  const selectedZoom =
+    equippedAttachmentList
+      .map(
+        (item) =>
+          item.modifiers
+            ?.zoom,
+      )
+      .find(
+        (value) =>
+          value != null,
+      ) ||
+    opticMagnification
+
+  const baseAdsTime =
+    Number(
+      liveStats.adsTime ||
+      0,
+    )
+
+  const configuredAdsTime =
+    baseAdsTime
+      ? (
+          (
+            baseAdsTime *
+            (
+              1 +
+              adsPct /
+                100
+            )
+          ) +
+          adsSecondsDelta
+        )
+      : null
+
   if (!weapon) {
 
     return (
@@ -437,63 +653,80 @@ function WeaponWorkbench({
     ],
     [
       'ADS ZOOM',
-      opticMagnification
-        ? `${opticMagnification}×`
+      selectedZoom
+        ? `${selectedZoom}×`
         : liveStats.adsZoom == null
           ? '—'
           : `${liveStats.adsZoom}×`,
-      opticMagnification
-        ? 'FROM OPTIC'
+      selectedZoom
+        ? 'CONFIGURED'
         : null,
     ],
     [
       'ADS TIME',
-      liveStats.adsTime == null
+      configuredAdsTime == null
         ? '—'
-        : `${liveStats.adsTime}S`,
-      hasEffect(
-        /ADS speed improvements/i,
+        : `${configuredAdsTime.toFixed(
+            3,
+          )}S`,
+      (
+        adsPct !==
+          0 ||
+        adsSecondsDelta !==
+          0
       )
-        ? 'IMPROVED BY ATTACHMENT'
+        ? `BASE ${baseAdsTime.toFixed(
+            3,
+          )}S`
         : null,
     ],
     [
       'RECOIL',
-      hasEffect(
-        /recoil reduction/i,
-      )
-        ? 'IMPROVED'
-        : 'BASE',
-      attachmentEffects
-        .filter(
-          (effect) =>
-            /recoil/i.test(
-              effect,
-            ),
-        )
-        .join(
-          ' • ',
-        ) ||
-        null,
+      verticalRecoilPct ===
+        0
+        ? '100%'
+        : `${(
+            100 +
+            verticalRecoilPct
+          ).toFixed(
+            0,
+          )}% V`,
+      verticalRecoilPct ===
+        0
+        ? null
+        : `${verticalRecoilPct > 0 ? '+' : ''}${verticalRecoilPct}% FROM ATTACHMENTS`,
+    ],
+    [
+      'HORIZONTAL RECOIL',
+      horizontalRecoilPct ===
+        0
+        ? '100%'
+        : `${(
+            100 +
+            horizontalRecoilPct
+          ).toFixed(
+            0,
+          )}%`,
+      horizontalRecoilPct ===
+        0
+        ? null
+        : `${horizontalRecoilPct > 0 ? '+' : ''}${horizontalRecoilPct}% FROM ATTACHMENTS`,
     ],
     [
       'SPREAD',
-      hasEffect(
-        /spread reduction/i,
-      )
-        ? 'IMPROVED'
-        : 'BASE',
-      attachmentEffects
-        .filter(
-          (effect) =>
-            /spread/i.test(
-              effect,
-            ),
-        )
-        .join(
-          ' • ',
-        ) ||
-        null,
+      spreadPct ===
+        0
+        ? '100%'
+        : `${(
+            100 +
+            spreadPct
+          ).toFixed(
+            0,
+          )}%`,
+      spreadPct ===
+        0
+        ? null
+        : `${spreadPct > 0 ? '+' : ''}${spreadPct}% FROM ATTACHMENTS`,
     ],
     [
       'MAG CAPACITY',
@@ -589,11 +822,13 @@ function WeaponWorkbench({
 
             <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
 
-              {attachmentSlotTypes.map(
-                ([
-                  type,
-                  key,
-                ]) => {
+              {attachmentTypeOrder.map(
+                (type) => {
+
+                  const key =
+                    attachmentKey(
+                      type,
+                    )
 
                   const selected =
                     attachments?.[
@@ -1037,6 +1272,12 @@ const [
     useState(false)
 
   const [
+    gearPicker,
+    setGearPicker,
+  ] =
+    useState(null)
+
+  const [
     pendingReserve,
     setPendingReserve,
   ] =
@@ -1147,10 +1388,31 @@ const [
   const equippedWeapons =
     useMemo(
       () =>
-        Object.values(
-          equipped,
-        ).filter(Boolean),
-      [equipped],
+        [
+          equipped.primary,
+          equipped.sidearm,
+          equipped.specialist,
+        ].filter(Boolean),
+      [
+        equipped.primary,
+        equipped.sidearm,
+        equipped.specialist,
+      ],
+    )
+
+  const equippedGearItems =
+    useMemo(
+      () =>
+        [
+          equipped.helmet,
+          equipped.armor,
+          equipped.vest,
+        ].filter(Boolean),
+      [
+        equipped.helmet,
+        equipped.armor,
+        equipped.vest,
+      ],
     )
 
   const equippedCalibres =
@@ -1442,8 +1704,13 @@ const [
           ) =>
             total +
             Number(
-              item.price ||
-                0,
+              (
+                weaponLiveData[
+                  item.id
+                ]?.price
+              ) ??
+              item.price ??
+              0,
             ),
           Number(
             selectedBackpack?.price ||
@@ -1452,6 +1719,18 @@ const [
           Number(
             selectedTraversal?.price ||
               0,
+          ) +
+          equippedGearItems.reduce(
+            (
+              gearTotal,
+              item,
+            ) =>
+              gearTotal +
+              Number(
+                item.price ||
+                  0,
+              ),
+            0,
           ),
         ) +
         equippedAttachmentItems.reduce(
@@ -1468,6 +1747,7 @@ const [
         ),
       [
         equippedWeapons,
+        equippedGearItems,
         equippedAttachmentItems,
         selectedBackpack,
         selectedTraversal,
@@ -1565,9 +1845,57 @@ const [
       ],
     )
 
+  const loadedAmmoValue =
+    Object.values(
+      weaponAmmo,
+    )
+      .filter(Boolean)
+      .reduce(
+        (
+          total,
+          entry,
+        ) => {
+
+          const rule =
+            ammoStackRules[
+              entry.item.id
+            ] || {}
+
+          const purchaseQuantity =
+            Math.max(
+              1,
+              Number(
+                rule.purchaseQuantity ||
+                entry.item.stack ||
+                1,
+              ),
+            )
+
+          const purchases =
+            Math.ceil(
+              Number(
+                entry.rounds ||
+                  0,
+              ) /
+              purchaseQuantity,
+            )
+
+          return (
+            total +
+            purchases *
+              Number(
+                entry.item.price ||
+                  0,
+              )
+          )
+        },
+        0,
+      )
+
   const totalValue =
     equipmentValue +
-    contentsValue
+    contentsValue +
+    loadedAmmoValue
 
   const knownWeight =
     useMemo(
@@ -1581,8 +1909,11 @@ const [
             ) =>
               total +
               Number(
-                item.weight ||
-                  0,
+                weaponLiveData[
+                  item.id
+                ]?.weight ??
+                item.weight ??
+                0,
               ),
             Number(
               selectedBackpack?.weight ||
@@ -1591,6 +1922,18 @@ const [
             Number(
               selectedTraversal?.weight ||
                 0,
+            ) +
+            equippedGearItems.reduce(
+              (
+                total,
+                item,
+              ) =>
+                total +
+                Number(
+                  item.weight ||
+                    0,
+                ),
+              0,
             ),
           ) +
           equippedAttachmentItems.reduce(
@@ -1606,29 +1949,107 @@ const [
             0,
           )
 
-        return medicalRows.reduce(
-          (
-            total,
-            row,
-          ) =>
-            total +
+        const medicalWeight =
+          medicalRows.reduce(
             (
-              Number(
-                row.item.weight ||
+              total,
+              row,
+            ) =>
+              total +
+              (
+                Number(
+                  row.item.weight ||
+                    0,
+                ) *
+                row.quantity
+              ),
+            0,
+          )
+
+        const reserveAmmoWeight =
+          ammoRows.reduce(
+            (
+              total,
+              item,
+            ) => {
+
+              const live =
+                ammunitionByName[
+                  normaliseDataName(
+                    item.name,
+                  )
+                ]
+
+              const weight =
+                Number(
+                  live?.weight ||
                   0,
-              ) *
-              row.quantity
-            ),
-          baseWeight,
+                )
+
+              return (
+                total +
+                weight *
+                  Number(
+                    item.physicalStacks ||
+                    0,
+                  )
+              )
+            },
+            0,
+          )
+
+        const loadedAmmoWeight =
+          Object.values(
+            weaponAmmo,
+          )
+            .filter(Boolean)
+            .reduce(
+              (
+                total,
+                entry,
+              ) => {
+
+                const live =
+                  ammunitionByName[
+                    normaliseDataName(
+                      entry.item.name,
+                    )
+                  ]
+
+                const weight =
+                  Number(
+                    live?.weight ||
+                    0,
+                  )
+
+                return total +
+                  weight
+              },
+              0,
+            )
+
+        return (
+          baseWeight +
+          medicalWeight +
+          reserveAmmoWeight +
+          loadedAmmoWeight
         )
       },
       [
         equippedWeapons,
+        equippedGearItems,
         equippedAttachmentItems,
         selectedBackpack,
         selectedTraversal,
         medicalRows,
+        ammoRows,
+        weaponAmmo,
       ],
+    )
+
+  const weightBand =
+    getWeightBand(
+      knownWeight,
     )
 
   const totalRounds =
@@ -1773,6 +2194,19 @@ const [
       }
 
       if (
+        gearSlots.has(
+          slot,
+        )
+      ) {
+
+        setGearPicker({
+          slot,
+        })
+
+        return
+      }
+
+      if (
         weaponSlots.has(
           slot,
         )
@@ -1782,6 +2216,28 @@ const [
           slot,
         })
       }
+    }
+
+  const equipGear =
+    (item) => {
+
+      if (
+        !gearPicker
+      ) {
+        return
+      }
+
+      setEquipped(
+        (current) => ({
+          ...current,
+          [gearPicker.slot]:
+            item,
+        }),
+      )
+
+      setGearPicker(
+        null,
+      )
     }
 
   const equipWeapon =
@@ -2803,6 +3259,87 @@ const [
       }
 
       if (
+        gearSlots.has(
+          selectedSlot,
+        )
+      ) {
+
+        const current =
+          equipped[
+            selectedSlot
+          ]
+
+        return (
+          <div className="flex min-h-[360px] items-center justify-center p-5 text-center">
+
+            <div className="w-full max-w-sm">
+
+              {current ? (
+
+                <WardogsItemImage
+                  item={current}
+                  className="mx-auto h-36 w-44 border border-white/8 bg-black/20"
+                  imageClassName="p-3 object-contain"
+                />
+
+              ) : (
+
+                <Shield
+                  size={44}
+                  strokeWidth={1}
+                  className="mx-auto text-stone-700"
+                />
+
+              )}
+
+              <div className="mt-4 text-lg font-black text-white">
+                {current?.name ||
+                  `NO ${selectedSlotDefinition?.title} EQUIPPED`}
+              </div>
+
+              {current && (
+
+                <div className="mt-2 text-[10px] text-stone-500">
+                  {current.weight == null
+                    ? 'WEIGHT ?'
+                    : `${Number(
+                        current.weight,
+                      ).toFixed(
+                        2,
+                      )} KG`}
+                  {' / '}
+                  {current.price == null
+                    ? 'PRICE ?'
+                    : money(
+                        current.price,
+                      )}
+                </div>
+
+              )}
+
+              <button
+                type="button"
+                onClick={() =>
+                  setGearPicker({
+                    slot:
+                      selectedSlot,
+                  })
+                }
+                className="mt-5 w-full bg-amber-500 px-4 py-3 text-[10px] font-black tracking-wider text-black"
+              >
+                {current
+                  ? 'CHANGE'
+                  : 'SELECT'}{' '}
+                {selectedSlotDefinition?.title}
+              </button>
+
+            </div>
+
+          </div>
+        )
+      }
+
+      if (
         selectedSlot ===
         'backpack'
       ) {
@@ -3122,11 +3659,15 @@ const [
 
             <div className="text-right text-[9px] font-bold tracking-wider text-stone-600">
 
-              {combatDataMeta.syncedAt
-                    ? `COMBAT DATA ${new Date(
-                        combatDataMeta.syncedAt,
+              {zoneAttachmentMeta.syncedAt
+                    ? `${zoneAttachmentMeta.count} ATTACHMENTS • ${new Date(
+                        zoneAttachmentMeta.syncedAt,
                       ).toLocaleDateString()}`
-                    : dataVersion.label}
+                    : combatDataMeta.syncedAt
+                      ? `COMBAT DATA ${new Date(
+                          combatDataMeta.syncedAt,
+                        ).toLocaleDateString()}`
+                      : dataVersion.label}
 
               <div className="mt-1">
                 {dataVersion.date}
@@ -3265,11 +3806,23 @@ const [
                 KNOWN WEIGHT
               </div>
 
-              <div className="mt-2 text-xl font-black text-white">
-                {knownWeight.toFixed(
-                  2,
-                )}{' '}
-                KG
+              <div className="mt-2 flex items-end justify-between gap-3">
+
+                <div className="text-xl font-black text-white">
+                  {knownWeight.toFixed(
+                    2,
+                  )}{' '}
+                  KG
+                </div>
+
+                <div className="border border-amber-500/30 bg-amber-500/[0.06] px-2 py-1 text-[9px] font-black text-amber-400">
+                  {weightBand.name}
+                </div>
+
+              </div>
+
+              <div className="mt-2 text-[9px] text-stone-600">
+                {weightBand.detail}
               </div>
 
             </div>
@@ -3767,7 +4320,15 @@ const [
                         'WEIGHT',
                         `${knownWeight.toFixed(
                           2,
-                        )} KG`,
+                        )} KG • ${weightBand.name}`,
+                      ],
+                      [
+                        'MOVEMENT',
+                        weightBand.movement,
+                      ],
+                      [
+                        'HANDLING',
+                        weightBand.ads,
                       ],
                       [
                         'WEAPONS',
@@ -4513,6 +5074,148 @@ const [
             )}
 
 
+
+          </div>
+
+        </div>
+
+      )}
+
+      {gearPicker && (
+
+        <div
+          className="fixed inset-0 z-[138] flex items-center justify-center bg-black/80 p-5 backdrop-blur-sm"
+          onMouseDown={(event) => {
+
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              setGearPicker(
+                null,
+              )
+            }
+          }}
+        >
+
+          <div className="flex max-h-[88vh] w-full max-w-5xl flex-col border border-white/12 bg-[#0d0f10] shadow-2xl">
+
+            <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
+
+              <div>
+
+                <div className="text-[9px] font-black tracking-[0.16em] text-amber-500">
+                  GEAR
+                </div>
+
+                <div className="mt-1 text-xl font-black text-white">
+                  SELECT {gearPicker.slot.toUpperCase()}
+                </div>
+
+                <div className="mt-1 text-[10px] text-stone-500">
+                  Current WARDOGS price, weight and artwork.
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setGearPicker(
+                    null,
+                  )
+                }
+                className="flex h-10 w-10 items-center justify-center border border-white/10 text-stone-500 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+
+            </div>
+
+            <div className="grid gap-3 overflow-y-auto p-4 sm:grid-cols-2 lg:grid-cols-3">
+
+              {gearItems
+                .filter(
+                  (item) =>
+                    item.type ===
+                    (
+                      gearPicker.slot ===
+                        'armor'
+                        ? 'ARMOR'
+                        : gearPicker.slot ===
+                            'helmet'
+                          ? 'HELMET'
+                          : 'VEST'
+                    ),
+                )
+                .map(
+                  (item) => (
+
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() =>
+                        equipGear(
+                          item,
+                        )
+                      }
+                      className={[
+                        'border p-4 text-left transition',
+                        equipped[
+                          gearPicker.slot
+                        ]?.id ===
+                        item.id
+                          ? 'border-amber-500/50 bg-amber-500/[0.05]'
+                          : 'border-white/8 bg-[#111416] hover:border-amber-500/30',
+                      ].join(' ')}
+                    >
+
+                      <WardogsItemImage
+                        item={item}
+                        className="h-36 w-full border border-white/6 bg-black/20"
+                        imageClassName="p-3 object-contain"
+                      />
+
+                      <div className="mt-3 text-[12px] font-black text-white">
+                        {item.name}
+                      </div>
+
+                      <div className="mt-2 flex items-center justify-between text-[10px]">
+
+                        <span className="text-stone-500">
+                          {item.weight == null
+                            ? 'WEIGHT ?'
+                            : `${Number(
+                                item.weight,
+                              ).toFixed(
+                                2,
+                              )} KG`}
+                        </span>
+
+                        <span className="font-black text-amber-400">
+                          {item.price == null
+                            ? 'PRICE ?'
+                            : money(
+                                item.price,
+                              )}
+                        </span>
+
+                      </div>
+
+                      {item.armorLevel && (
+
+                        <div className="mt-3 border border-white/8 bg-black/20 p-2 text-[9px] font-black text-stone-400">
+                          PROTECTION LEVEL {item.armorLevel}
+                        </div>
+
+                      )}
+
+                    </button>
+
+                  ),
+                )}
+
+            </div>
 
           </div>
 
