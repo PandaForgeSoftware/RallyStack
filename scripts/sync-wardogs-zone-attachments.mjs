@@ -5,6 +5,10 @@ import {
   weapons,
 } from '../src/data/wardogsLoadoutData.js'
 
+import {
+  packableItems,
+} from '../src/data/wardogsPackableData.js'
+
 const root =
   process.cwd()
 
@@ -22,6 +26,9 @@ const assetFolder =
 
 const LIST_URL =
   'https://wardogs.zone/database/attachments'
+
+const WEAPONS_URL =
+  'https://wardogs.zone/database/weapons'
 
 const USER_AGENT =
   'RallyStack-Community-Loadout-Builder/4.0'
@@ -323,6 +330,46 @@ function parseSignedSeconds(
     : null
 }
 
+function normaliseName(
+  value,
+) {
+
+  return String(
+    value ||
+    '',
+  )
+    .toLowerCase()
+    .replace(
+      /[^a-z0-9]+/g,
+      '',
+    )
+}
+
+function databaseLinks(
+  html,
+) {
+
+  return Array.from(
+    String(
+      html ||
+      '',
+    ).matchAll(
+      /<a\b[^>]*href=["'](?<href>\/database\/(?!compare(?:\?|\/)|attachments(?:\?|["'])|weapons(?:\?|["'])|skins(?:\?|["']))[^"'?#]+)["'][^>]*>(?<body>[\s\S]*?)<\/a>/gi,
+    ),
+  ).map(
+    (match) => ({
+      href:
+        match.groups?.href ||
+        '',
+      text:
+        plainText(
+          match.groups?.body ||
+          '',
+        ),
+    }),
+  )
+}
+
 async function mapLimit(
   values,
   limit,
@@ -396,42 +443,150 @@ const listing =
     LIST_URL,
   )
 
-const hrefs =
+const attachmentCandidateMap =
+  new Map()
+
+databaseLinks(
+  listing,
+).forEach(
+  (candidate) => {
+
+    const rawType =
+      typeFromText(
+        candidate.text,
+      )
+
+    if (
+      !rawType
+    ) {
+      return
+    }
+
+    attachmentCandidateMap.set(
+      candidate.href,
+      {
+        ...candidate,
+        rawType,
+      },
+    )
+  },
+)
+
+const attachmentCandidates =
   Array.from(
-    new Set(
-      Array.from(
-        listing.matchAll(
-          /href=["'](\/database\/(?!attachments(?:\?|["']))[^"'?#]+)["']/gi,
-        ),
-      ).map(
-        (match) =>
-          match[1],
-      ),
-    ),
+    attachmentCandidateMap.values(),
   )
 
 console.log(
-  `Attachment links discovered: ${hrefs.length}`,
+  `Attachment records discovered: ${attachmentCandidates.length}`,
 )
 
 if (
-  hrefs.length <
-  150
+  attachmentCandidates.length <
+  200
 ) {
 
   throw new Error(
-    'Wardogs Zone attachment discovery returned too few records. Existing generated data was not touched.',
+    'Wardogs Zone returned fewer than 200 classified attachments. Existing generated data was not touched.',
+  )
+}
+
+console.log('')
+console.log(
+  'Reading authoritative weapon page references...',
+)
+
+const weaponListing =
+  await fetchText(
+    WEAPONS_URL,
+  )
+
+const weaponListingLinks =
+  databaseLinks(
+    weaponListing,
+  )
+
+const weaponPageById =
+  new Map()
+
+const weaponIdByHref =
+  new Map()
+
+for (
+  const weapon of
+  weapons
+) {
+
+  const needle =
+    normaliseName(
+      weapon.name,
+    )
+
+  const match =
+    weaponListingLinks.find(
+      (entry) => {
+
+        const haystack =
+          normaliseName(
+            entry.text,
+          )
+
+        return (
+          haystack ===
+            needle ||
+          haystack.startsWith(
+            needle,
+          )
+        )
+      },
+    )
+
+  if (
+    !match
+  ) {
+    continue
+  }
+
+  weaponPageById.set(
+    weapon.id,
+    match.href,
+  )
+
+  weaponIdByHref.set(
+    match.href,
+    weapon.id,
+  )
+}
+
+console.log(
+  `Local weapons matched to current Zone pages: ${weaponPageById.size}/${weapons.length}`,
+)
+
+if (
+  weaponPageById.size <
+  Math.max(
+    30,
+    weapons.length -
+      2,
+  )
+) {
+
+  throw new Error(
+    'Too many RallyStack weapons could not be matched to current Wardogs Zone pages. Existing generated data was not touched.',
   )
 }
 
 const rawItems =
   await mapLimit(
-    hrefs,
+    attachmentCandidates,
     8,
     async (
-      href,
+      candidate,
       index,
     ) => {
+
+      const href =
+        candidate.href
 
       const url =
         `https://wardogs.zone${href}`
@@ -461,9 +616,7 @@ const rawItems =
             : null
 
         const rawType =
-          typeFromText(
-            text,
-          )
+          candidate.rawType
 
         if (
           !name ||
@@ -541,6 +694,22 @@ const rawItems =
             /ZERO\s*(\d+)-(\d+)\s*m/i,
           )
 
+        const compatibleWeapons =
+          Array.from(
+            new Set(
+              databaseLinks(
+                html,
+              )
+                .map(
+                  (entry) =>
+                    weaponIdByHref.get(
+                      entry.href,
+                    ),
+                )
+                .filter(Boolean),
+            ),
+          )
+
         if (
           (
             index +
@@ -551,7 +720,7 @@ const rawItems =
         ) {
 
           console.log(
-            `Processed ${index + 1}/${hrefs.length}`,
+            `Processed ${index + 1}/${attachmentCandidates.length}`,
           )
         }
 
@@ -627,7 +796,7 @@ const rawItems =
                   )
                 : null,
           },
-          compatibleWeapons: [],
+          compatibleWeapons,
           sourceUrl:
             url,
           image,
@@ -644,7 +813,7 @@ const items =
 
 if (
   items.length <
-  150
+  200
 ) {
 
   throw new Error(
@@ -654,73 +823,167 @@ if (
 
 console.log('')
 console.log(
-  'Reading weapon compatibility and live handling stats...',
+  'Reading exact gunsmith slots, magazines and live weapon stats...',
 )
 
 const zoneWeaponData = {}
+
+const packableMagazines =
+  packableItems.filter(
+    (item) =>
+      item.packCategory ===
+      'MAGAZINES',
+  )
+
+const loadoutSlotLabels = [
+  [
+    'CANTED_SIGHT',
+    /Canted\s+Sight/i,
+  ],
+  [
+    'PISTOL_GRIP',
+    /Pistol\s+Grip/i,
+  ],
+  [
+    'DUST_COVER',
+    /Dust\s+Cover/i,
+  ],
+  [
+    'UNDERBARREL',
+    /Underbarrel/i,
+  ],
+  [
+    'HANDGUARD',
+    /Handguard/i,
+  ],
+  [
+    'MAGAZINE',
+    /Magazine/i,
+  ],
+  [
+    'MUZZLE',
+    /Muzzle|Suppressor/i,
+  ],
+  [
+    'OPTIC',
+    /Sight|Optic/i,
+  ],
+  [
+    'STOCK',
+    /Stock/i,
+  ],
+  [
+    'BARREL',
+    /Barrel/i,
+  ],
+  [
+    'TRIGGER',
+    /Trigger/i,
+  ],
+  [
+    'GRIP',
+    /(?:^|\s)Grip(?:\s|$)/i,
+  ],
+]
 
 for (
   const weapon of
   weapons
 ) {
 
-  const candidates = [
-    weapon.id,
-    safeSlug(
-      weapon.name,
-    ),
-    safeSlug(
-      weapon.name,
-    ).replaceAll(
-      '-',
-      '',
-    ),
-  ]
-
-  let text =
-    ''
-
-  for (
-    const slug of
-    Array.from(
-      new Set(
-        candidates,
-      ),
+  const href =
+    weaponPageById.get(
+      weapon.id,
     )
-  ) {
 
-    try {
-
-      text =
-        plainText(
-          await fetchText(
-            `https://wardogs.zone/database/${slug}`,
-          ),
-        )
-
-      if (
-        text.includes(
-          weapon.name,
-        )
-      ) {
-        break
-      }
-    }
-    catch {
-      text =
-        ''
-    }
-  }
-
-  if (!text) {
+  if (!href) {
     continue
   }
 
+  let html =
+    ''
+
+  try {
+
+    html =
+      await fetchText(
+        `https://wardogs.zone${href}`,
+      )
+  }
+  catch {
+    continue
+  }
+
+  const text =
+    plainText(
+      html,
+    )
+
   const loadout =
     text.match(
-      /Loadout\s+\d+\s+SLOTS[\s\S]*?(?=Skins & Cosmetics|Compatible Ammunition|Other [A-Za-z ]+\s+\d+|Reference)/i,
+      /Loadout\s+\d+\s+SLOTS[\s\S]*?(?=Skins & Cosmetics|Compatible Ammunition|Magazines\s+\d+|Other [A-Za-z ]+\s+\d+|Reference)/i,
     )?.[0] ||
-    text
+    ''
+
+  const pageLinks =
+    databaseLinks(
+      html,
+    )
+
+  const compatibleMagazines =
+    Array.from(
+      new Set(
+        packableMagazines
+          .filter(
+            (magazine) => {
+
+              const needle =
+                normaliseName(
+                  magazine.name,
+                )
+
+              return pageLinks.some(
+                (entry) =>
+                  normaliseName(
+                    entry.text,
+                  ).includes(
+                    needle,
+                  ),
+              )
+            },
+          )
+          .map(
+            (magazine) =>
+              magazine.name,
+          ),
+      ),
+    )
+
+  const attachmentSlots =
+    loadoutSlotLabels
+      .filter(
+        ([, matcher]) =>
+          matcher.test(
+            loadout,
+          ),
+      )
+      .map(
+        ([slot]) =>
+          slot,
+      )
+
+  if (
+    compatibleMagazines.length >
+      0 &&
+    !attachmentSlots.includes(
+      'MAGAZINE',
+    )
+  ) {
+
+    attachmentSlots.push(
+      'MAGAZINE',
+    )
+  }
 
   const baseDamage =
     safeNumber(
@@ -736,6 +999,10 @@ for (
       weapon.id,
     name:
       weapon.name,
+    sourceUrl:
+      `https://wardogs.zone${href}`,
+    attachmentSlots,
+    compatibleMagazines,
     price:
       safeNumber(
         text.match(
@@ -805,26 +1072,66 @@ for (
         )?.[1],
       ),
   }
+}
 
-  for (
-    const item of
-    items
-  ) {
+const compatibilityCount =
+  items.filter(
+    (item) =>
+      item.compatibleWeapons
+        .length >
+      0,
+  ).length
 
-    if (
-      text
-        .toLowerCase()
-        .includes(
-          item.name
-            .toLowerCase(),
-        )
-    ) {
+const incompatibleBipodSmgPairs =
+  items
+    .filter(
+      (item) =>
+        /\bBipod\b/i.test(
+          item.name,
+        ),
+    )
+    .flatMap(
+      (item) =>
+        item.compatibleWeapons
+          .map(
+            (weaponId) => ({
+              item:
+                item.name,
+              weapon:
+                weapons.find(
+                  (weapon) =>
+                    weapon.id ===
+                    weaponId,
+                ),
+            }),
+          )
+          .filter(
+            (entry) =>
+              entry.weapon
+                ?.category ===
+              'SMG',
+          ),
+    )
 
-      item.compatibleWeapons.push(
-        weapon.id,
-      )
-    }
-  }
+console.log(
+  `Attachments with authoritative weapon fits: ${compatibilityCount}/${items.length}`,
+)
+
+if (
+  incompatibleBipodSmgPairs.length >
+  0
+) {
+
+  console.log(
+    'NOTE: Current source explicitly links these bipod/SMG pairs:',
+  )
+
+  incompatibleBipodSmgPairs.forEach(
+    (entry) =>
+      console.log(
+        `  ${entry.item} -> ${entry.weapon.name}`,
+      ),
+  )
 }
 
 const output =
@@ -844,6 +1151,12 @@ export const zoneAttachmentMeta = ${JSON.stringify(
         items.length,
       source:
         'Wardogs Zone',
+      compatibilitySource:
+        'Attachment item-page weapon links',
+      localWeaponsMatched:
+        weaponPageById.size,
+      attachmentsWithFits:
+        compatibilityCount,
     },
     null,
     2,
@@ -892,4 +1205,10 @@ console.log(
 )
 console.log(
   `WEAPON STATS    ${Object.keys(zoneWeaponData).length}/${weapons.length}`,
+)
+console.log(
+  `WITH FITS       ${compatibilityCount}/${items.length}`,
+)
+console.log(
+  `WEAPON PAGES    ${weaponPageById.size}/${weapons.length}`,
 )
