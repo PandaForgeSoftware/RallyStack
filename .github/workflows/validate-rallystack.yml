@@ -1,9 +1,6 @@
 name: Validate RallyStack loadout branch
 
 on:
-  push:
-    branches:
-      - planner-mannequin-v1
   workflow_dispatch:
 
 permissions:
