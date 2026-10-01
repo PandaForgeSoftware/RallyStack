@@ -31,6 +31,12 @@ import {
 import {
   ammoStackRules,
 } from '../data/wardogsAmmoStackRules'
+
+import {
+  attachmentItems,
+  combatDataMeta,
+  weaponLiveData,
+} from '../data/wardogsCombatData'
 import BackpackPackingView from '../features/loadouts/components/BackpackPackingView'
 import WardogsItemImage from '../features/loadouts/components/WardogsItemImage'
 
@@ -161,13 +167,85 @@ const getMagazineOptions =
     )
   }
 
+
+const attachmentSlotTypes = [
+  ['MAGAZINE', 'magazine'],
+  ['OPTIC', 'optic'],
+  ['MUZZLE', 'muzzle'],
+  ['FOREGRIP', 'foregrip'],
+  ['HANDGUARD', 'handguard'],
+  ['BARREL', 'barrel'],
+]
+
+const getAttachmentOptions =
+  (
+    weapon,
+    type,
+  ) => {
+
+    if (!weapon) {
+      return []
+    }
+
+    const live =
+      weaponLiveData[
+        weapon.id
+      ]
+
+    const compatibleNames =
+      new Set(
+        live
+          ?.compatibleAttachments ||
+        [],
+      )
+
+    const synced =
+      attachmentItems.filter(
+        (item) =>
+          item.type ===
+            type &&
+          (
+            compatibleNames
+              .size ===
+              0
+              ? item
+                  .compatibleWeapons
+                  ?.includes(
+                    weapon.id,
+                  )
+              : compatibleNames
+                  .has(
+                    item.name,
+                  )
+          ),
+      )
+
+    if (
+      synced.length >
+      0
+    ) {
+      return synced
+    }
+
+    if (
+      type ===
+      'MAGAZINE'
+    ) {
+      return getMagazineOptions(
+        weapon,
+      )
+    }
+
+    return []
+  }
+
 function WeaponWorkbench({
   weapon,
   weaponSlot,
   selectedSlot,
   selectSlot,
-  magazine,
-  openMagazinePicker,
+  attachments,
+  openAttachmentPicker,
   openAmmoPicker,
   clearAttachment,
   loadedAmmo,
@@ -177,6 +255,15 @@ function WeaponWorkbench({
   removeReserve,
 }) {
 
+  const magazine =
+    attachments?.magazine ||
+    null
+
+  const liveStats =
+    weaponLiveData[
+      weapon?.id
+    ] || {}
+
   const magazineCapacity =
     magazine?.name
       ?.match(
@@ -184,27 +271,51 @@ function WeaponWorkbench({
       )?.[1] ||
     null
 
+  const equippedAttachmentList =
+    Object.values(
+      attachments ||
+      {},
+    ).filter(Boolean)
+
   const attachmentWeight =
-    Number(
-      magazine?.weight ||
+    equippedAttachmentList.reduce(
+      (
+        total,
+        item,
+      ) =>
+        total +
+        Number(
+          item.weight ||
+            0,
+        ),
       0,
     )
 
   const attachmentPrice =
-    Number(
-      magazine?.price ||
+    equippedAttachmentList.reduce(
+      (
+        total,
+        item,
+      ) =>
+        total +
+        Number(
+          item.price ||
+            0,
+        ),
       0,
     )
 
   const weaponWeight =
     Number(
-      weapon?.weight ||
+      liveStats.weight ??
+      weapon?.weight ??
       0,
     )
 
   const weaponPrice =
     Number(
-      weapon?.price ||
+      liveStats.price ??
+      weapon?.price ??
       0,
     )
 
@@ -238,12 +349,14 @@ function WeaponWorkbench({
   const stats = [
     [
       'DAMAGE',
-      weapon.damage ??
+      liveStats.damage ??
+        weapon.damage ??
         '—',
     ],
     [
       'RPM',
-      weapon.rpm ??
+      liveStats.rpm ??
+        weapon.rpm ??
         '—',
     ],
     [
@@ -274,6 +387,24 @@ function WeaponWorkbench({
             weaponPrice,
           )}`
         : null,
+    ],
+    [
+      'ACCURACY',
+      liveStats.accuracy == null
+        ? '—'
+        : `${liveStats.accuracy} MOA`,
+    ],
+    [
+      'MUZZLE VELOCITY',
+      liveStats.muzzleVelocity == null
+        ? '—'
+        : `${liveStats.muzzleVelocity} M/S`,
+    ],
+    [
+      'EFFECTIVE RANGE',
+      liveStats.effectiveRange == null
+        ? '—'
+        : `${liveStats.effectiveRange} M`,
     ],
     [
       'MAG CAPACITY',
@@ -307,7 +438,7 @@ function WeaponWorkbench({
 
             <div>
 
-              <div className="text-[8px] font-black tracking-[0.2em] text-amber-500">
+              <div className="text-[10px] font-black tracking-[0.16em] text-amber-500">
                 {weaponSlot.toUpperCase()}
               </div>
 
@@ -331,7 +462,7 @@ function WeaponWorkbench({
                 )
               }
               className={[
-                'border px-3 py-2 text-[8px] font-black tracking-wider',
+                'border px-3 py-2 text-[9px] font-black tracking-wider',
                 selectedSlot ===
                 weaponSlot
                   ? 'border-amber-500/40 bg-amber-500/[0.06] text-amber-400'
@@ -361,86 +492,92 @@ function WeaponWorkbench({
                 ATTACHMENTS
               </div>
 
-              <div className="text-[7px] tracking-wider text-stone-700">
+              <div className="text-[9px] tracking-wider text-stone-700">
                 VERIFIED COMPATIBILITY ONLY
               </div>
 
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
 
-              <button
-                type="button"
-                disabled={
-                  getMagazineOptions(
-                    weapon,
-                  ).length ===
-                  0
-                }
-                onClick={() =>
-                  openMagazinePicker(
-                    weaponSlot,
-                    weapon,
+              {attachmentSlotTypes.map(
+                ([
+                  type,
+                  key,
+                ]) => {
+
+                  const selected =
+                    attachments?.[
+                      key
+                    ] ||
+                    null
+
+                  const options =
+                    getAttachmentOptions(
+                      weapon,
+                      type,
+                    )
+
+                  if (
+                    options.length ===
+                    0 &&
+                    !selected
+                  ) {
+                    return null
+                  }
+
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      disabled={
+                        options.length ===
+                        0
+                      }
+                      onClick={() =>
+                        openAttachmentPicker(
+                          weaponSlot,
+                          weapon,
+                          type,
+                          key,
+                        )
+                      }
+                      className={[
+                        'min-h-24 border p-3 text-left transition',
+                        selected
+                          ? 'border-amber-500/45 bg-amber-500/[0.06]'
+                          : 'border-white/10 bg-black/20 hover:border-amber-500/30',
+                        options.length ===
+                        0
+                          ? 'cursor-not-allowed opacity-35'
+                          : '',
+                      ].join(' ')}
+                    >
+
+                      <div className="text-[9px] font-black tracking-[0.14em] text-stone-500">
+                        {type}
+                      </div>
+
+                      <div className="mt-2 truncate text-[11px] font-black text-white">
+                        {selected?.name ||
+                          'SELECT'}
+                      </div>
+
+                      <div className="mt-1 text-[9px] text-stone-600">
+                        {selected
+                          ? (
+                              selected.price == null
+                                ? 'PRICE ?'
+                                : money(
+                                    selected.price,
+                                  )
+                            )
+                          : `${options.length} OPTIONS`}
+                      </div>
+
+                    </button>
                   )
-                }
-                className={[
-                  'min-h-20 border p-3 text-left transition',
-                  magazine
-                    ? 'border-amber-500/45 bg-amber-500/[0.06]'
-                    : 'border-white/10 bg-black/20 hover:border-amber-500/30',
-                  getMagazineOptions(
-                    weapon,
-                  ).length ===
-                  0
-                    ? 'cursor-not-allowed opacity-35'
-                    : '',
-                ].join(' ')}
-              >
-
-                <div className="text-[7px] font-black tracking-[0.16em] text-stone-600">
-                  MAGAZINE
-                </div>
-
-                <div className="mt-2 truncate text-[9px] font-black text-white">
-                  {magazine?.name ||
-                    'SELECT'}
-                </div>
-
-                {magazine && (
-
-                  <div className="mt-1 text-[7px] text-amber-500">
-                    {magazineCapacity
-                      ? `${magazineCapacity} RND`
-                      : 'EQUIPPED'}
-                  </div>
-
-                )}
-
-              </button>
-
-              {[
-                'OPTIC',
-                'MUZZLE',
-                'GRIP',
-              ].map(
-                (label) => (
-
-                  <div
-                    key={label}
-                    className="min-h-20 border border-white/6 bg-black/15 p-3"
-                  >
-
-                    <div className="text-[7px] font-black tracking-[0.16em] text-stone-700">
-                      {label}
-                    </div>
-
-                    <div className="mt-2 text-[8px] font-black text-stone-800">
-                      DATA SYNC PENDING
-                    </div>
-
-                  </div>
-
-                ),
+                },
               )}
 
             </div>
@@ -483,7 +620,7 @@ function WeaponWorkbench({
 
                 <div className="min-w-0 flex-1">
 
-                  <div className="text-[7px] font-black tracking-[0.16em] text-stone-600">
+                  <div className="text-[9px] font-black tracking-[0.14em] text-stone-600">
                     AMMUNITION
                   </div>
 
@@ -561,63 +698,13 @@ function WeaponWorkbench({
 
             </div>
 
-            {magazine && (
-
-              <div className="mt-2 flex items-center gap-3 border border-white/8 bg-black/20 p-3">
-
-                <WardogsItemImage
-                  item={magazine}
-                  className="h-14 w-16 shrink-0 border-0 bg-transparent"
-                  imageClassName="p-1 object-contain"
-                />
-
-                <div className="min-w-0 flex-1">
-
-                  <div className="truncate text-[9px] font-black text-white">
-                    {magazine.name}
-                  </div>
-
-                  <div className="mt-1 text-[8px] text-stone-600">
-                    {magazine.weight == null
-                      ? 'WEIGHT ?'
-                      : `${Number(
-                          magazine.weight,
-                        ).toFixed(
-                          2,
-                        )} KG`}
-                    {' / '}
-                    {magazine.price == null
-                      ? 'PRICE ?'
-                      : money(
-                          magazine.price,
-                        )}
-                  </div>
-
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    clearAttachment(
-                      weaponSlot,
-                    )
-                  }
-                  className="text-[8px] font-black text-red-400"
-                >
-                  REMOVE
-                </button>
-
-              </div>
-
-            )}
-
           </div>
 
         </div>
 
         <aside className="bg-black/15 p-4">
 
-          <div className="text-[8px] font-black tracking-[0.2em] text-amber-500">
+          <div className="text-[10px] font-black tracking-[0.16em] text-amber-500">
             LIVE STATS
           </div>
 
@@ -660,7 +747,7 @@ function WeaponWorkbench({
 
           <div className="mt-4 border border-amber-500/15 bg-amber-500/[0.03] p-3">
 
-            <div className="text-[7px] font-black tracking-[0.16em] text-amber-600">
+            <div className="text-[9px] font-black tracking-[0.14em] text-amber-600">
               ATTACHMENT DELTA
             </div>
 
@@ -1575,15 +1662,18 @@ const [
       )
     }
 
-  const openMagazinePicker =
+  const openAttachmentPicker =
     (
       weaponSlot,
       weapon,
+      type,
+      key,
     ) => {
 
       const options =
-        getMagazineOptions(
+        getAttachmentOptions(
           weapon,
+          type,
         )
 
       if (
@@ -1596,6 +1686,8 @@ const [
       setAttachmentPicker({
         weaponSlot,
         weapon,
+        type,
+        key,
         options,
       })
     }
@@ -1614,19 +1706,25 @@ const [
             ...(current[
               attachmentPicker.weaponSlot
             ] || {}),
-            magazine:
+            [attachmentPicker.key]:
               item,
           },
         }),
       )
 
-      setWeaponAmmo(
-        (current) => ({
-          ...current,
-          [attachmentPicker.weaponSlot]:
-            null,
-        }),
-      )
+      if (
+        attachmentPicker.key ===
+        'magazine'
+      ) {
+
+        setWeaponAmmo(
+          (current) => ({
+            ...current,
+            [attachmentPicker.weaponSlot]:
+              null,
+          }),
+        )
+      }
 
       setAttachmentPicker(
         null,
@@ -1634,7 +1732,10 @@ const [
     }
 
   const clearAttachment =
-    (weaponSlot) => {
+    (
+      weaponSlot,
+      key,
+    ) => {
 
       setWeaponAttachments(
         (current) => ({
@@ -1643,11 +1744,25 @@ const [
             ...(current[
               weaponSlot
             ] || {}),
-            magazine:
+            [key]:
               null,
           },
         }),
       )
+
+      if (
+        key ===
+        'magazine'
+      ) {
+
+        setWeaponAmmo(
+          (current) => ({
+            ...current,
+            [weaponSlot]:
+              null,
+          }),
+        )
+      }
     }
 
   const openAmmoPicker =
@@ -2194,7 +2309,7 @@ const [
                   )
                 }
                 className={[
-                  'border px-3 py-2 text-[8px] font-black tracking-wider',
+                  'border px-3 py-2 text-[9px] font-black tracking-wider',
                   weaponCategory ===
                   category
                     ? 'border-amber-500/40 bg-amber-500/[0.07] text-amber-400'
@@ -2763,7 +2878,7 @@ const [
                       )
                     }
                     className={[
-                      'border px-3 py-2 text-[8px] font-black tracking-wider',
+                      'border px-3 py-2 text-[9px] font-black tracking-wider',
                       ammoCalibre ===
                       calibre
                         ? 'border-amber-500/40 bg-amber-500/[0.07] text-amber-400'
@@ -2849,7 +2964,11 @@ const [
 
             <div className="text-right text-[9px] font-bold tracking-wider text-stone-600">
 
-              {dataVersion.label}
+              {combatDataMeta.syncedAt
+                    ? `COMBAT DATA ${new Date(
+                        combatDataMeta.syncedAt,
+                      ).toLocaleDateString()}`
+                    : dataVersion.label}
 
               <div className="mt-1">
                 {dataVersion.date}
@@ -3094,7 +3213,7 @@ const [
 
                             <div className="min-w-0 flex-1">
 
-                              <div className="text-[8px] font-black tracking-wider text-stone-600">
+                              <div className="text-[9px] font-black tracking-wider text-stone-600">
                                 {slot.title}
                               </div>
 
@@ -3130,7 +3249,7 @@ const [
                                     slot.id,
                                   )
                                 }
-                                className="w-full border-t border-white/8 py-2 text-[8px] font-black tracking-wider text-red-400"
+                                className="w-full border-t border-white/8 py-2 text-[9px] font-black tracking-wider text-red-400"
                               >
                                 REMOVE
                               </button>
@@ -3187,7 +3306,7 @@ const [
                       </div>
                     </div>
 
-                    <div className="border border-amber-500/20 px-3 py-2 text-[8px] font-black tracking-wider text-amber-500">
+                    <div className="border border-amber-500/20 px-3 py-2 text-[9px] font-black tracking-wider text-amber-500">
                       {selectedSlotDefinition?.title}
                     </div>
 
@@ -3208,11 +3327,13 @@ const [
                   selectSlot={
                     selectSlot
                   }
-                  magazine={
-                    workbenchMagazine
+                  attachments={
+                    weaponAttachments[
+                      workbenchSlot
+                    ] || {}
                   }
-                  openMagazinePicker={
-                    openMagazinePicker
+                  openAttachmentPicker={
+                    openAttachmentPicker
                   }
                   openAmmoPicker={
                     openAmmoPicker
@@ -3707,7 +3828,7 @@ const [
                                 )
                               }}
                               className={[
-                                'border px-3 py-2 text-[8px] font-black tracking-wider',
+                                'border px-3 py-2 text-[9px] font-black tracking-wider',
                                 backpackCategory ===
                                 category
                                   ? 'border-amber-500/45 bg-amber-500/[0.07] text-amber-400'
@@ -3944,7 +4065,7 @@ const [
                                   key={index}
                                   className="border border-dashed border-amber-500/30 bg-black/35 p-3"
                                 >
-                                  <div className="text-[8px] font-black tracking-wider text-amber-500">
+                                  <div className="text-[9px] font-black tracking-wider text-amber-500">
                                     WEAPON SLING {index + 1}
                                   </div>
                                 </div>
@@ -4108,7 +4229,7 @@ const [
 
                       <div className="text-right">
 
-                        <div className="text-[8px] font-black tracking-wider text-stone-600">
+                        <div className="text-[9px] font-black tracking-wider text-stone-600">
                           KNOWN WEIGHT
                         </div>
 
@@ -4580,7 +4701,7 @@ const [
                 </div>
 
                 <div className="mt-1 text-xl font-black text-white">
-                  MAGAZINE
+                  {attachmentPicker.type}
                 </div>
 
               </div>
@@ -4659,7 +4780,7 @@ const [
             </div>
 
             <div className="border-t border-white/8 px-5 py-3 text-[8px] text-stone-600">
-              Showing verified magazine options currently available in the RallyStack catalogue.
+              Verified WARDOGS compatibility only. Price, weight and inventory footprint come from the current synced catalogue.
             </div>
 
           </div>
