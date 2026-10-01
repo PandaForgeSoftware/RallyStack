@@ -850,7 +850,7 @@ const [
         ),
 
         ...makeGearInstances(
-          medicalItems || [],
+          packableItems,
           packedGear || {},
           rotations,
         ),
@@ -858,7 +858,6 @@ const [
       [
         looseAmmo,
         packedAmmo,
-        medicalItems,
         packedGear,
         rotations,
       ],
@@ -1106,8 +1105,7 @@ const [
             ),
 
             ...makeGearInstances(
-              medicalItems ||
-                [],
+              packableItems,
               nextGear,
               rotations,
             ),
@@ -1200,8 +1198,7 @@ const [
           ),
 
           ...makeGearInstances(
-            medicalItems ||
-              [],
+            packableItems,
             packedGear ||
               {},
             rotations,
