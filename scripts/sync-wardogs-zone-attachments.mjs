@@ -18,6 +18,12 @@ const outputFile =
     'src/data/wardogsZoneAttachments.js',
   )
 
+const auditFile =
+  path.join(
+    root,
+    'src/data/wardogsZoneCompatibilityAudit.json',
+  )
+
 const assetFolder =
   path.join(
     root,
@@ -1074,6 +1080,171 @@ for (
   }
 }
 
+const slotForAttachmentType = {
+  MAGAZINE:
+    'MAGAZINE',
+  OPTIC:
+    'OPTIC',
+  CANTED_SIGHT:
+    'CANTED_SIGHT',
+  MUZZLE:
+    'MUZZLE',
+  FOREGRIP:
+    'UNDERBARREL',
+  GRIP:
+    'GRIP',
+  PISTOL_GRIP:
+    'PISTOL_GRIP',
+  HANDGUARD:
+    'HANDGUARD',
+  BARREL:
+    'BARREL',
+  STOCK:
+    'STOCK',
+  DUST_COVER:
+    'DUST_COVER',
+  TRIGGER:
+    'TRIGGER',
+}
+
+const rejectedFits = []
+
+for (
+  const item of
+  items
+) {
+
+  const requiredSlot =
+    slotForAttachmentType[
+      item.type
+    ]
+
+  /*
+   * "Other" is deliberately not treated as an
+   * equippable slot. Wardogs Zone includes internal
+   * component parts in its 206 attachment records,
+   * but the game's actual loadout wells decide what
+   * the player can select.
+   */
+  if (
+    !requiredSlot
+  ) {
+
+    if (
+      item.compatibleWeapons
+        .length >
+      0
+    ) {
+
+      item.compatibleWeapons.forEach(
+        (weaponId) =>
+          rejectedFits.push({
+            item:
+              item.name,
+            type:
+              item.type,
+            weaponId,
+            reason:
+              'No selectable gunsmith slot for attachment type',
+          }),
+      )
+    }
+
+    item.compatibleWeapons =
+      []
+
+    continue
+  }
+
+  const verifiedFits = []
+
+  item.compatibleWeapons.forEach(
+    (weaponId) => {
+
+      const weaponData =
+        zoneWeaponData[
+          weaponId
+        ]
+
+      if (!weaponData) {
+
+        rejectedFits.push({
+          item:
+            item.name,
+          type:
+            item.type,
+          weaponId,
+          reason:
+            'Weapon page was not parsed',
+        })
+
+        return
+      }
+
+      if (
+        item.type ===
+        'MAGAZINE'
+      ) {
+
+        const exactMagazineMatch =
+          (
+            weaponData
+              .compatibleMagazines ||
+            []
+          ).includes(
+            item.name,
+          )
+
+        if (
+          !exactMagazineMatch
+        ) {
+
+          rejectedFits.push({
+            item:
+              item.name,
+            type:
+              item.type,
+            weaponId,
+            reason:
+              'Magazine is not listed by the weapon page',
+          })
+
+          return
+        }
+      }
+      else if (
+        !(
+          weaponData
+            .attachmentSlots ||
+          []
+        ).includes(
+          requiredSlot,
+        )
+      ) {
+
+        rejectedFits.push({
+          item:
+            item.name,
+          type:
+            item.type,
+          weaponId,
+          reason:
+            `Weapon does not expose ${requiredSlot} in its gunsmith`,
+        })
+
+        return
+      }
+
+      verifiedFits.push(
+        weaponId,
+      )
+    },
+  )
+
+  item.compatibleWeapons =
+    verifiedFits
+}
+
 const compatibilityCount =
   items.filter(
     (item) =>
@@ -1134,6 +1305,174 @@ if (
   )
 }
 
+const attachmentTypeCounts =
+  Object.fromEntries(
+    Array.from(
+      new Set(
+        items.map(
+          (item) =>
+            item.type,
+        ),
+      ),
+    )
+      .sort()
+      .map(
+        (type) => [
+          type,
+          items.filter(
+            (item) =>
+              item.type ===
+              type,
+          ).length,
+        ],
+      ),
+  )
+
+const bipodSmgPairs =
+  items
+    .filter(
+      (item) =>
+        /\bBipod\b/i.test(
+          item.name,
+        ),
+    )
+    .flatMap(
+      (item) =>
+        item.compatibleWeapons
+          .map(
+            (weaponId) => ({
+              attachment:
+                item.name,
+              weaponId,
+              weapon:
+                weapons.find(
+                  (weapon) =>
+                    weapon.id ===
+                    weaponId,
+                )?.name ||
+                weaponId,
+            }),
+          )
+          .filter(
+            (entry) =>
+              weapons.find(
+                (weapon) =>
+                  weapon.id ===
+                  entry.weaponId,
+              )?.category ===
+              'SMG',
+          ),
+    )
+
+const compatibilityAudit = {
+  generatedAt:
+    new Date()
+      .toISOString(),
+  source:
+    'Wardogs Zone gunsmith / item-page fit graph',
+  attachmentCount:
+    items.length,
+  attachmentTypeCounts,
+  localWeapons:
+    weapons.length,
+  weaponPagesMatched:
+    weaponPageById.size,
+  weaponPagesParsed:
+    Object.keys(
+      zoneWeaponData,
+    ).length,
+  attachmentsWithVerifiedFits:
+    compatibilityCount,
+  attachmentsWithoutSelectableFits:
+    items
+      .filter(
+        (item) =>
+          item.compatibleWeapons
+            .length ===
+          0,
+      )
+      .map(
+        (item) => ({
+          name:
+            item.name,
+          type:
+            item.type,
+          sourceUrl:
+            item.sourceUrl,
+        }),
+      ),
+  rejectedFits,
+  bipodSmgPairs,
+  weapons:
+    Object.fromEntries(
+      weapons.map(
+        (weapon) => {
+
+          const data =
+            zoneWeaponData[
+              weapon.id
+            ] ||
+            null
+
+          return [
+            weapon.id,
+            {
+              name:
+                weapon.name,
+              sourceUrl:
+                data?.sourceUrl ||
+                null,
+              attachmentSlots:
+                data
+                  ?.attachmentSlots ||
+                [],
+              magazines:
+                data
+                  ?.compatibleMagazines ||
+                [],
+              selectableAttachments:
+                items
+                  .filter(
+                    (item) =>
+                      item
+                        .compatibleWeapons
+                        .includes(
+                          weapon.id,
+                        ),
+                  )
+                  .map(
+                    (item) => ({
+                      name:
+                        item.name,
+                      type:
+                        item.type,
+                    }),
+                  ),
+            },
+          ]
+        },
+      ),
+    ),
+}
+
+if (
+  bipodSmgPairs.length >
+  0
+) {
+
+  console.log('')
+  console.log(
+    'WARNING: source-verified bipod/SMG fit(s) detected:',
+  )
+
+  bipodSmgPairs.forEach(
+    (entry) =>
+      console.log(
+        `  ${entry.attachment} -> ${entry.weapon}`,
+      ),
+  )
+}
+
 const output =
   `/*
  * Auto-generated by:
@@ -1181,6 +1520,16 @@ await fs.writeFile(
   'utf8',
 )
 
+await fs.writeFile(
+  auditFile,
+  JSON.stringify(
+    compatibilityAudit,
+    null,
+    2,
+  ),
+  'utf8',
+)
+
 console.log('')
 console.log(
   '========================================',
@@ -1211,4 +1560,10 @@ console.log(
 )
 console.log(
   `WEAPON PAGES    ${weaponPageById.size}/${weapons.length}`,
+)
+console.log(
+  `REJECTED FITS   ${rejectedFits.length}`,
+)
+console.log(
+  `BIPOD -> SMG    ${bipodSmgPairs.length}`,
 )
