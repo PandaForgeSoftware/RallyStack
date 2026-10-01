@@ -474,22 +474,20 @@ databaseLinks(
 ).forEach(
   (entry) => {
 
-    const category =
-      categoryFromText(
-        entry.text,
-      )
-
-    if (
-      !category
-    ) {
-      return
-    }
-
+    /*
+     * Do not drop an equipment record merely because
+     * the listing card wording changed. The item page
+     * itself is the authority for its slot and stats.
+     */
     candidateMap.set(
       entry.href,
       {
         ...entry,
-        category,
+        category:
+          categoryFromText(
+            entry.text,
+          ) ||
+          'Other',
       },
     )
   },
@@ -672,7 +670,12 @@ const results =
           id,
           name,
           category:
-            candidate.category.toUpperCase(),
+            (
+              categoryFromText(
+                text,
+              ) ||
+              candidate.category
+            ).toUpperCase(),
           slot:
             parseSlot(
               text,
