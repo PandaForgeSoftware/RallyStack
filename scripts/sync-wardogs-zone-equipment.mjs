@@ -520,6 +520,66 @@ for (
   )
 }
 
+/*
+ * The catalogue renders roughly half its cards as anchors
+ * and keeps the rest in the page's client data. Pull the
+ * remaining detail URLs directly from that source payload.
+ */
+const rawDatabaseRefs =
+  Array.from(
+    new Set(
+      Array.from(
+        listing.matchAll(
+          /\\?["'](\/database\/[a-z0-9_-]+)\\?["']/gi,
+        ),
+      ).map(
+        (match) =>
+          match[1],
+      ),
+    ),
+  ).filter(
+    (href) =>
+      ![
+        '/database',
+        '/database/skins',
+        '/database/compare',
+        '/database/weapons',
+        '/database/attachments',
+        '/database/ammo',
+        '/database/equipment',
+        '/database/vehicles',
+      ].includes(
+        href,
+      ),
+  )
+
+rawDatabaseRefs.forEach(
+  (href) => {
+
+    if (
+      !candidateMap.has(
+        href,
+      )
+    ) {
+
+      candidateMap.set(
+        href,
+        {
+          href,
+          text:
+            '',
+          category:
+            'Other',
+        },
+      )
+    }
+  },
+)
+
+console.log(
+  `Raw detail references found in source payload: ${rawDatabaseRefs.length}`,
+)
+
 const candidates =
   Array.from(
     candidateMap.values(),
@@ -534,12 +594,12 @@ console.log(
 
 if (
   declaredCount &&
-  candidates.length !==
+  candidates.length <
     declaredCount
 ) {
 
   throw new Error(
-    `Equipment catalogue mismatch: source declares ${declaredCount}, discovered ${candidates.length}. Existing generated data was not touched.`,
+    `Equipment catalogue incomplete before parsing: source declares ${declaredCount}, discovered only ${candidates.length}. Existing generated data was not touched.`,
   )
 }
 
@@ -587,6 +647,32 @@ const results =
           )
 
         if (!name) {
+          return null
+        }
+
+        const parsedSlot =
+          parseSlot(
+            text,
+          ) ||
+          fallbackSlotFromName(
+            name,
+          )
+
+        const pageCategory =
+          categoryFromText(
+            text,
+          ) ||
+          candidate.category
+
+        const equipmentSignal =
+          parsedSlot ||
+          /(?:Equipment|Armor|Armour|Storage|Throwable|Medical|Utility|Supply|Deployable|Melee|Backpack|Vest|Helmet|Parachute)/i.test(
+            `${pageCategory} ${text}`,
+          )
+
+        if (
+          !equipmentSignal
+        ) {
           return null
         }
 
@@ -697,19 +783,9 @@ const results =
           id,
           name,
           category:
-            (
-              categoryFromText(
-                text,
-              ) ||
-              candidate.category
-            ).toUpperCase(),
+            pageCategory.toUpperCase(),
           slot:
-            parseSlot(
-              text,
-            ) ||
-            fallbackSlotFromName(
-              name,
-            ),
+            parsedSlot,
           price:
             economy?.[1]
               ? safeNumber(
