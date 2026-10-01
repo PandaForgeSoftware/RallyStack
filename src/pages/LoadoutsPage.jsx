@@ -221,11 +221,12 @@ const backpackCategories = [
   'MEDICAL',
   'LOOSE AMMO',
   'MAGAZINES',
-  'GRENADES',
   'TACTICAL',
   'BUILDING',
   'RECON',
   'VEHICLE',
+  'PARACHUTES',
+  'MISC',
 ]
 
 
