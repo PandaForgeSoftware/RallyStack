@@ -632,7 +632,7 @@ function LoadoutsPage() {
     selectedBackpackId,
     setSelectedBackpackId,
   ] =
-    useState('assault')
+    useState(null)
 
   const [
     packedAmmo,
@@ -673,7 +673,7 @@ const [
         item.id ===
         selectedBackpackId,
     ) ||
-    backpacks[0]
+    null
 
   const selectedSlotDefinition =
     slots.find(
@@ -726,6 +726,25 @@ const [
           ),
         ),
       [equippedWeapons],
+    )
+
+
+  const equippedAttachmentItems =
+    useMemo(
+      () =>
+        Object.values(
+          weaponAttachments,
+        )
+          .flatMap(
+            (group) =>
+              Object.values(
+                group || {},
+              ),
+          )
+          .filter(Boolean),
+      [
+        weaponAttachments,
+      ],
     )
 
   const slotWeapons =
@@ -990,12 +1009,25 @@ const [
                 0,
             ),
           Number(
-            selectedBackpack.price ||
+            selectedBackpack?.price ||
               0,
           ),
+        ) +
+        equippedAttachmentItems.reduce(
+          (
+            total,
+            item,
+          ) =>
+            total +
+            Number(
+              item.price ||
+                0,
+            ),
+          0,
         ),
       [
         equippedWeapons,
+        equippedAttachmentItems,
         selectedBackpack,
       ],
     )
@@ -1108,12 +1140,24 @@ const [
               total +
               Number(
                 item.weight ||
-                0,
+                  0,
               ),
             Number(
-              selectedBackpack.weight ||
-              0,
+              selectedBackpack?.weight ||
+                0,
             ),
+          ) +
+          equippedAttachmentItems.reduce(
+            (
+              total,
+              item,
+            ) =>
+              total +
+              Number(
+                item.weight ||
+                  0,
+              ),
+            0,
           )
 
         return medicalRows.reduce(
@@ -1125,7 +1169,7 @@ const [
             (
               Number(
                 row.item.weight ||
-                0,
+                  0,
               ) *
               row.quantity
             ),
@@ -1134,6 +1178,7 @@ const [
       },
       [
         equippedWeapons,
+        equippedAttachmentItems,
         selectedBackpack,
         medicalRows,
       ],
@@ -1325,6 +1370,17 @@ const [
   const openBackpack =
     () => {
 
+      if (
+        !selectedBackpack
+      ) {
+
+        selectSlot(
+          'backpack',
+        )
+
+        return
+      }
+
       setBuilderView(
         'backpack',
       )
@@ -1442,7 +1498,8 @@ const [
 
   if (
     activeTab === 'builder' &&
-    builderView === 'backpack'
+    builderView === 'backpack' &&
+    selectedBackpack
   ) {
     return (
       <BackpackPackingView
@@ -2430,7 +2487,9 @@ const [
                       }
                       className="border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2 text-[8px] font-black tracking-[0.12em] text-amber-400 hover:bg-amber-500/[0.12]"
                     >
-                      OPEN PACK
+                      {selectedBackpack
+                        ? 'OPEN PACK'
+                        : 'SELECT PACK'}
                     </button>
 
                   </div>
@@ -2444,25 +2503,48 @@ const [
                           'backpack',
                         )
                       }
-                      className="group border border-white/10 bg-[#131617] p-2 text-left hover:border-amber-500/30"
+                      className={[
+                        'group border bg-[#131617] p-2 text-left transition',
+                        selectedBackpack
+                          ? 'border-white/10 hover:border-amber-500/30'
+                          : 'border-amber-500/25 hover:border-amber-500/50',
+                      ].join(' ')}
                     >
 
-                      <WardogsItemImage
-                        item={
-                          selectedBackpack
-                        }
-                        className="h-20 w-full border-0 bg-transparent"
-                        imageClassName="p-1 object-contain"
-                      />
+                      {selectedBackpack ? (
+
+                        <WardogsItemImage
+                          item={
+                            selectedBackpack
+                          }
+                          className="h-20 w-full border-0 bg-transparent"
+                          imageClassName="p-1 object-contain"
+                        />
+
+                      ) : (
+
+                        <div className="flex h-20 items-center justify-center border border-dashed border-amber-500/20 text-amber-500/60">
+                          <Backpack
+                            size={30}
+                            strokeWidth={1.2}
+                          />
+                        </div>
+
+                      )}
 
                       <div className="mt-2 truncate text-[8px] font-black text-white">
                         BACKPACK
                       </div>
 
-                      <div className="mt-1 truncate text-[7px] text-stone-600">
-                        {
-                          selectedBackpack.name
-                        }
+                      <div className={[
+                        'mt-1 truncate text-[7px]',
+                        selectedBackpack
+                          ? 'text-stone-600'
+                          : 'text-amber-500',
+                      ].join(' ')}
+                      >
+                        {selectedBackpack?.name ||
+                          'SELECT A PACK'}
                       </div>
 
                     </button>
@@ -2542,9 +2624,170 @@ const [
                       </div>
 
                       <div className="mt-1 text-sm font-black text-amber-400">
+                        {selectedBackpack
+                          ? money(
+                              selectedBackpack.price,
+                            )
+                          : '—'}
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+                <div className="border-b border-white/8 bg-[#0f1213] p-4">
+
+                  <div className="flex items-center justify-between">
+
+                    <div>
+
+                      <div className="text-[9px] font-black tracking-[0.2em] text-amber-500">
+                        OVERALL LOADOUT
+                      </div>
+
+                      <div className="mt-1 text-[9px] text-stone-600">
+                        Combined build stats
+                      </div>
+
+                    </div>
+
+                    <div className="text-right">
+
+                      <div className="text-[7px] font-black tracking-wider text-stone-600">
+                        TOTAL VALUE
+                      </div>
+
+                      <div className="mt-1 text-lg font-black text-amber-400">
                         {money(
-                          selectedBackpack.price,
+                          totalValue,
                         )}
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+
+                    {[
+                      [
+                        'WEIGHT',
+                        `${knownWeight.toFixed(
+                          2,
+                        )} KG`,
+                      ],
+                      [
+                        'WEAPONS',
+                        equippedWeapons.length,
+                      ],
+                      [
+                        'ATTACHMENTS',
+                        equippedAttachmentItems.length,
+                      ],
+                      [
+                        'ROUNDS',
+                        totalRounds,
+                      ],
+                      [
+                        'PACKED',
+                        totalPackedStacks,
+                      ],
+                      [
+                        'BAG',
+                        selectedBackpack
+                          ? `${selectedBackpack.capacity} CELLS`
+                          : 'NONE',
+                      ],
+                    ].map(
+                      ([
+                        label,
+                        value,
+                      ]) => (
+
+                        <div
+                          key={label}
+                          className="border border-white/8 bg-black/25 p-3"
+                        >
+
+                          <div className="text-[7px] font-black tracking-wider text-stone-600">
+                            {label}
+                          </div>
+
+                          <div className="mt-1 truncate text-[11px] font-black text-white">
+                            {value}
+                          </div>
+
+                        </div>
+
+                      ),
+                    )}
+
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+
+                    <div className="border border-white/8 bg-black/20 p-3">
+
+                      <div className="text-[7px] font-black tracking-wider text-stone-600">
+                        PRIMARY FIREPOWER
+                      </div>
+
+                      <div className="mt-2 flex items-end justify-between gap-3">
+
+                        <div>
+                          <div className="text-[8px] text-stone-600">
+                            DAMAGE
+                          </div>
+                          <div className="text-sm font-black text-white">
+                            {equipped.primary?.damage ??
+                              '—'}
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <div className="text-[8px] text-stone-600">
+                            RPM
+                          </div>
+                          <div className="text-sm font-black text-white">
+                            {equipped.primary?.rpm ??
+                              '—'}
+                          </div>
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                    <div className="border border-white/8 bg-black/20 p-3">
+
+                      <div className="text-[7px] font-black tracking-wider text-stone-600">
+                        SIDEARM FIREPOWER
+                      </div>
+
+                      <div className="mt-2 flex items-end justify-between gap-3">
+
+                        <div>
+                          <div className="text-[8px] text-stone-600">
+                            DAMAGE
+                          </div>
+                          <div className="text-sm font-black text-white">
+                            {equipped.sidearm?.damage ??
+                              '—'}
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <div className="text-[8px] text-stone-600">
+                            RPM
+                          </div>
+                          <div className="text-sm font-black text-white">
+                            {equipped.sidearm?.rpm ??
+                              '—'}
+                          </div>
+                        </div>
+
                       </div>
 
                     </div>
