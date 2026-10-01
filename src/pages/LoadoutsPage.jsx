@@ -306,6 +306,37 @@ const attachmentTypeOrder = [
   'OTHER',
 ]
 
+const attachmentTypeLabels = {
+  MAGAZINE:
+    'MAGAZINE',
+  OPTIC:
+    'SIGHT',
+  CANTED_SIGHT:
+    'CANTED SIGHT',
+  MUZZLE:
+    'MUZZLE',
+  FOREGRIP:
+    'UNDERBARREL',
+  GRIP:
+    'GRIP',
+  PISTOL_GRIP:
+    'PISTOL GRIP',
+  HANDGUARD:
+    'HANDGUARD',
+  BARREL:
+    'BARREL',
+  RECEIVER:
+    'RECEIVER',
+  STOCK:
+    'STOCK',
+  DUST_COVER:
+    'DUST COVER',
+  TRIGGER:
+    'TRIGGER',
+  OTHER:
+    'COMPONENT',
+}
+
 const attachmentKey =
   (type) =>
     type
@@ -362,105 +393,126 @@ const getAttachmentOptions =
       return []
     }
 
-    const live =
-      weaponLiveData[
+    const zoneSynced =
+      zoneAttachmentItems.length >
+      0
+
+    const zoneWeapon =
+      zoneWeaponData[
         weapon.id
-      ]
+      ] || {}
 
-    const compatibleNames =
-      new Set(
-        live
-          ?.compatibleAttachments ||
-        [],
-      )
-
+    /*
+     * Compatibility authority:
+     * Wardogs Zone's current item pages are generated
+     * from the game's own weapon-customisation wells.
+     *
+     * Do not union these fits with older broad category
+     * compatibility. That was the bug that could offer
+     * weapon-specific bipods to an SMG.
+     */
     const synced =
       completeAttachmentItems.filter(
         (item) =>
           item.type ===
             type &&
           (
-            compatibleNames
-              .has(
-                item.name,
-              ) ||
-            item
-              .compatibleWeapons
-              ?.includes(
-                weapon.id,
-              )
+            zoneSynced
+              ? item
+                  .compatibleWeapons
+                  ?.includes(
+                    weapon.id,
+                  )
+              : (
+                  weaponLiveData[
+                    weapon.id
+                  ]
+                    ?.compatibleAttachments ||
+                  []
+                ).includes(
+                  item.name,
+                )
           ),
       )
 
     if (
-      type ===
+      type !==
       'MAGAZINE'
-    ) {
-
-      const packable =
-        getMagazineOptions(
-          weapon,
-        )
-
-      const byName =
-        new Map()
-
-      ;[
-        ...packable,
-        ...synced,
-      ].forEach(
-        (item) => {
-
-          const previous =
-            byName.get(
-              item.name,
-            )
-
-          byName.set(
-            item.name,
-            previous
-              ? {
-                  ...previous,
-                  ...item,
-                  price:
-                    item.price ??
-                    previous.price ??
-                    null,
-                  weight:
-                    item.weight ??
-                    previous.weight ??
-                    null,
-                  inventoryWidth:
-                    item.inventoryWidth ??
-                    previous.inventoryWidth ??
-                    null,
-                  inventoryHeight:
-                    item.inventoryHeight ??
-                    previous.inventoryHeight ??
-                    null,
-                  image:
-                    item.image ||
-                    previous.image ||
-                    null,
-                }
-              : item,
-          )
-        },
-      )
-
-      return Array.from(
-        byName.values(),
-      )
-    }
-
-    if (
-      synced.length >
-      0
     ) {
       return synced
     }
 
-    return []
+    const exactMagazineNames =
+      new Set(
+        zoneWeapon
+          .compatibleMagazines ||
+        [],
+      )
+
+    const packable =
+      (
+        exactMagazineNames.size >
+        0
+      )
+        ? magazineCatalogue.filter(
+            (item) =>
+              exactMagazineNames.has(
+                item.name,
+              ),
+          )
+        : getMagazineOptions(
+            weapon,
+          )
+
+    const byName =
+      new Map()
+
+    ;[
+      ...packable,
+      ...synced,
+    ].forEach(
+      (item) => {
+
+        const previous =
+          byName.get(
+            item.name,
+          )
+
+        byName.set(
+          item.name,
+          previous
+            ? {
+                ...previous,
+                ...item,
+                price:
+                  item.price ??
+                  previous.price ??
+                  null,
+                weight:
+                  item.weight ??
+                  previous.weight ??
+                  null,
+                inventoryWidth:
+                  item.inventoryWidth ??
+                  previous.inventoryWidth ??
+                  null,
+                inventoryHeight:
+                  item.inventoryHeight ??
+                  previous.inventoryHeight ??
+                  null,
+                image:
+                  item.image ||
+                  previous.image ||
+                  null,
+              }
+            : item,
+        )
+      },
+    )
+
+    return Array.from(
+      byName.values(),
+    )
   }
 
 function WeaponWorkbench({
@@ -924,7 +976,7 @@ function WeaponWorkbench({
               </div>
 
               <div className="text-[9px] tracking-wider text-stone-700">
-                VERIFIED COMPATIBILITY ONLY
+                GAME GUNSMITH FITS ONLY
               </div>
 
             </div>
@@ -988,7 +1040,10 @@ function WeaponWorkbench({
                     >
 
                       <div className="text-[9px] font-black tracking-[0.14em] text-stone-500">
-                        {type}
+                        {attachmentTypeLabels[
+                          type
+                        ] ||
+                          type}
                       </div>
 
                       <div className="mt-2 truncate text-[11px] font-black text-white">
@@ -5989,7 +6044,10 @@ const [
                 </div>
 
                 <div className="mt-1 text-xl font-black text-white">
-                  {attachmentPicker.type}
+                  {attachmentTypeLabels[
+                    attachmentPicker.type
+                  ] ||
+                    attachmentPicker.type}
                 </div>
 
               </div>
@@ -6068,7 +6126,7 @@ const [
             </div>
 
             <div className="border-t border-white/8 px-5 py-3 text-[8px] text-stone-600">
-              Verified WARDOGS compatibility only. Price, weight and inventory footprint come from the current synced catalogue.
+              Compatibility comes from the current WARDOGS gunsmith fit list. Price, weight and inventory footprint come from the synced item catalogue.
             </div>
 
           </div>
