@@ -393,19 +393,71 @@ const getAttachmentOptions =
       )
 
     if (
+      type ===
+      'MAGAZINE'
+    ) {
+
+      const packable =
+        getMagazineOptions(
+          weapon,
+        )
+
+      const byName =
+        new Map()
+
+      ;[
+        ...packable,
+        ...synced,
+      ].forEach(
+        (item) => {
+
+          const previous =
+            byName.get(
+              item.name,
+            )
+
+          byName.set(
+            item.name,
+            previous
+              ? {
+                  ...previous,
+                  ...item,
+                  price:
+                    item.price ??
+                    previous.price ??
+                    null,
+                  weight:
+                    item.weight ??
+                    previous.weight ??
+                    null,
+                  inventoryWidth:
+                    item.inventoryWidth ??
+                    previous.inventoryWidth ??
+                    null,
+                  inventoryHeight:
+                    item.inventoryHeight ??
+                    previous.inventoryHeight ??
+                    null,
+                  image:
+                    item.image ||
+                    previous.image ||
+                    null,
+                }
+              : item,
+          )
+        },
+      )
+
+      return Array.from(
+        byName.values(),
+      )
+    }
+
+    if (
       synced.length >
       0
     ) {
       return synced
-    }
-
-    if (
-      type ===
-      'MAGAZINE'
-    ) {
-      return getMagazineOptions(
-        weapon,
-      )
     }
 
     return []
@@ -425,6 +477,8 @@ function WeaponWorkbench({
   reserveStep,
   addReserve,
   removeReserve,
+  addMagazineToPack,
+  packedMagazineCount,
 }) {
 
   const magazine =
@@ -961,6 +1015,44 @@ function WeaponWorkbench({
 
             </div>
 
+            {magazine && (
+
+              <button
+                type="button"
+                onClick={
+                  addMagazineToPack
+                }
+                className="mt-3 flex w-full items-center justify-between border border-white/10 bg-[#111416] px-4 py-3 text-left transition hover:border-amber-500/35"
+              >
+
+                <div>
+
+                  <div className="text-[9px] font-black tracking-[0.14em] text-stone-500">
+                    SPARE MAGAZINES
+                  </div>
+
+                  <div className="mt-1 text-[11px] font-black text-white">
+                    ADD {magazine.name} TO BACKPACK
+                  </div>
+
+                </div>
+
+                <div className="text-right">
+
+                  <div className="text-[10px] font-black text-amber-400">
+                    +1 MAG
+                  </div>
+
+                  <div className="mt-1 text-[9px] text-stone-600">
+                    {packedMagazineCount} IN PACK
+                  </div>
+
+                </div>
+
+              </button>
+
+            )}
+
             <div className="mt-3 border border-white/10 bg-black/20">
 
               <button
@@ -1339,6 +1431,12 @@ const [
     useState(null)
 
   const [
+    pendingMagazine,
+    setPendingMagazine,
+  ] =
+    useState(null)
+
+  const [
     weaponAttachments,
     setWeaponAttachments,
   ] =
@@ -1398,6 +1496,31 @@ const [
       workbenchSlot
     ]?.magazine ||
     null
+
+  const workbenchPackableMagazine =
+    workbenchMagazine
+      ? (
+          packableItems.find(
+            (item) =>
+              item.packCategory ===
+                'MAGAZINES' &&
+              item.name ===
+                workbenchMagazine.name,
+          ) ||
+          null
+        )
+      : null
+
+  const workbenchPackedMagazineCount =
+    workbenchPackableMagazine
+      ? Number(
+          packedGear[
+            workbenchPackableMagazine
+              .id
+          ] ||
+          0,
+        )
+      : 0
 
 
   const workbenchLoadedAmmo =
@@ -1810,7 +1933,7 @@ const [
       ],
     )
 
-  const medicalRows =
+  const packedGearRows =
     useMemo(
       () =>
         Object.entries(
@@ -1823,7 +1946,7 @@ const [
             ]) => {
 
               const item =
-                medicalItems.find(
+                packableItems.find(
                   (candidate) =>
                     candidate.id ===
                     id,
@@ -1874,7 +1997,7 @@ const [
           )
 
         const gearValue =
-          medicalRows.reduce(
+          packedGearRows.reduce(
             (
               total,
               row,
@@ -1897,7 +2020,7 @@ const [
       },
       [
         ammoRows,
-        medicalRows,
+        packedGearRows,
       ],
     )
 
@@ -2009,7 +2132,7 @@ const [
           )
 
         const medicalWeight =
-          medicalRows.reduce(
+          packedGearRows.reduce(
             (
               total,
               row,
@@ -2100,7 +2223,7 @@ const [
         equippedAttachmentItems,
         selectedBackpack,
         selectedTraversal,
-        medicalRows,
+        packedGearRows,
         ammoRows,
         weaponAmmo,
       ],
@@ -2136,7 +2259,7 @@ const [
         ),
       0,
     ) +
-    medicalRows.reduce(
+    packedGearRows.reduce(
       (
         total,
         row,
@@ -2169,7 +2292,7 @@ const [
         ),
       0,
     ) +
-    medicalRows.reduce(
+    packedGearRows.reduce(
       (
         total,
         row,
@@ -2694,6 +2817,78 @@ const [
           null,
         )
       }
+
+      if (
+        pendingMagazine
+      ) {
+
+        changePackedGear(
+          pendingMagazine.id,
+          1,
+        )
+
+        setPendingMagazine(
+          null,
+        )
+      }
+    }
+
+  const addWorkbenchMagazineToPack =
+    () => {
+
+      const item =
+        workbenchPackableMagazine
+
+      if (!item) {
+
+        setBuilderNotice(
+          'This magazine is not yet available in the packable catalogue.'
+        )
+
+        return
+      }
+
+      if (
+        !selectedBackpack
+      ) {
+
+        setPendingMagazine(
+          item,
+        )
+
+        setBagPicker(
+          true,
+        )
+
+        return
+      }
+
+      const footprintCells =
+        Number(
+          item.inventoryWidth ||
+          1,
+        ) *
+        Number(
+          item.inventoryHeight ||
+          1,
+        )
+
+      if (
+        footprintCells >
+        freePackCells
+      ) {
+
+        setBuilderNotice(
+          `Your ${selectedBackpack.name} has no free space for another ${item.name}.`
+        )
+
+        return
+      }
+
+      changePackedGear(
+        item.id,
+        1,
+      )
     }
 
   const addWorkbenchReserve =
@@ -4125,6 +4320,12 @@ const [
                   }
                   removeReserve={
                     removeWorkbenchReserve
+                  }
+                  addMagazineToPack={
+                    addWorkbenchMagazineToPack
+                  }
+                  packedMagazineCount={
+                    workbenchPackedMagazineCount
                   }
                 />
 
