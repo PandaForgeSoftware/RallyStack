@@ -363,6 +363,8 @@ const gunsmithSlotForType = {
     'DUST_COVER',
   TRIGGER:
     'TRIGGER',
+  RECEIVER:
+    'RECEIVER',
 }
 
 const attachmentKey =
