@@ -25,6 +25,9 @@ const assetFolder =
 const LIST_URL =
   'https://wardogs.zone/database/equipment'
 
+const SITEMAP_URL =
+  'https://wardogs.zone/sitemap.xml'
+
 const USER_AGENT =
   'RallyStack-Community-Loadout-Builder/5.0'
 
@@ -520,65 +523,151 @@ for (
   )
 }
 
-/*
- * The catalogue renders roughly half its cards as anchors
- * and keeps the rest in the page's client data. Pull the
- * remaining detail URLs directly from that source payload.
- */
-const rawDatabaseRefs =
+console.log(
+  'Reading Wardogs Zone sitemap for hidden equipment records...',
+)
+
+const sitemap =
+  await fetchText(
+    SITEMAP_URL,
+  )
+
+const sitemapRefs =
   Array.from(
     new Set(
       Array.from(
-        listing.matchAll(
-          /\\?["'](\/database\/[a-z0-9_-]+)\\?["']/gi,
+        sitemap.matchAll(
+          /https:\/\/wardogs\.zone\/database\/[a-z0-9_-]+/gi,
         ),
       ).map(
         (match) =>
-          match[1],
+          match[0]
+            .replace(
+              'https://wardogs.zone',
+              '',
+            ),
       ),
     ),
   ).filter(
     (href) =>
       ![
-        '/database',
-        '/database/skins',
-        '/database/compare',
         '/database/weapons',
+        '/database/vehicles',
         '/database/attachments',
         '/database/ammo',
         '/database/equipment',
-        '/database/vehicles',
+        '/database/compare',
+        '/database/skins',
       ].includes(
         href,
       ),
   )
 
-rawDatabaseRefs.forEach(
-  (href) => {
-
-    if (
-      !candidateMap.has(
-        href,
-      )
-    ) {
-
-      candidateMap.set(
-        href,
-        {
-          href,
-          text:
-            '',
-          category:
-            'Other',
-        },
-      )
-    }
-  },
+console.log(
+  `English database detail refs in sitemap: ${sitemapRefs.length}`,
 )
+
+const known =
+  new Set(
+    candidateMap.keys(),
+  )
+
+const hiddenRefs =
+  sitemapRefs.filter(
+    (href) =>
+      !known.has(
+        href,
+      ),
+  )
 
 console.log(
-  `Raw detail references found in source payload: ${rawDatabaseRefs.length}`,
+  `Unclassified detail refs to inspect: ${hiddenRefs.length}`,
 )
+
+const hiddenResults =
+  await mapLimit(
+    hiddenRefs,
+    12,
+    async (
+      href,
+    ) => {
+
+      try {
+
+        const html =
+          await fetchText(
+            `https://wardogs.zone${href}`,
+          )
+
+        const text =
+          plainText(
+            html,
+          )
+
+        const name =
+          plainText(
+            html.match(
+              /<h1[^>]*>([\s\S]*?)<\/h1>/i,
+            )?.[1] ||
+            '',
+          )
+
+        if (!name) {
+          return null
+        }
+
+        const parsedSlot =
+          parseSlot(
+            text,
+          ) ||
+          fallbackSlotFromName(
+            name,
+          )
+
+        const pageCategory =
+          categoryFromText(
+            text,
+          )
+
+        const equipmentSignal =
+          parsedSlot ||
+          /(?:Equipment|Armor|Armour|Storage|Throwable|Explosive|Medical|Utility|Suppl(?:y|ies)|Deployable|Melee|Backpack|Vest|Helmet|Parachute|Repair Tool|Range Finder|Binoculars|Monocular|Hammer|Wrench|Drill)/i.test(
+            `${pageCategory || ''} ${text}`,
+          )
+
+        if (
+          !equipmentSignal
+        ) {
+          return null
+        }
+
+        return {
+          href,
+          text:
+            name,
+          category:
+            pageCategory ||
+            'Other',
+          html,
+        }
+      }
+      catch {
+        return null
+      }
+    },
+  )
+
+hiddenResults
+  .filter(Boolean)
+  .forEach(
+    (entry) => {
+
+      candidateMap.set(
+        entry.href,
+        entry,
+      )
+    },
+  )
 
 const candidates =
   Array.from(
@@ -629,6 +718,7 @@ const results =
       try {
 
         const html =
+          candidate.html ||
           await fetchText(
             sourceUrl,
           )
@@ -845,11 +935,28 @@ const results =
     },
   )
 
-const items =
-  results.filter(
+const itemMap =
+  new Map()
+
+results
+  .filter(
     (item) =>
       item &&
       !item.error,
+  )
+  .forEach(
+    (item) => {
+
+      itemMap.set(
+        item.sourceUrl,
+        item,
+      )
+    },
+  )
+
+const items =
+  Array.from(
+    itemMap.values(),
   )
 
 const failures =
