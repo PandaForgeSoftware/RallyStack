@@ -282,7 +282,7 @@ function parseSlot(
 
   const match =
     text.match(
-      /\bSlot\s+(Primary|Secondary|Sidearm|Specialist|Helmet|Armor|Armour|Tac[- ]?Vest|Tactical Vest|Backpack|Traversal)\b/i,
+      /\bSlot\s*(Primary|Secondary|Sidearm|Specialist|Helmet|Armor|Armour|Vest|Tac[- ]?Vest|Tactical\s*Vest|Backpack|Traversal)\b/i,
     )
 
   if (!match) {
@@ -312,6 +312,8 @@ function parseSlot(
       'ARMOR',
     armour:
       'ARMOR',
+    vest:
+      'VEST',
     tacvest:
       'VEST',
     tacticalvest:
@@ -326,6 +328,53 @@ function parseSlot(
     value
   ] ||
     null
+}
+
+function fallbackSlotFromName(
+  name,
+) {
+
+  if (
+    /\bHelmet\b/i.test(
+      name,
+    )
+  ) {
+    return 'HELMET'
+  }
+
+  if (
+    /\bArmor\b|\bArmour\b/i.test(
+      name,
+    )
+  ) {
+    return 'ARMOR'
+  }
+
+  if (
+    /Tac\s*Vest/i.test(
+      name,
+    )
+  ) {
+    return 'VEST'
+  }
+
+  if (
+    /Backpack|^Pouch$/i.test(
+      name,
+    )
+  ) {
+    return 'BACKPACK'
+  }
+
+  if (
+    /Parachute/i.test(
+      name,
+    )
+  ) {
+    return 'TRAVERSAL'
+  }
+
+  return null
 }
 
 async function mapLimit(
@@ -627,6 +676,9 @@ const results =
           slot:
             parseSlot(
               text,
+            ) ||
+            fallbackSlotFromName(
+              name,
             ),
           price:
             economy?.[1]
@@ -716,6 +768,23 @@ const selectable =
     (item) =>
       item.slot,
   )
+
+const specialistItems =
+  selectable.filter(
+    (item) =>
+      item.slot ===
+      'SPECIALIST',
+  )
+
+if (
+  specialistItems.length <
+  8
+) {
+
+  throw new Error(
+    `Only ${specialistItems.length} Specialist-slot equipment items were parsed. Existing generated data was not touched.`,
+  )
+}
 
 const audit = {
   generatedAt:
@@ -815,6 +884,8 @@ export const zoneEquipmentMeta = ${JSON.stringify(
       declaredCount,
       selectableCount:
         selectable.length,
+      specialistCount:
+        specialistItems.length,
       source:
         'Wardogs Zone',
     },
@@ -860,6 +931,9 @@ console.log(
 )
 console.log(
   `SELECTABLE      ${selectable.length}`,
+)
+console.log(
+  `SPECIALIST      ${specialistItems.length}`,
 )
 console.log(
   `MISSING PRICE   ${audit.missingPrice.length}`,
