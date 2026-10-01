@@ -1543,7 +1543,8 @@ const [
         looseAmmo.filter(
           (item) =>
             item.calibre ===
-            weapon.calibre,
+              weapon.calibre &&
+            !item.tracer,
         )
 
       setAmmoPicker({
