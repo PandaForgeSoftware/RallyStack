@@ -115,6 +115,12 @@ function OperatorFigure({
   openBackpack,
 }) {
 
+  const [
+    operatorView,
+    setOperatorView,
+  ] =
+    useState('front')
+
   const slotClass =
     (slot) =>
       [
@@ -125,11 +131,11 @@ function OperatorFigure({
       ].join(' ')
 
   return (
-    <div className="relative mx-auto h-[650px] w-full max-w-[500px] overflow-hidden">
+    <div className="relative mx-auto h-[700px] w-full max-w-[590px] overflow-hidden">
 
       <div className="absolute inset-x-[14%] top-[4%] bottom-[2%] bg-[radial-gradient(ellipse_at_center,rgba(245,158,11,0.08),transparent_65%)]" />
 
-      <div className="absolute left-1/2 top-10 h-[570px] w-[280px] -translate-x-1/2">
+      <div className="absolute left-1/2 top-10 z-10 h-[620px] w-[310px] -translate-x-1/2">
 
         <svg
           viewBox="0 0 300 620"
@@ -383,6 +389,99 @@ function OperatorFigure({
 
         </svg>
 
+      </div>
+
+      <div className="absolute right-3 top-3 z-40 flex border border-white/10 bg-black/45 p-1">
+        {[
+          ['front', 'FRONT'],
+          ['back', 'BACK'],
+        ].map(
+          ([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() =>
+                setOperatorView(
+                  id,
+                )
+              }
+              className={[
+                'px-3 py-2 text-[8px] font-black tracking-[0.14em] transition',
+                operatorView === id
+                  ? 'bg-amber-500 text-black'
+                  : 'text-stone-500 hover:text-white',
+              ].join(' ')}
+            >
+              {label}
+            </button>
+          ),
+        )}
+      </div>
+
+      {operatorView ===
+      'front' ? (
+        <>
+          {equipped.primary && (
+            <WardogsItemImage
+              item={
+                equipped.primary
+              }
+              className="pointer-events-none absolute left-1/2 top-[195px] z-30 h-24 w-[270px] -translate-x-1/2 rotate-[14deg] border-0 bg-transparent"
+              imageClassName="object-contain drop-shadow-[0_12px_20px_rgba(0,0,0,0.85)]"
+            />
+          )}
+
+          {equipped.sidearm && (
+            <WardogsItemImage
+              item={
+                equipped.sidearm
+              }
+              className="pointer-events-none absolute left-[57%] top-[355px] z-30 h-24 w-28 rotate-[72deg] border-0 bg-transparent"
+              imageClassName="object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.85)]"
+            />
+          )}
+
+          {equipped.specialist && (
+            <WardogsItemImage
+              item={
+                equipped.specialist
+              }
+              className="pointer-events-none absolute left-[54%] top-[118px] z-20 h-28 w-40 -rotate-[24deg] border-0 bg-transparent opacity-90"
+              imageClassName="object-contain"
+            />
+          )}
+        </>
+      ) : (
+        <>
+          <WardogsItemImage
+            item={backpack}
+            className="pointer-events-none absolute left-1/2 top-[170px] z-30 h-[245px] w-[210px] -translate-x-1/2 border-0 bg-transparent"
+            imageClassName="object-contain drop-shadow-[0_16px_24px_rgba(0,0,0,0.9)]"
+          />
+
+          {equipped.primary && (
+            <WardogsItemImage
+              item={
+                equipped.primary
+              }
+              className="pointer-events-none absolute left-1/2 top-[190px] z-40 h-24 w-[280px] -translate-x-1/2 -rotate-[18deg] border-0 bg-transparent"
+              imageClassName="object-contain drop-shadow-[0_12px_20px_rgba(0,0,0,0.85)]"
+            />
+          )}
+        </>
+      )}
+
+      <div className="pointer-events-none absolute bottom-[74px] left-1/2 z-40 -translate-x-1/2 border border-white/10 bg-black/60 px-4 py-2 text-center backdrop-blur-sm">
+        <div className="text-[7px] font-black tracking-[0.18em] text-stone-600">
+          OPERATOR PREVIEW
+        </div>
+
+        <div className="mt-1 text-[9px] font-black text-white">
+          {operatorView ===
+          'front'
+            ? 'EQUIPPED GEAR'
+            : backpack.name}
+        </div>
       </div>
 
       <button
@@ -2029,7 +2128,7 @@ const [
           {builderView ===
           'operator' ? (
 
-            <section className="mx-auto grid max-w-[1700px] gap-5 px-5 pb-12 xl:grid-cols-[290px_520px_minmax(0,1fr)] lg:px-8">
+            <section className="mx-auto grid max-w-[1700px] gap-5 px-5 pb-12 xl:grid-cols-[320px_620px_minmax(380px,1fr)] lg:px-8">
 
               <aside className="border border-white/8 bg-[#0e1011]">
 
@@ -2087,9 +2186,23 @@ const [
                             className="flex w-full items-center gap-3 p-3 text-left"
                           >
 
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-white/8 text-amber-500">
+                            <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden border border-white/8 bg-black/20 text-amber-500">
 
-                              <Icon size={17} />
+                              {weapon ||
+                              bag ? (
+                                <WardogsItemImage
+                                  item={
+                                    weapon ||
+                                    bag
+                                  }
+                                  className="h-full w-full border-0 bg-transparent"
+                                  imageClassName="p-1 object-contain"
+                                />
+                              ) : (
+                                <Icon
+                                  size={17}
+                                />
+                              )}
 
                             </div>
 
@@ -2163,8 +2276,35 @@ const [
 
                   </div>
 
-                  <div className="border border-amber-500/20 px-3 py-2 text-[8px] font-black tracking-wider text-amber-500">
-                    {selectedSlotDefinition?.title}
+                  <div className="flex items-center gap-2">
+
+                    <div className="border border-white/8 bg-black/20 px-3 py-2 text-right">
+                      <div className="text-[7px] font-black tracking-wider text-stone-600">
+                        TOTAL
+                      </div>
+                      <div className="mt-1 text-[11px] font-black text-amber-400">
+                        {money(
+                          totalValue,
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="border border-white/8 bg-black/20 px-3 py-2 text-right">
+                      <div className="text-[7px] font-black tracking-wider text-stone-600">
+                        WEIGHT
+                      </div>
+                      <div className="mt-1 text-[11px] font-black text-white">
+                        {knownWeight.toFixed(
+                          2,
+                        )}{' '}
+                        KG
+                      </div>
+                    </div>
+
+                    <div className="border border-amber-500/20 px-3 py-2 text-[8px] font-black tracking-wider text-amber-500">
+                      {selectedSlotDefinition?.title}
+                    </div>
+
                   </div>
 
                 </div>
@@ -2190,6 +2330,152 @@ const [
               </section>
 
               <section className="border border-white/8 bg-[#0e1011]">
+
+                <div className="border-b border-white/8 bg-[#0b0d0e] p-4">
+
+                  <div className="flex items-center justify-between">
+
+                    <div>
+
+                      <div className="text-[9px] font-black tracking-[0.2em] text-amber-500">
+                        CARRY
+                      </div>
+
+                      <div className="mt-1 text-lg font-black text-white">
+                        FIELD LOADOUT
+                      </div>
+
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={
+                        openBackpack
+                      }
+                      className="border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2 text-[8px] font-black tracking-[0.12em] text-amber-400 hover:bg-amber-500/[0.12]"
+                    >
+                      OPEN PACK
+                    </button>
+
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        selectSlot(
+                          'backpack',
+                        )
+                      }
+                      className="group border border-white/10 bg-[#131617] p-2 text-left hover:border-amber-500/30"
+                    >
+
+                      <WardogsItemImage
+                        item={
+                          selectedBackpack
+                        }
+                        className="h-20 w-full border-0 bg-transparent"
+                        imageClassName="p-1 object-contain"
+                      />
+
+                      <div className="mt-2 truncate text-[8px] font-black text-white">
+                        BACKPACK
+                      </div>
+
+                      <div className="mt-1 truncate text-[7px] text-stone-600">
+                        {
+                          selectedBackpack.name
+                        }
+                      </div>
+
+                    </button>
+
+                    <div className="border border-white/10 bg-[#131617] p-2">
+
+                      <div className="flex h-20 items-center justify-center border border-dashed border-white/8 text-stone-700">
+                        <span className="text-3xl font-thin">
+                          ↟
+                        </span>
+                      </div>
+
+                      <div className="mt-2 text-[8px] font-black text-white">
+                        TRAVERSAL
+                      </div>
+
+                      <div className="mt-1 text-[7px] text-stone-700">
+                        COMING NEXT
+                      </div>
+
+                    </div>
+
+                    <div className="border border-white/10 bg-[#131617] p-2">
+
+                      <div className="flex h-20 items-center justify-center border border-dashed border-white/8 text-stone-700">
+                        <span className="text-2xl">
+                          ◫
+                        </span>
+                      </div>
+
+                      <div className="mt-2 text-[8px] font-black text-white">
+                        TRANSPORT
+                      </div>
+
+                      <div className="mt-1 text-[7px] text-stone-700">
+                        COMING NEXT
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+
+                    <div className="border border-white/8 bg-black/25 p-3">
+
+                      <div className="text-[7px] font-black tracking-wider text-stone-600">
+                        PACKED
+                      </div>
+
+                      <div className="mt-1 text-sm font-black text-white">
+                        {
+                          totalPackedStacks
+                        }
+                      </div>
+
+                    </div>
+
+                    <div className="border border-white/8 bg-black/25 p-3">
+
+                      <div className="text-[7px] font-black tracking-wider text-stone-600">
+                        ROUNDS
+                      </div>
+
+                      <div className="mt-1 text-sm font-black text-emerald-400">
+                        {
+                          totalRounds
+                        }
+                      </div>
+
+                    </div>
+
+                    <div className="border border-white/8 bg-black/25 p-3">
+
+                      <div className="text-[7px] font-black tracking-wider text-stone-600">
+                        PACK
+                      </div>
+
+                      <div className="mt-1 text-sm font-black text-amber-400">
+                        {money(
+                          selectedBackpack.price,
+                        )}
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </div>
 
                 <div className="border-b border-white/8 p-4">
 
