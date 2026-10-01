@@ -532,6 +532,53 @@ const attachmentResults =
             /Unlock\s*(Career|Infantry|Medic|Recon|Support)?\s*(?:lvl\.?\s*)?(\d+)?\s*(?:·\s*\$([\d,]+)\s*to unlock)?/i,
           )
 
+        const effectSection =
+          text
+            .split(
+              /Price per life/i,
+            )[0]
+            ?.split(
+              name,
+            )
+            .slice(
+              1,
+            )
+            .join(
+              name,
+            ) ||
+          ''
+
+        const effects =
+          effectSection
+            .split(
+              '›',
+            )
+            .map(
+              (entry) =>
+                entry
+                  .trim(),
+            )
+            .filter(
+              (entry) =>
+                entry &&
+                !/^Unverified$/i.test(
+                  entry,
+                ) &&
+                entry.length <
+                  120,
+            )
+
+        const magnification =
+          safeNumber(
+            effects
+              .join(
+                ' ',
+              )
+              .match(
+                /([\d.]+)x\s*magnification/i,
+              ),
+          )
+
         const segment =
           compatibilitySegment(
             text,
@@ -659,6 +706,8 @@ const attachmentResults =
                 )
               : null,
           compatibleWeapons,
+          effects,
+          magnification,
           sourceUrl:
             url,
           image,
