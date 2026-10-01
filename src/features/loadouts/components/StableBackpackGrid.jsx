@@ -173,6 +173,68 @@ function StableBackpackGrid({
         },
       )}
 
+      {(backpack.compartments || []).map(
+        (compartment) => {
+
+          const left =
+            GRID_PADDING +
+            compartment.column *
+              (
+                CELL_SIZE +
+                CELL_GAP
+              ) -
+            3
+
+          const top =
+            GRID_PADDING +
+            compartment.row *
+              (
+                CELL_SIZE +
+                CELL_GAP
+              ) -
+            3
+
+          const width =
+            compartment.width *
+              CELL_SIZE +
+            (
+              compartment.width -
+              1
+            ) *
+              CELL_GAP +
+            6
+
+          const height =
+            compartment.height *
+              CELL_SIZE +
+            (
+              compartment.height -
+              1
+            ) *
+              CELL_GAP +
+            6
+
+          return (
+            <div
+              key={
+                compartment.id
+              }
+              className="pointer-events-none absolute z-10 border border-amber-500/20"
+              style={{
+                left:
+                  `${left}px`,
+                top:
+                  `${top}px`,
+                width:
+                  `${width}px`,
+                height:
+                  `${height}px`,
+              }}
+            />
+          )
+        },
+      )}
+
       {placements.map(
         (
           placement,
