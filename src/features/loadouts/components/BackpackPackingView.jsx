@@ -628,16 +628,43 @@ function buildLayout(
   unresolved.forEach(
     (instance) => {
 
-      if (
-        placements.length >
-        instances.length
-      ) {
-        return
-      }
-
       let found =
         null
 
+      const orientations = [
+        {
+          rotated:
+            instance.rotated,
+          width:
+            instance.footprint.width,
+          height:
+            instance.footprint.height,
+        },
+      ]
+
+      if (
+        instance.baseWidth !==
+        instance.baseHeight
+      ) {
+
+        orientations.push({
+          rotated:
+            !instance.rotated,
+          width:
+            instance.footprint.height,
+          height:
+            instance.footprint.width,
+        })
+      }
+
+      /*
+       * WARDOGS-style auto packing:
+       * scan left-to-right across each row,
+       * then move down. At each position try
+       * the current orientation first, then
+       * rotate automatically if that is the
+       * only valid fit.
+       */
       for (
         let row = 0;
         row <
@@ -652,58 +679,64 @@ function buildLayout(
           column += 1
         ) {
 
-          const valid =
-            canPlace({
-              backpack,
+          for (
+            const orientation
+            of orientations
+          ) {
+
+            const valid =
+              canPlace({
+                backpack,
+                row,
+                column,
+                width:
+                  orientation.width,
+                height:
+                  orientation.height,
+                occupied,
+              })
+
+            if (!valid) {
+              continue
+            }
+
+            const cells =
+              cellsForPlacement({
+                row,
+                column,
+                width:
+                  orientation.width,
+                height:
+                  orientation.height,
+                columns:
+                  backpack.columns,
+              })
+
+            found = {
+              ...instance,
+              rotated:
+                orientation.rotated,
+              footprint: {
+                width:
+                  orientation.width,
+                height:
+                  orientation.height,
+              },
               row,
               column,
               width:
-                instance
-                  .footprint
-                  .width,
+                orientation.width,
               height:
-                instance
-                  .footprint
-                  .height,
-              occupied,
-            })
+                orientation.height,
+              cells,
+            }
 
-          if (!valid) {
-            continue
+            break
           }
 
-          const cells =
-            cellsForPlacement({
-              row,
-              column,
-              width:
-                instance
-                  .footprint
-                  .width,
-              height:
-                instance
-                  .footprint
-                  .height,
-              columns:
-                backpack.columns,
-            })
-
-          found = {
-            ...instance,
-            row,
-            column,
-            width:
-              instance
-                .footprint
-                .width,
-            height:
-              instance
-                .footprint
-                .height,
-            cells,
+          if (found) {
+            break
           }
-
-          break
         }
 
         if (found) {
@@ -1334,6 +1367,16 @@ const [
         return
       }
 
+      setRotations(
+        (current) => ({
+          ...current,
+          [key]:
+            Boolean(
+              moving.rotated,
+            ),
+        }),
+      )
+
       setPositions(
         (current) => ({
           ...current,
@@ -1373,9 +1416,7 @@ const [
 
       const nextRotated =
         !Boolean(
-          rotations[
-            key
-          ],
+          moving.rotated,
         )
 
       const nextWidth =
@@ -1518,6 +1559,14 @@ const [
 
       setError('')
     }
+  const autoArrange =
+    () => {
+
+      setPositions({})
+      setRotations({})
+      setError('')
+    }
+
   const realCategory =
     category ===
       'RECOMMENDED' ||
@@ -1541,25 +1590,43 @@ const [
             BACK TO OPERATOR
           </button>
 
-          <div className="text-right">
+          <div className="flex items-center gap-3">
 
-            <div className="text-[9px] font-black tracking-[0.16em] text-stone-500">
-              BACKPACK CAPACITY
-            </div>
+            <button
+              type="button"
+              onClick={
+                autoArrange
+              }
+              className="border border-amber-500/30 bg-amber-500/[0.05] px-4 py-3 text-[8px] font-black tracking-[0.14em] text-amber-400 transition hover:bg-amber-500/[0.12]"
+            >
+              AUTO ARRANGE
+            </button>
 
-            <div className="mt-1 text-xl font-black text-white">
-              {layout.usedCells}
-              <span className="text-stone-600">
-                {' / '}
-                {backpack.capacity}
-              </span>
+            <div className="text-right">
+
+              <div className="text-[9px] font-black tracking-[0.16em] text-stone-500">
+                BACKPACK CAPACITY
+              </div>
+
+              <div className="mt-1 text-xl font-black text-white">
+                {layout.usedCells}
+                <span className="text-stone-600">
+                  {' / '}
+                  {backpack.capacity}
+                </span>
+              </div>
+
+              <div className="mt-1 text-[8px] font-black tracking-wider text-emerald-500">
+                {layout.remaining} FREE
+              </div>
+
             </div>
 
           </div>
 
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[410px_minmax(560px,1fr)_320px]">
+        <div className="grid gap-5 xl:grid-cols-[360px_minmax(640px,1fr)_300px]">
 
           <aside className="border border-white/8 bg-[#0e1011]">
 
@@ -1965,7 +2032,7 @@ const [
 
           </aside>
 
-          <section className="flex min-h-[720px] flex-col items-center border border-white/8 bg-[#0e1011] p-6">
+          <section className="flex min-h-[760px] flex-col items-center border border-amber-500/10 bg-[#0e1011] p-6">
 
             <div className="flex w-full items-start justify-center gap-5">
 
@@ -2049,8 +2116,16 @@ const [
 
             )}
 
-            <div className="mt-4 text-[8px] font-bold tracking-[0.16em] text-stone-700">
-              DRAG ITEMS TO ANY VALID POSITION
+            <div className="mt-4 text-center">
+
+              <div className="text-[8px] font-black tracking-[0.16em] text-emerald-600">
+                AUTO PACK: LEFT TO RIGHT • AUTO ROTATE WHEN NEEDED
+              </div>
+
+              <div className="mt-1 text-[8px] font-bold tracking-[0.14em] text-stone-700">
+                CLICK TO STACK • DRAG TO MOVE • MANUAL ROTATE STILL AVAILABLE
+              </div>
+
             </div>
 
           </section>
