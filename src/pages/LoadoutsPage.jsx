@@ -170,6 +170,7 @@ function WeaponWorkbench({
   openMagazinePicker,
   openAmmoPicker,
   clearAttachment,
+  loadedAmmo,
 }) {
 
   const magazineCapacity =
@@ -447,23 +448,56 @@ function WeaponWorkbench({
                   weapon,
                 )
               }
-              className="mt-3 flex w-full items-center justify-between border border-white/10 bg-black/20 p-3 text-left transition hover:border-amber-500/30"
+              className="mt-3 flex w-full items-center gap-3 border border-white/10 bg-black/20 p-3 text-left transition hover:border-amber-500/30"
             >
 
-              <div>
+              <div className="flex h-14 w-16 shrink-0 items-center justify-center border border-white/8 bg-[#111416]">
+
+                {loadedAmmo?.item ? (
+
+                  <WardogsItemImage
+                    item={
+                      loadedAmmo.item
+                    }
+                    className="h-full w-full border-0 bg-transparent"
+                    imageClassName="p-1 object-contain"
+                  />
+
+                ) : (
+
+                  <Package
+                    size={24}
+                    strokeWidth={1}
+                    className="text-stone-700"
+                  />
+
+                )}
+
+              </div>
+
+              <div className="min-w-0 flex-1">
 
                 <div className="text-[7px] font-black tracking-[0.16em] text-stone-600">
                   AMMUNITION
                 </div>
 
-                <div className="mt-1 text-[9px] font-black text-white">
-                  SELECT {weapon.calibre} AMMO
+                <div className="mt-1 truncate text-[9px] font-black text-white">
+                  {loadedAmmo?.item?.name ||
+                    `SELECT ${weapon.calibre} AMMO`}
+                </div>
+
+                <div className="mt-1 text-[7px] text-stone-600">
+                  {loadedAmmo
+                    ? `${loadedAmmo.rounds}/${loadedAmmo.capacity} LOADED`
+                    : 'MAGAZINE LOADS FIRST'}
                 </div>
 
               </div>
 
-              <div className="text-[8px] font-black text-amber-400">
-                ADD TO PACK
+              <div className="text-right text-[8px] font-black text-amber-400">
+                {loadedAmmo
+                  ? 'ADD MORE'
+                  : 'SELECT'}
               </div>
 
             </button>
@@ -715,6 +749,13 @@ const [
   ] =
     useState({})
 
+
+  const [
+    weaponAmmo,
+    setWeaponAmmo,
+  ] =
+    useState({})
+
   const selectedBackpack =
     backpacks.find(
       (item) =>
@@ -753,6 +794,13 @@ const [
     weaponAttachments[
       workbenchSlot
     ]?.magazine ||
+    null
+
+
+  const workbenchLoadedAmmo =
+    weaponAmmo[
+      workbenchSlot
+    ] ||
     null
 
   const equippedWeapons =
@@ -1276,6 +1324,68 @@ const [
       0,
     )
 
+
+  const usedPackCells =
+    ammoRows.reduce(
+      (
+        total,
+        item,
+      ) =>
+        total +
+        Number(
+          item.physicalStacks ||
+          0,
+        ),
+      0,
+    ) +
+    medicalRows.reduce(
+      (
+        total,
+        row,
+      ) => {
+
+        const physicalStacks =
+          Math.ceil(
+            row.quantity /
+            Math.max(
+              1,
+              Number(
+                row.item.maxStack ||
+                1,
+              ),
+            ),
+          )
+
+        return (
+          total +
+          (
+            physicalStacks *
+            Number(
+              row.item.inventoryWidth ||
+              1,
+            ) *
+            Number(
+              row.item.inventoryHeight ||
+              1,
+            )
+          )
+        )
+      },
+      0,
+    )
+
+  const freePackCells =
+    selectedBackpack
+      ? Math.max(
+          0,
+          Number(
+            selectedBackpack.capacity ||
+            0,
+          ) -
+          usedPackCells,
+        )
+      : 0
+
   const selectSlot =
     (slot) => {
 
@@ -1327,6 +1437,14 @@ const [
           ...current,
           [selectedSlot]:
             {},
+        }),
+      )
+
+      setWeaponAmmo(
+        (current) => ({
+          ...current,
+          [selectedSlot]:
+            null,
         }),
       )
 
@@ -1384,6 +1502,14 @@ const [
         }),
       )
 
+      setWeaponAmmo(
+        (current) => ({
+          ...current,
+          [attachmentPicker.weaponSlot]:
+            null,
+        }),
+      )
+
       setAttachmentPicker(
         null,
       )
@@ -1413,17 +1539,6 @@ const [
         return
       }
 
-      if (
-        !selectedBackpack
-      ) {
-
-        setBuilderNotice(
-          'Equip a backpack before adding ammunition. Ammo needs somewhere to go.'
-        )
-
-        return
-      }
-
       const options =
         looseAmmo.filter(
           (item) =>
@@ -1433,6 +1548,8 @@ const [
 
       setAmmoPicker({
         weapon,
+        weaponSlot:
+          workbenchSlot,
         options,
       })
     }
@@ -1440,12 +1557,50 @@ const [
   const addAmmoFromPicker =
     (item) => {
 
+      if (!ammoPicker) {
+        return
+      }
+
+      const weaponSlot =
+        ammoPicker.weaponSlot
+
+      const magazine =
+        weaponAttachments[
+          weaponSlot
+        ]?.magazine ||
+        null
+
+      const capacity =
+        Number(
+          magazine?.name
+            ?.match(
+              /(\d+)\s*RND/i,
+            )?.[1] ||
+          0,
+        )
+
+      if (
+        capacity <=
+        0
+      ) {
+
+        setBuilderNotice(
+          'Select a magazine first so RallyStack knows how many rounds the weapon can hold.'
+        )
+
+        setAmmoPicker(
+          null,
+        )
+
+        return
+      }
+
       const rule =
         ammoStackRules[
           item.id
         ] || {}
 
-      const quantity =
+      const purchaseQuantity =
         Math.max(
           1,
           Number(
@@ -1455,10 +1610,139 @@ const [
           ),
         )
 
-      changeAmmoRounds(
-        item.id,
-        quantity,
+      const currentLoaded =
+        weaponAmmo[
+          weaponSlot
+        ]
+
+      const currentlyLoadedRounds =
+        currentLoaded?.item?.id ===
+          item.id
+          ? Number(
+              currentLoaded.rounds ||
+              0,
+            )
+          : 0
+
+      const magazineSpace =
+        Math.max(
+          0,
+          capacity -
+          currentlyLoadedRounds,
+        )
+
+      const roundsToMagazine =
+        Math.min(
+          magazineSpace,
+          purchaseQuantity,
+        )
+
+      const roundsToPack =
+        purchaseQuantity -
+        roundsToMagazine
+
+      if (
+        roundsToPack >
+        0 &&
+        !selectedBackpack
+      ) {
+
+        setBuilderNotice(
+          `The ${capacity}-round magazine will fill first, but ${roundsToPack} rounds would be left over. Equip a backpack for the spare ammunition.`
+        )
+
+        setAmmoPicker(
+          null,
+        )
+
+        return
+      }
+
+      if (
+        roundsToPack >
+        0
+      ) {
+
+        const existingPackRounds =
+          Number(
+            packedAmmo[
+              item.id
+            ] ||
+            0,
+          )
+
+        const maxStack =
+          Math.max(
+            1,
+            Number(
+              rule.maxStack ||
+              item.stack ||
+              1,
+            ),
+          )
+
+        const beforeStacks =
+          Math.ceil(
+            existingPackRounds /
+            maxStack,
+          )
+
+        const afterStacks =
+          Math.ceil(
+            (
+              existingPackRounds +
+              roundsToPack
+            ) /
+            maxStack,
+          )
+
+        const extraCells =
+          Math.max(
+            0,
+            afterStacks -
+            beforeStacks,
+          )
+
+        if (
+          extraCells >
+          freePackCells
+        ) {
+
+          setBuilderNotice(
+            `Your ${selectedBackpack.name} does not have enough free space for the ${roundsToPack} spare rounds. Free a backpack cell or choose a larger pack.`
+          )
+
+          setAmmoPicker(
+            null,
+          )
+
+          return
+        }
+      }
+
+      setWeaponAmmo(
+        (current) => ({
+          ...current,
+          [weaponSlot]: {
+            item,
+            rounds:
+              currentlyLoadedRounds +
+              roundsToMagazine,
+            capacity,
+          },
+        }),
       )
+
+      if (
+        roundsToPack >
+        0
+      ) {
+
+        changeAmmoRounds(
+          item.id,
+          roundsToPack,
+        )
+      }
 
       setAmmoPicker(
         null,
@@ -1469,6 +1753,14 @@ const [
     (slot) => {
 
       setEquipped(
+        (current) => ({
+          ...current,
+          [slot]:
+            null,
+        }),
+      )
+
+      setWeaponAmmo(
         (current) => ({
           ...current,
           [slot]:
@@ -2641,6 +2933,9 @@ const [
                   clearAttachment={
                     clearAttachment
                   }
+                  loadedAmmo={
+                    workbenchLoadedAmmo
+                  }
                 />
 
               </section>
@@ -3555,41 +3850,51 @@ const [
             />
 
             <div className="mt-4 text-xl font-black text-white">
-              BACKPACK REQUIRED
+              LOADOUT CHECK
             </div>
 
             <p className="mt-2 text-xs leading-5 text-stone-500">
               {builderNotice}
             </p>
 
-            <button
-              type="button"
-              onClick={() => {
+            {builderNotice?.includes(
+              'magazine'
+            ) ? (
 
-                setBuilderNotice(
-                  null,
-                )
+              <button
+                type="button"
+                onClick={() =>
+                  setBuilderNotice(
+                    null,
+                  )
+                }
+                className="mt-5 bg-amber-500 px-5 py-3 text-[9px] font-black tracking-wider text-black"
+              >
+                CLOSE
+              </button>
 
-                selectSlot(
-                  'backpack',
-                )
-              }}
-              className="mt-5 bg-amber-500 px-5 py-3 text-[9px] font-black tracking-wider text-black"
-            >
-              SELECT BACKPACK
-            </button>
+            ) : (
 
-            <button
-              type="button"
-              onClick={() =>
-                setBuilderNotice(
-                  null,
-                )
-              }
-              className="mt-3 block w-full text-[8px] font-black text-stone-600"
-            >
-              CLOSE
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+
+                  setBuilderNotice(
+                    null,
+                  )
+
+                  selectSlot(
+                    'backpack',
+                  )
+                }}
+                className="mt-5 bg-amber-500 px-5 py-3 text-[9px] font-black tracking-wider text-black"
+              >
+                SELECT BACKPACK
+              </button>
+
+            )}
+
+
 
           </div>
 
@@ -3736,39 +4041,45 @@ const [
                           item,
                         )
                       }
-                      className="border border-white/8 bg-[#121516] p-4 text-left transition hover:border-amber-500/35"
+                      className="flex items-center gap-3 border border-white/8 bg-[#121516] p-3 text-left transition hover:border-amber-500/35"
                     >
 
-                      <div className="flex items-start justify-between gap-4">
+                      <WardogsItemImage
+                        item={item}
+                        className="h-16 w-20 shrink-0 border border-white/8 bg-black/20"
+                        imageClassName="p-1 object-contain"
+                      />
 
-                        <div>
+                      <div className="min-w-0 flex-1">
 
-                          <div className="text-[10px] font-black text-white">
-                            {item.name}
-                          </div>
-
-                          <div className="mt-1 text-[8px] text-stone-600">
-                            DAMAGE {item.damage ?? '—'}
-                            {' / '}
-                            SPEED {item.speed ?? '—'}
-                            {' / '}
-                            PEN {item.penetration ?? '—'}
-                          </div>
-
+                        <div className="text-[10px] font-black text-white">
+                          {item.name}
                         </div>
 
-                        <div className="text-right">
+                        <div className="mt-1 text-[8px] text-stone-600">
+                          DAMAGE {item.damage ?? '—'}
+                          {' / '}
+                          SPEED {item.speed ?? '—'}
+                          {' / '}
+                          PEN {item.penetration ?? '—'}
+                        </div>
 
-                          <div className="text-[10px] font-black text-amber-400">
-                            {money(
-                              item.price,
-                            )}
-                          </div>
+                        <div className="mt-1 text-[7px] text-stone-700">
+                          MAGAZINE FILLS FIRST • SPARE ROUNDS GO TO BACKPACK
+                        </div>
 
-                          <div className="mt-1 text-[7px] text-stone-600">
-                            +{quantity} ROUNDS
-                          </div>
+                      </div>
 
+                      <div className="text-right">
+
+                        <div className="text-[10px] font-black text-amber-400">
+                          {money(
+                            item.price,
+                          )}
+                        </div>
+
+                        <div className="mt-1 text-[7px] text-stone-600">
+                          +{quantity} ROUNDS
                         </div>
 
                       </div>
