@@ -468,6 +468,37 @@ function canPlace({
         [],
     )
 
+  const compartments =
+    backpack.compartments ||
+    []
+
+  if (
+    compartments.length >
+      0
+  ) {
+
+    const insideOneCompartment =
+      compartments.some(
+        (compartment) =>
+          row >=
+            compartment.row &&
+          column >=
+            compartment.column &&
+          row + height <=
+            compartment.row +
+              compartment.height &&
+          column + width <=
+            compartment.column +
+              compartment.width,
+      )
+
+    if (
+      !insideOneCompartment
+    ) {
+      return false
+    }
+  }
+
   return cellsForPlacement({
     row,
     column,
