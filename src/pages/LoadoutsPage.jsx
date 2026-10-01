@@ -43,6 +43,7 @@ import {
 import {
   zoneAttachmentItems,
   zoneAttachmentMeta,
+  zoneWeaponData,
 } from '../data/wardogsZoneAttachments'
 import BackpackPackingView from '../features/loadouts/components/BackpackPackingView'
 import WardogsItemImage from '../features/loadouts/components/WardogsItemImage'
@@ -313,7 +314,42 @@ const attachmentKey =
 const completeAttachmentItems =
   zoneAttachmentItems.length >
     0
-    ? zoneAttachmentItems
+    ? zoneAttachmentItems.map(
+        (zoneItem) => {
+
+          const labItem =
+            attachmentItems.find(
+              (item) =>
+                item.name ===
+                zoneItem.name,
+            )
+
+          return {
+            ...labItem,
+            ...zoneItem,
+            price:
+              zoneItem.price ??
+              labItem?.price ??
+              null,
+            weight:
+              zoneItem.weight ??
+              labItem?.weight ??
+              null,
+            inventoryWidth:
+              zoneItem.inventoryWidth ??
+              labItem?.inventoryWidth ??
+              null,
+            inventoryHeight:
+              zoneItem.inventoryHeight ??
+              labItem?.inventoryHeight ??
+              null,
+            image:
+              zoneItem.image ||
+              labItem?.image ||
+              null,
+          }
+        },
+      )
     : attachmentItems
 
 const getAttachmentOptions =
@@ -345,17 +381,14 @@ const getAttachmentOptions =
             type &&
           (
             compatibleNames
-              .size ===
-              0
-              ? item
-                  .compatibleWeapons
-                  ?.includes(
-                    weapon.id,
-                  )
-              : compatibleNames
-                  .has(
-                    item.name,
-                  )
+              .has(
+                item.name,
+              ) ||
+            item
+              .compatibleWeapons
+              ?.includes(
+                weapon.id,
+              )
           ),
       )
 
@@ -398,12 +431,22 @@ function WeaponWorkbench({
     attachments?.magazine ||
     null
 
-  const liveStats =
-    weaponLiveData[
-      weapon?.id
-    ] || {}
+  const liveStats = {
+    ...(
+      weaponLiveData[
+        weapon?.id
+      ] || {}
+    ),
+    ...(
+      zoneWeaponData[
+        weapon?.id
+      ] || {}
+    ),
+  }
 
   const magazineCapacity =
+    magazine?.modifiers
+      ?.capacity ||
     magazine?.name
       ?.match(
         /(\d+)\s*RND/i,
@@ -438,7 +481,15 @@ function WeaponWorkbench({
       ) =>
         total +
         Number(
-          item.price ||
+          (
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ) ||
             0,
         ),
       0,
@@ -682,15 +733,19 @@ function WeaponWorkbench({
     ],
     [
       'RECOIL',
-      verticalRecoilPct ===
-        0
-        ? '100%'
-        : `${(
-            100 +
-            verticalRecoilPct
-          ).toFixed(
-            0,
-          )}% V`,
+      `${(
+        Number(
+          liveStats.verticalRecoil ||
+            100,
+        ) *
+        (
+          1 +
+          verticalRecoilPct /
+            100
+        )
+      ).toFixed(
+        0,
+      )}% V`,
       verticalRecoilPct ===
         0
         ? null
@@ -698,15 +753,19 @@ function WeaponWorkbench({
     ],
     [
       'HORIZONTAL RECOIL',
-      horizontalRecoilPct ===
-        0
-        ? '100%'
-        : `${(
-            100 +
-            horizontalRecoilPct
-          ).toFixed(
-            0,
-          )}%`,
+      `${(
+        Number(
+          liveStats.horizontalRecoil ||
+            100,
+        ) *
+        (
+          1 +
+          horizontalRecoilPct /
+            100
+        )
+      ).toFixed(
+        0,
+      )}%`,
       horizontalRecoilPct ===
         0
         ? null
@@ -714,15 +773,19 @@ function WeaponWorkbench({
     ],
     [
       'SPREAD',
-      spreadPct ===
-        0
-        ? '100%'
-        : `${(
-            100 +
-            spreadPct
-          ).toFixed(
-            0,
-          )}%`,
+      `${(
+        Number(
+          liveStats.spreadPct ||
+            100,
+        ) *
+        (
+          1 +
+          spreadPct /
+            100
+        )
+      ).toFixed(
+        0,
+      )}%`,
       spreadPct ===
         0
         ? null
@@ -1709,7 +1772,15 @@ const [
                   item.id
                 ]?.price
               ) ??
-              item.price ??
+              (
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ) ??
               0,
             ),
           Number(
@@ -1727,7 +1798,15 @@ const [
             ) =>
               gearTotal +
               Number(
-                item.price ||
+                (
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ) ||
                   0,
               ),
             0,
@@ -1740,7 +1819,15 @@ const [
           ) =>
             total +
             Number(
-              item.price ||
+              (
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ) ||
                 0,
             ),
           0,
@@ -1806,7 +1893,15 @@ const [
               total +
               (
                 Number(
-                  item.price ||
+                  (
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ) ||
                   0,
                 ) *
                 Number(
@@ -1826,7 +1921,15 @@ const [
               total +
               (
                 Number(
-                  row.item.price ||
+                  row.(
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ) ||
                   0,
                 ) *
                 row.quantity
@@ -1884,7 +1987,15 @@ const [
             total +
             purchases *
               Number(
-                entry.item.price ||
+                entry.(
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ) ||
                   0,
               )
           )
@@ -2971,7 +3082,15 @@ const [
 
                   <div className="text-right text-sm font-black text-white">
                     {money(
-                      item.price,
+                      (
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ),
                     )}
                   </div>
 
@@ -3100,7 +3219,15 @@ const [
 
                 <div className="text-sm font-black text-amber-500">
                   {money(
-                    item.price,
+                    (
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ),
                   )}
                 </div>
 
@@ -3447,7 +3574,15 @@ const [
 
                   <div className="text-sm font-black text-amber-500">
                     {money(
-                      item.price,
+                      (
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ),
                     )}
                   </div>
 
@@ -4923,7 +5058,15 @@ const [
 
                                 <div className="text-xs font-black text-amber-500">
                                   {money(
-                                    item.price *
+                                    (
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ) *
                                     item.stacks,
                                   )}
                                 </div>
@@ -5193,10 +5336,26 @@ const [
                         </span>
 
                         <span className="font-black text-amber-400">
-                          {item.price == null
+                          {(
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ) == null
                             ? 'PRICE ?'
                             : money(
-                                item.price,
+                                (
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ),
                               )}
                         </span>
 
@@ -5328,10 +5487,26 @@ const [
                       </div>
 
                       <div className="text-[12px] font-black text-amber-400">
-                        {item.price == null
+                        {(
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ) == null
                           ? 'PRICE ?'
                           : money(
-                              item.price,
+                              (
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ),
                             )}
                       </div>
 
@@ -5459,7 +5634,15 @@ const [
 
                       <div className="text-[10px] font-black text-amber-400">
                         {money(
-                          item.price,
+                          (
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ),
                         )}
                       </div>
 
@@ -5678,7 +5861,15 @@ const [
 
                         <div className="text-[10px] font-black text-amber-400">
                           {money(
-                            item.price,
+                            (
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ),
                           )}
                         </div>
 
@@ -5793,10 +5984,26 @@ const [
                     </div>
 
                     <div className="text-right text-[10px] font-black text-amber-400">
-                      {item.price == null
+                      {(
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ) == null
                         ? 'PRICE ?'
                         : money(
-                            item.price,
+                            (
+                            zoneWeaponData[
+                              item.id
+                            ]?.price ??
+                            weaponLiveData[
+                              item.id
+                            ]?.price ??
+                            item.price
+                          ),
                           )}
                     </div>
 
