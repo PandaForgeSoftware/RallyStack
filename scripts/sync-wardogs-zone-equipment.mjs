@@ -431,8 +431,19 @@ function isEquipmentPage(
       '',
     )
 
-  return /:\s*WARDOGS\s+(?:Armor|Storage|Throwable|Medical Item|Utility Item|Supply Item|Deployable|Melee(?: Item)?|Explosive(?: Item)?)\s+Stats\s*&\s*Price/i.test(
-    title,
+  const detailPage =
+    /:\s*WARDOGS\s+.+?\s+Stats\s*&\s*Price/i.test(
+      title,
+    )
+
+  const knownNonEquipment =
+    /:\s*WARDOGS\s+(?:Weapon|Attachment|Ammo|Vehicle|Skin|Cosmetic)\s+Stats\s*&\s*Price/i.test(
+      title,
+    )
+
+  return (
+    detailPage &&
+    !knownNonEquipment
   )
 }
 
