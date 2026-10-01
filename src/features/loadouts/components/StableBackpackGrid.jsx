@@ -10,7 +10,7 @@ const money =
     `$${Number(value || 0).toLocaleString()}`
 
 const CELL_SIZE =
-  74
+  90
 
 const CELL_GAP =
   4
@@ -254,7 +254,7 @@ function StableBackpackGrid({
               }
               title="Click to add to this stack"
               className={[
-                'absolute z-20 cursor-pointer overflow-hidden bg-[#101314] outline outline-1 active:cursor-grabbing',
+                'group absolute z-20 cursor-pointer overflow-hidden bg-[#101314] outline outline-1 active:cursor-grabbing',
                 draggingKey ===
                 placement.key
                   ? 'outline-amber-200 opacity-60'
@@ -336,7 +336,7 @@ function StableBackpackGrid({
                       placement.key,
                     )
                   }}
-                  className="absolute bottom-1 right-1 z-40 flex h-7 w-7 items-center justify-center border border-amber-500/60 bg-black/85 text-amber-400 transition hover:bg-amber-500 hover:text-black"
+                  className="absolute bottom-1 right-1 z-40 flex h-7 w-7 items-center justify-center border border-amber-500/60 bg-black/85 text-amber-400 opacity-0 transition hover:bg-amber-500 hover:text-black group-hover:opacity-100"
                 >
                   <RotateCw
                     size={13}
