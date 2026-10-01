@@ -161,240 +161,415 @@ const getMagazineOptions =
     )
   }
 
-function OperatorFigure({
+function WeaponWorkbench({
+  weapon,
+  weaponSlot,
   selectedSlot,
   selectSlot,
-  equipped,
-  backpack,
-  openBackpack,
+  magazine,
+  openMagazinePicker,
+  clearAttachment,
 }) {
 
-  const [
-    operatorView,
-    setOperatorView,
-  ] =
-    useState('front')
+  const magazineCapacity =
+    magazine?.name
+      ?.match(
+        /(\d+)\s*RND/i,
+      )?.[1] ||
+    null
+
+  const attachmentWeight =
+    Number(
+      magazine?.weight ||
+      0,
+    )
+
+  const attachmentPrice =
+    Number(
+      magazine?.price ||
+      0,
+    )
+
+  const weaponWeight =
+    Number(
+      weapon?.weight ||
+      0,
+    )
+
+  const weaponPrice =
+    Number(
+      weapon?.price ||
+      0,
+    )
+
+  if (!weapon) {
+
+    return (
+      <div className="flex min-h-[700px] items-center justify-center p-8 text-center">
+
+        <div className="max-w-md">
+
+          <Crosshair
+            size={52}
+            strokeWidth={1}
+            className="mx-auto text-stone-700"
+          />
+
+          <div className="mt-5 text-2xl font-black text-white">
+            SELECT A WEAPON
+          </div>
+
+          <p className="mt-2 text-xs leading-5 text-stone-600">
+            Choose a primary, sidearm or specialist weapon to open the live stats and attachment workbench.
+          </p>
+
+        </div>
+
+      </div>
+    )
+  }
+
+  const stats = [
+    [
+      'DAMAGE',
+      weapon.damage ??
+        '—',
+    ],
+    [
+      'RPM',
+      weapon.rpm ??
+        '—',
+    ],
+    [
+      'CALIBRE',
+      weapon.calibre ||
+        '—',
+    ],
+    [
+      'WEIGHT',
+      `${(
+        weaponWeight +
+        attachmentWeight
+      ).toFixed(
+        2,
+      )} KG`,
+      attachmentWeight
+        ? `BASE ${weaponWeight.toFixed(2)} KG`
+        : null,
+    ],
+    [
+      'PRICE',
+      money(
+        weaponPrice +
+        attachmentPrice,
+      ),
+      attachmentPrice
+        ? `BASE ${money(
+            weaponPrice,
+          )}`
+        : null,
+    ],
+    [
+      'MAG CAPACITY',
+      magazineCapacity
+        ? `${magazineCapacity} RND`
+        : '—',
+      magazine
+        ? magazine.name
+        : 'NO MAG SELECTED',
+    ],
+    [
+      'UNLOCK LEVEL',
+      weapon.unlockLevel ??
+        '—',
+    ],
+    [
+      'CATEGORY',
+      weapon.category ||
+        '—',
+    ],
+  ]
 
   return (
-    <div className="relative mx-auto min-h-[700px] w-full max-w-[620px] overflow-hidden">
+    <div className="min-h-[700px]">
 
-      <div className="pointer-events-none absolute inset-x-[18%] top-[6%] bottom-[5%] bg-[radial-gradient(ellipse_at_center,rgba(245,158,11,0.10),transparent_68%)]" />
+      <div className="grid min-h-[700px] xl:grid-cols-[minmax(0,1fr)_230px]">
 
-      <div className="absolute right-4 top-4 z-40 flex border border-white/10 bg-black/55 p-1">
-        {[
-          ['front', 'FRONT'],
-          ['back', 'BACK'],
-        ].map(
-          ([id, label]) => (
+        <div className="relative flex min-h-[700px] flex-col border-r border-white/8 p-6">
+
+          <div className="flex items-start justify-between gap-4">
+
+            <div>
+
+              <div className="text-[8px] font-black tracking-[0.2em] text-amber-500">
+                {weaponSlot.toUpperCase()}
+              </div>
+
+              <div className="mt-1 text-2xl font-black text-white">
+                {weapon.name}
+              </div>
+
+              <div className="mt-1 text-[9px] font-bold tracking-wider text-stone-600">
+                {weapon.category}
+                {' / '}
+                {weapon.calibre}
+              </div>
+
+            </div>
+
             <button
-              key={id}
               type="button"
               onClick={() =>
-                setOperatorView(
-                  id,
+                selectSlot(
+                  weaponSlot,
                 )
               }
               className={[
-                'px-4 py-2 text-[8px] font-black tracking-[0.14em]',
-                operatorView === id
-                  ? 'bg-amber-500 text-black'
-                  : 'text-stone-500 hover:text-white',
+                'border px-3 py-2 text-[8px] font-black tracking-wider',
+                selectedSlot ===
+                weaponSlot
+                  ? 'border-amber-500/40 bg-amber-500/[0.06] text-amber-400'
+                  : 'border-white/10 text-stone-500',
               ].join(' ')}
             >
-              {label}
+              CHANGE
             </button>
-          ),
-        )}
-      </div>
 
-      <div className="absolute left-1/2 top-8 z-10 h-[630px] w-[330px] -translate-x-1/2">
+          </div>
 
-        <svg
-          viewBox="0 0 320 700"
-          className="h-full w-full"
-          aria-label="Operator mannequin"
-        >
-          <defs>
-            <linearGradient
-              id="operatorBody"
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="1"
-            >
-              <stop offset="0%" stopColor="#272c2f" />
-              <stop offset="100%" stopColor="#101315" />
-            </linearGradient>
-            <linearGradient
-              id="operatorCloth"
-              x1="0"
-              y1="0"
-              x2="1"
-              y2="1"
-            >
-              <stop offset="0%" stopColor="#1e2325" />
-              <stop offset="100%" stopColor="#0c0f10" />
-            </linearGradient>
-          </defs>
+          <div className="relative mt-8 flex min-h-[320px] items-center justify-center overflow-hidden border border-white/8 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.06),transparent_62%)]">
 
-          <ellipse
-            cx="160"
-            cy="680"
-            rx="92"
-            ry="12"
-            fill="rgba(0,0,0,.55)"
-          />
-
-          <circle
-            cx="160"
-            cy="75"
-            r="43"
-            fill="url(#operatorBody)"
-            stroke={
-              selectedSlot === 'helmet'
-                ? '#f59e0b'
-                : '#353b3e'
-            }
-            strokeWidth="3"
-          />
-
-          <path
-            d="M130 116 C138 130 182 130 190 116 L199 155 L121 155 Z"
-            fill="#141819"
-          />
-
-          <path
-            d="M92 160 C118 136 202 136 228 160 L246 325 C220 346 195 355 160 355 C125 355 100 346 74 325 Z"
-            fill="url(#operatorCloth)"
-            stroke={
-              selectedSlot === 'armor'
-                ? '#f59e0b'
-                : '#33393c'
-            }
-            strokeWidth="3"
-          />
-
-          <path
-            d="M109 171 C128 159 192 159 211 171 L222 287 C204 303 185 311 160 311 C135 311 116 303 98 287 Z"
-            fill="#171b1d"
-            stroke={
-              selectedSlot === 'vest'
-                ? '#f59e0b'
-                : '#2f3538'
-            }
-            strokeWidth="3"
-          />
-
-          <path
-            d="M91 167 C60 181 48 209 43 257 L31 369 C33 389 49 395 63 379 L82 271 L104 207 Z"
-            fill="url(#operatorBody)"
-            stroke="#303638"
-            strokeWidth="3"
-          />
-
-          <path
-            d="M229 167 C260 181 272 209 277 257 L289 369 C287 389 271 395 257 379 L238 271 L216 207 Z"
-            fill="url(#operatorBody)"
-            stroke="#303638"
-            strokeWidth="3"
-          />
-
-          <path
-            d="M85 329 L235 329 L224 405 L96 405 Z"
-            fill="#141819"
-            stroke="#303638"
-            strokeWidth="3"
-          />
-
-          <path
-            d="M101 401 L154 401 L145 654 L82 654 L71 594 Z"
-            fill="url(#operatorBody)"
-            stroke="#303638"
-            strokeWidth="3"
-          />
-
-          <path
-            d="M166 401 L219 401 L249 594 L238 654 L175 654 Z"
-            fill="url(#operatorBody)"
-            stroke="#303638"
-            strokeWidth="3"
-          />
-        </svg>
-
-        {operatorView === 'front' ? (
-          <>
-            {equipped.primary && (
-              <WardogsItemImage
-                item={equipped.primary}
-                className="pointer-events-none absolute left-1/2 top-[225px] z-30 h-24 w-[280px] -translate-x-1/2 border-0 bg-transparent"
-                imageClassName="object-contain drop-shadow-[0_14px_24px_rgba(0,0,0,0.9)]"
-              />
-            )}
-
-            {equipped.sidearm && (
-              <WardogsItemImage
-                item={equipped.sidearm}
-                className="pointer-events-none absolute left-[61%] top-[385px] z-30 h-20 w-20 rotate-[78deg] border-0 bg-transparent"
-                imageClassName="object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.9)]"
-              />
-            )}
-          </>
-        ) : (
-          <>
             <WardogsItemImage
-              item={backpack}
-              className="pointer-events-none absolute left-1/2 top-[170px] z-30 h-[250px] w-[220px] -translate-x-1/2 border-0 bg-transparent"
-              imageClassName="object-contain drop-shadow-[0_16px_28px_rgba(0,0,0,0.9)]"
+              item={weapon}
+              className="h-[280px] w-[92%] border-0 bg-transparent"
+              imageClassName="p-5 object-contain drop-shadow-[0_18px_30px_rgba(0,0,0,0.85)]"
             />
 
-            {equipped.primary && (
-              <WardogsItemImage
-                item={equipped.primary}
-                className="pointer-events-none absolute left-1/2 top-[235px] z-40 h-24 w-[285px] -translate-x-1/2 -rotate-[17deg] border-0 bg-transparent"
-                imageClassName="object-contain drop-shadow-[0_14px_24px_rgba(0,0,0,0.9)]"
-              />
+          </div>
+
+          <div className="mt-5">
+
+            <div className="mb-2 flex items-center justify-between">
+
+              <div className="text-[8px] font-black tracking-[0.18em] text-stone-600">
+                ATTACHMENTS
+              </div>
+
+              <div className="text-[7px] tracking-wider text-stone-700">
+                VERIFIED COMPATIBILITY ONLY
+              </div>
+
+            </div>
+
+            <div className="grid grid-cols-4 gap-2">
+
+              <button
+                type="button"
+                disabled={
+                  getMagazineOptions(
+                    weapon,
+                  ).length ===
+                  0
+                }
+                onClick={() =>
+                  openMagazinePicker(
+                    weaponSlot,
+                    weapon,
+                  )
+                }
+                className={[
+                  'min-h-20 border p-3 text-left transition',
+                  magazine
+                    ? 'border-amber-500/45 bg-amber-500/[0.06]'
+                    : 'border-white/10 bg-black/20 hover:border-amber-500/30',
+                  getMagazineOptions(
+                    weapon,
+                  ).length ===
+                  0
+                    ? 'cursor-not-allowed opacity-35'
+                    : '',
+                ].join(' ')}
+              >
+
+                <div className="text-[7px] font-black tracking-[0.16em] text-stone-600">
+                  MAGAZINE
+                </div>
+
+                <div className="mt-2 truncate text-[9px] font-black text-white">
+                  {magazine?.name ||
+                    'SELECT'}
+                </div>
+
+                {magazine && (
+
+                  <div className="mt-1 text-[7px] text-amber-500">
+                    {magazineCapacity
+                      ? `${magazineCapacity} RND`
+                      : 'EQUIPPED'}
+                  </div>
+
+                )}
+
+              </button>
+
+              {[
+                'OPTIC',
+                'MUZZLE',
+                'GRIP',
+              ].map(
+                (label) => (
+
+                  <div
+                    key={label}
+                    className="min-h-20 border border-white/6 bg-black/15 p-3"
+                  >
+
+                    <div className="text-[7px] font-black tracking-[0.16em] text-stone-700">
+                      {label}
+                    </div>
+
+                    <div className="mt-2 text-[8px] font-black text-stone-800">
+                      DATA SYNC PENDING
+                    </div>
+
+                  </div>
+
+                ),
+              )}
+
+            </div>
+
+            {magazine && (
+
+              <div className="mt-2 flex items-center gap-3 border border-white/8 bg-black/20 p-3">
+
+                <WardogsItemImage
+                  item={magazine}
+                  className="h-14 w-16 shrink-0 border-0 bg-transparent"
+                  imageClassName="p-1 object-contain"
+                />
+
+                <div className="min-w-0 flex-1">
+
+                  <div className="truncate text-[9px] font-black text-white">
+                    {magazine.name}
+                  </div>
+
+                  <div className="mt-1 text-[8px] text-stone-600">
+                    {magazine.weight == null
+                      ? 'WEIGHT ?'
+                      : `${Number(
+                          magazine.weight,
+                        ).toFixed(
+                          2,
+                        )} KG`}
+                    {' / '}
+                    {magazine.price == null
+                      ? 'PRICE ?'
+                      : money(
+                          magazine.price,
+                        )}
+                  </div>
+
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    clearAttachment(
+                      weaponSlot,
+                    )
+                  }
+                  className="text-[8px] font-black text-red-400"
+                >
+                  REMOVE
+                </button>
+
+              </div>
+
             )}
-          </>
-        )}
+
+          </div>
+
+        </div>
+
+        <aside className="bg-black/15 p-4">
+
+          <div className="text-[8px] font-black tracking-[0.2em] text-amber-500">
+            LIVE STATS
+          </div>
+
+          <div className="mt-4 space-y-2">
+
+            {stats.map(
+              ([
+                label,
+                value,
+                note,
+              ]) => (
+
+                <div
+                  key={label}
+                  className="border border-white/8 bg-[#111416] p-3"
+                >
+
+                  <div className="text-[7px] font-black tracking-[0.15em] text-stone-600">
+                    {label}
+                  </div>
+
+                  <div className="mt-1 text-sm font-black text-white">
+                    {value}
+                  </div>
+
+                  {note && (
+
+                    <div className="mt-1 truncate text-[7px] text-stone-700">
+                      {note}
+                    </div>
+
+                  )}
+
+                </div>
+
+              ),
+            )}
+
+          </div>
+
+          <div className="mt-4 border border-amber-500/15 bg-amber-500/[0.03] p-3">
+
+            <div className="text-[7px] font-black tracking-[0.16em] text-amber-600">
+              ATTACHMENT DELTA
+            </div>
+
+            <div className="mt-2 flex justify-between text-[8px] text-stone-500">
+              <span>
+                WEIGHT
+              </span>
+              <span className="font-black text-white">
+                +{attachmentWeight.toFixed(
+                  2,
+                )} KG
+              </span>
+            </div>
+
+            <div className="mt-2 flex justify-between text-[8px] text-stone-500">
+              <span>
+                COST
+              </span>
+              <span className="font-black text-amber-400">
+                +{money(
+                  attachmentPrice,
+                )}
+              </span>
+            </div>
+
+          </div>
+
+        </aside>
+
       </div>
 
-      <button
-        type="button"
-        onClick={() =>
-          selectSlot('helmet')
-        }
-        className="absolute left-1/2 top-[38px] z-30 h-20 w-24 -translate-x-1/2 rounded-full border border-transparent hover:border-amber-500/50"
-        aria-label="Select helmet"
-      />
-
-      <button
-        type="button"
-        onClick={() =>
-          selectSlot('vest')
-        }
-        className="absolute left-1/2 top-[185px] z-30 h-36 w-40 -translate-x-1/2 border border-transparent hover:border-amber-500/40"
-        aria-label="Select tactical vest"
-      />
-
-      <div className="absolute bottom-5 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2">
-        <button
-          type="button"
-          onClick={() =>
-            selectSlot('primary')
-          }
-          className="border border-white/10 bg-black/55 px-4 py-3 text-[8px] font-black tracking-[0.13em] text-white hover:border-amber-500/40"
-        >
-          {equipped.primary?.name || 'SELECT PRIMARY'}
-        </button>
-
-        <button
-          type="button"
-          onClick={openBackpack}
-          className="border border-amber-500/35 bg-amber-500/[0.07] px-4 py-3 text-[8px] font-black tracking-[0.13em] text-amber-400 hover:bg-amber-500/[0.12]"
-        >
-          OPEN PACK
-        </button>
-      </div>
     </div>
   )
 }
@@ -506,6 +681,31 @@ const [
         item.id ===
         selectedSlot,
     )
+
+
+  const workbenchSlot =
+    weaponSlots.has(
+      selectedSlot,
+    )
+      ? selectedSlot
+      : equipped.primary
+        ? 'primary'
+        : equipped.sidearm
+          ? 'sidearm'
+          : equipped.specialist
+            ? 'specialist'
+            : 'primary'
+
+  const workbenchWeapon =
+    equipped[
+      workbenchSlot
+    ]
+
+  const workbenchMagazine =
+    weaponAttachments[
+      workbenchSlot
+    ]?.magazine ||
+    null
 
   const equippedWeapons =
     useMemo(
@@ -2107,98 +2307,6 @@ const [
 
                           {weapon && (
                             <>
-                              {getMagazineOptions(
-                                weapon,
-                              ).length >
-                              0 && (
-
-                                <div className="border-t border-white/8 p-2">
-
-                                  <div className="mb-2 text-[7px] font-black tracking-[0.16em] text-stone-600">
-                                    ATTACHMENTS
-                                  </div>
-
-                                  <div className="grid grid-cols-4 gap-1">
-
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        openMagazinePicker(
-                                          slot.id,
-                                          weapon,
-                                        )
-                                      }
-                                      className={[
-                                        'min-h-11 border px-2 py-2 text-[7px] font-black tracking-wider',
-                                        weaponAttachments[
-                                          slot.id
-                                        ]?.magazine
-                                          ? 'border-amber-500/45 bg-amber-500/[0.07] text-amber-400'
-                                          : 'border-white/10 bg-black/20 text-stone-400 hover:border-amber-500/30',
-                                      ].join(' ')}
-                                    >
-                                      MAG
-                                    </button>
-
-                                    {[
-                                      'OPTIC',
-                                      'MUZZLE',
-                                      'GRIP',
-                                    ].map(
-                                      (label) => (
-                                        <div
-                                          key={label}
-                                          className="flex min-h-11 items-center justify-center border border-white/6 bg-black/15 px-1 text-center text-[7px] font-black tracking-wider text-stone-800"
-                                        >
-                                          {label}
-                                        </div>
-                                      ),
-                                    )}
-
-                                  </div>
-
-                                  {weaponAttachments[
-                                    slot.id
-                                  ]?.magazine && (
-
-                                    <div className="mt-2 flex items-center justify-between border border-white/8 bg-black/25 p-2">
-
-                                      <div className="min-w-0 pr-2">
-
-                                        <div className="truncate text-[8px] font-black text-white">
-                                          {
-                                            weaponAttachments[
-                                              slot.id
-                                            ].magazine.name
-                                          }
-                                        </div>
-
-                                        <div className="mt-1 text-[7px] text-stone-600">
-                                          SELECTED MAG
-                                        </div>
-
-                                      </div>
-
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          clearAttachment(
-                                            slot.id,
-                                          )
-                                        }
-                                        className="text-[7px] font-black text-red-400"
-                                      >
-                                        REMOVE
-                                      </button>
-
-                                    </div>
-
-                                  )}
-
-                                </div>
-
-                              )}
-
                               <button
                                 type="button"
                                 onClick={() =>
@@ -2229,11 +2337,11 @@ const [
                   <div>
 
                     <div className="text-xs font-black tracking-[0.18em] text-white">
-                      OPERATOR
+                      WEAPON WORKBENCH
                     </div>
 
                     <div className="mt-1 text-[9px] text-stone-600">
-                      CLICK A GEAR POSITION
+                      LIVE WEAPON STATS + VERIFIED ATTACHMENTS
                     </div>
 
                   </div>
@@ -2271,21 +2379,27 @@ const [
 
                 </div>
 
-                <OperatorFigure
+                <WeaponWorkbench
+                  weapon={
+                    workbenchWeapon
+                  }
+                  weaponSlot={
+                    workbenchSlot
+                  }
                   selectedSlot={
                     selectedSlot
                   }
                   selectSlot={
                     selectSlot
                   }
-                  equipped={
-                    equipped
+                  magazine={
+                    workbenchMagazine
                   }
-                  backpack={
-                    selectedBackpack
+                  openMagazinePicker={
+                    openMagazinePicker
                   }
-                  openBackpack={
-                    openBackpack
+                  clearAttachment={
+                    clearAttachment
                   }
                 />
 
