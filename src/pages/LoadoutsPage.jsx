@@ -1775,6 +1775,24 @@ const [
     useState(false)
 
   const [
+    slingItems,
+    setSlingItems,
+  ] =
+    useState([])
+
+  const [
+    slingPicker,
+    setSlingPicker,
+  ] =
+    useState(null)
+
+  const [
+    slingQuery,
+    setSlingQuery,
+  ] =
+    useState('')
+
+  const [
     gearPicker,
     setGearPicker,
   ] =
@@ -2005,6 +2023,57 @@ const [
           .filter(Boolean),
       [
         weaponAttachments,
+      ],
+    )
+
+
+  const slingEligibleItems =
+    useMemo(
+      () => [
+        ...weapons,
+        ...specialistEquipmentOptions,
+      ],
+      [],
+    )
+
+  const visibleSlingItems =
+    useMemo(
+      () => {
+
+        const needle =
+          slingQuery
+            .trim()
+            .toLowerCase()
+
+        return slingEligibleItems.filter(
+          (item) =>
+            !needle ||
+            item.name
+              .toLowerCase()
+              .includes(
+                needle,
+              ) ||
+            String(
+              item.category ||
+              '',
+            )
+              .toLowerCase()
+              .includes(
+                needle,
+              ) ||
+            String(
+              item.calibre ||
+              '',
+            )
+              .toLowerCase()
+              .includes(
+                needle,
+              ),
+        )
+      },
+      [
+        slingEligibleItems,
+        slingQuery,
       ],
     )
 
@@ -2324,6 +2393,28 @@ const [
             0,
           ),
         ) +
+        slingItems.reduce(
+          (
+            total,
+            item,
+          ) =>
+            total +
+            (
+              item
+                ? Number(
+                    zoneWeaponData[
+                      item.id
+                    ]?.price ??
+                    weaponLiveData[
+                      item.id
+                    ]?.price ??
+                    item.price ??
+                    0,
+                  )
+                : 0
+            ),
+          0,
+        ) +
         equippedAttachmentItems.reduce(
           (
             total,
@@ -2340,6 +2431,7 @@ const [
         equippedWeapons,
         equippedGearItems,
         equippedSpecialistGear,
+        slingItems,
         equippedAttachmentItems,
         selectedBackpack,
         selectedTraversal,
@@ -2543,6 +2635,28 @@ const [
               0,
             ),
           ) +
+          slingItems.reduce(
+            (
+              total,
+              item,
+            ) =>
+              total +
+              (
+                item
+                  ? Number(
+                      zoneWeaponData[
+                        item.id
+                      ]?.weight ??
+                      weaponLiveData[
+                        item.id
+                      ]?.weight ??
+                      item.weight ??
+                      0,
+                    )
+                  : 0
+              ),
+            0,
+          ) +
           equippedAttachmentItems.reduce(
             (
               total,
@@ -2646,6 +2760,7 @@ const [
         equippedWeapons,
         equippedGearItems,
         equippedSpecialistGear,
+        slingItems,
         equippedAttachmentItems,
         selectedBackpack,
         selectedTraversal,
@@ -3230,6 +3345,17 @@ const [
         false,
       )
 
+      setSlingItems(
+        (current) =>
+          current.slice(
+            0,
+            Number(
+              item.slings ||
+              0,
+            ),
+          ),
+      )
+
       if (
         pendingReserve
       ) {
@@ -3426,6 +3552,84 @@ const [
           workbenchReserveStep,
           workbenchReserveRounds,
         ),
+      )
+    }
+
+  const openSlingPicker =
+    (index) => {
+
+      setSlingQuery(
+        '',
+      )
+
+      setSlingPicker({
+        index,
+      })
+    }
+
+  const equipSlingItem =
+    (item) => {
+
+      if (
+        !slingPicker
+      ) {
+        return
+      }
+
+      setSlingItems(
+        (current) => {
+
+          const next = [
+            ...current,
+          ]
+
+          while (
+            next.length <
+            Number(
+              selectedBackpack?.slings ||
+              0,
+            )
+          ) {
+            next.push(
+              null,
+            )
+          }
+
+          next[
+            slingPicker.index
+          ] =
+            item
+
+          return next
+        },
+      )
+
+      setSlingPicker(
+        null,
+      )
+
+      setSlingQuery(
+        '',
+      )
+    }
+
+  const clearSlingItem =
+    (index) => {
+
+      setSlingItems(
+        (current) => {
+
+          const next = [
+            ...current,
+          ]
+
+          next[
+            index
+          ] =
+            null
+
+          return next
+        },
       )
     }
 
@@ -4803,17 +5007,7 @@ const [
 
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={
-                        openBackpack
-                      }
-                      className="border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2 text-[8px] font-black tracking-[0.12em] text-amber-400 hover:bg-amber-500/[0.12]"
-                    >
-                      {selectedBackpack
-                        ? 'OPEN PACK'
-                        : 'SELECT PACK'}
-                    </button>
+
 
                   </div>
 
@@ -4913,6 +5107,129 @@ const [
                     </button>
 
                   </div>
+
+                  {selectedBackpack &&
+                    Number(
+                      selectedBackpack.slings ||
+                      0,
+                    ) >
+                      0 && (
+
+                    <div className="mt-3 space-y-2">
+
+                      <div className="flex items-center justify-between">
+
+                        <div className="text-[9px] font-black tracking-[0.16em] text-stone-500">
+                          WEAPON SLINGS
+                        </div>
+
+                        <div className="text-[9px] font-black text-amber-500">
+                          {slingItems.filter(
+                            Boolean,
+                          ).length}
+                          {' / '}
+                          {selectedBackpack.slings}
+                        </div>
+
+                      </div>
+
+                      {Array.from({
+                        length:
+                          selectedBackpack.slings,
+                      }).map(
+                        (
+                          _,
+                          index,
+                        ) => {
+
+                          const item =
+                            slingItems[
+                              index
+                            ] ||
+                            null
+
+                          return (
+                            <div
+                              key={
+                                `sling-${index}`
+                              }
+                              className="flex items-center gap-3 border border-white/8 bg-[#111416] p-2"
+                            >
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openSlingPicker(
+                                    index,
+                                  )
+                                }
+                                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                              >
+
+                                <div className="flex h-14 w-20 shrink-0 items-center justify-center border border-white/8 bg-black/20">
+
+                                  {item ? (
+
+                                    <WardogsItemImage
+                                      item={item}
+                                      className="h-full w-full border-0 bg-transparent"
+                                      imageClassName="p-1 object-contain"
+                                    />
+
+                                  ) : (
+
+                                    <Crosshair
+                                      size={20}
+                                      className="text-stone-700"
+                                    />
+
+                                  )}
+
+                                </div>
+
+                                <div className="min-w-0">
+
+                                  <div className="text-[8px] font-black tracking-wider text-stone-600">
+                                    SLING {index + 1}
+                                  </div>
+
+                                  <div className="mt-1 truncate text-[10px] font-black text-white">
+                                    {item?.name ||
+                                      'SELECT WEAPON / SPECIALIST ITEM'}
+                                  </div>
+
+                                  <div className="mt-1 text-[8px] text-stone-600">
+                                    BARE ITEM • NO ATTACHMENTS OR LOADED ROUND
+                                  </div>
+
+                                </div>
+
+                              </button>
+
+                              {item && (
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    clearSlingItem(
+                                      index,
+                                    )
+                                  }
+                                  className="px-2 py-2 text-[8px] font-black text-red-400"
+                                >
+                                  REMOVE
+                                </button>
+
+                              )}
+
+                            </div>
+                          )
+                        },
+                      )}
+
+                    </div>
+
+                  )}
 
                   <button
                     type="button"
@@ -5070,6 +5387,14 @@ const [
                         'TRAVERSAL',
                         selectedTraversal?.name ||
                           'NONE',
+                      ],
+                      [
+                        'SLINGS',
+                        selectedBackpack?.slings
+                          ? `${slingItems.filter(
+                              Boolean,
+                            ).length}/${selectedBackpack.slings}`
+                          : 'NONE',
                       ],
                     ].map(
                       ([
@@ -5788,6 +6113,173 @@ const [
             )}
 
 
+
+          </div>
+
+        </div>
+
+      )}
+
+      {slingPicker && (
+
+        <div
+          className="fixed inset-0 z-[139] flex items-center justify-center bg-black/80 p-5 backdrop-blur-sm"
+          onMouseDown={(event) => {
+
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              setSlingPicker(
+                null,
+              )
+            }
+          }}
+        >
+
+          <div className="flex max-h-[88vh] w-full max-w-6xl flex-col border border-white/12 bg-[#0d0f10] shadow-2xl">
+
+            <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
+
+              <div>
+
+                <div className="text-[9px] font-black tracking-[0.16em] text-amber-500">
+                  BACKPACK SLING {slingPicker.index + 1}
+                </div>
+
+                <div className="mt-1 text-xl font-black text-white">
+                  SELECT BARE SLING ITEM
+                </div>
+
+                <div className="mt-1 text-[10px] text-stone-500">
+                  Slings accept weapon-slot purchases. Slung guns carry no attachments, magazine or loaded round.
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSlingPicker(
+                    null,
+                  )
+                }
+                className="flex h-10 w-10 items-center justify-center border border-white/10 text-stone-500 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+
+            </div>
+
+            <div className="border-b border-white/8 p-4">
+
+              <div className="flex h-11 items-center gap-3 border border-white/10 bg-black/20 px-3">
+
+                <Search
+                  size={15}
+                  className="text-stone-600"
+                />
+
+                <input
+                  autoFocus
+                  value={
+                    slingQuery
+                  }
+                  onChange={(event) =>
+                    setSlingQuery(
+                      event.target.value,
+                    )
+                  }
+                  placeholder="Search weapons and specialist equipment..."
+                  className="w-full bg-transparent text-xs text-white outline-none placeholder:text-stone-700"
+                />
+
+              </div>
+
+            </div>
+
+            <div className="grid gap-3 overflow-y-auto p-4 sm:grid-cols-2 lg:grid-cols-3">
+
+              {visibleSlingItems.map(
+                (item) => {
+
+                  const live =
+                    zoneWeaponData[
+                      item.id
+                    ] ||
+                    weaponLiveData[
+                      item.id
+                    ] ||
+                    {}
+
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() =>
+                        equipSlingItem(
+                          item,
+                        )
+                      }
+                      className="border border-white/8 bg-[#111416] p-3 text-left transition hover:border-amber-500/35"
+                    >
+
+                      <WardogsItemImage
+                        item={item}
+                        className="h-24 w-full border border-white/6 bg-black/20"
+                        imageClassName="p-2 object-contain"
+                      />
+
+                      <div className="mt-3 text-[11px] font-black text-white">
+                        {item.name}
+                      </div>
+
+                      <div className="mt-1 text-[9px] text-stone-500">
+                        {String(
+                          item.category ||
+                          'SPECIALIST',
+                        ).replaceAll(
+                          '_',
+                          ' ',
+                        )}
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between text-[10px]">
+
+                        <span className="text-stone-500">
+                          {(
+                            live.weight ??
+                            item.weight
+                          ) == null
+                            ? 'WEIGHT ?'
+                            : `${Number(
+                                live.weight ??
+                                item.weight,
+                              ).toFixed(
+                                2,
+                              )} KG`}
+                        </span>
+
+                        <span className="font-black text-amber-400">
+                          {(
+                            live.price ??
+                            item.price
+                          ) == null
+                            ? 'PRICE ?'
+                            : money(
+                                live.price ??
+                                item.price,
+                              )}
+                        </span>
+
+                      </div>
+
+                    </button>
+                  )
+                },
+              )}
+
+            </div>
 
           </div>
 
