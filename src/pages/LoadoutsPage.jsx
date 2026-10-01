@@ -903,8 +903,6 @@ function WeaponWorkbench({
 
           )}
 
-          </div>
-
         </aside>
 
       </div>
