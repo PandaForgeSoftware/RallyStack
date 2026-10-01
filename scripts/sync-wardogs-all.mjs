@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process'
 const scripts = [
   'scripts/sync-wardogs-packable-items.mjs',
   'scripts/sync-wardogs-combat-data.mjs',
+  'scripts/sync-wardogs-zone-equipment.mjs',
   'scripts/sync-wardogs-zone-attachments.mjs',
   'scripts/verify-wardogs-loadout-data.mjs',
 ]
