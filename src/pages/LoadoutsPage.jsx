@@ -266,6 +266,50 @@ const traversalItems =
       'PARACHUTES',
   )
 
+const backpackOptions =
+  backpacks
+    .filter(
+      (item) =>
+        item.availableInBuilder !==
+        false,
+    )
+    .map(
+      (item) => {
+
+        const synced =
+          gearItems.find(
+            (gear) =>
+              gear.type ===
+                'BACKPACK' &&
+              gear.name ===
+                item.name,
+          )
+
+        return {
+          ...item,
+          price:
+            synced?.price ??
+            item.price,
+          weight:
+            synced?.weight ??
+            item.weight,
+          unlockLevel:
+            synced?.unlockLevel ??
+            item.unlockLevel,
+          unlockCost:
+            synced?.unlockCost ??
+            item.unlockCost,
+          image:
+            synced?.image ||
+            item.image ||
+            null,
+          sourceUrl:
+            synced?.sourceUrl ||
+            null,
+        }
+      },
+    )
+
 const getMagazineOptions =
   (weapon) => {
 
@@ -1557,7 +1601,7 @@ const [
     useState({})
 
   const selectedBackpack =
-    backpacks.find(
+    backpackOptions.find(
       (item) =>
         item.id ===
         selectedBackpackId,
@@ -3421,7 +3465,7 @@ const [
     () => (
       <div className="grid gap-3 2xl:grid-cols-2">
 
-        {backpacks.map(
+        {backpackOptions.map(
           (item) => (
             <article
               key={item.id}
@@ -5782,7 +5826,7 @@ const [
 
             <div className="grid gap-3 overflow-y-auto p-4 sm:grid-cols-2 lg:grid-cols-3">
 
-              {backpacks.map(
+              {backpackOptions.map(
                 (item) => (
 
                   <button
