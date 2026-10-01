@@ -2007,6 +2007,11 @@ const [
                   moveInstance={moveInstance}
                   rotateInstance={rotateInstance}
                   removeInstance={removeInstance}
+                  increaseInstance={(placement) =>
+                    tryAdd(
+                      placement.item,
+                    )
+                  }
                 />
 
               </div>
