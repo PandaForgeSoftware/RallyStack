@@ -337,6 +337,33 @@ const attachmentTypeLabels = {
     'COMPONENT',
 }
 
+const gunsmithSlotForType = {
+  MAGAZINE:
+    'MAGAZINE',
+  OPTIC:
+    'OPTIC',
+  CANTED_SIGHT:
+    'CANTED_SIGHT',
+  MUZZLE:
+    'MUZZLE',
+  FOREGRIP:
+    'UNDERBARREL',
+  GRIP:
+    'GRIP',
+  PISTOL_GRIP:
+    'PISTOL_GRIP',
+  HANDGUARD:
+    'HANDGUARD',
+  BARREL:
+    'BARREL',
+  STOCK:
+    'STOCK',
+  DUST_COVER:
+    'DUST_COVER',
+  TRIGGER:
+    'TRIGGER',
+}
+
 const attachmentKey =
   (type) =>
     type
@@ -411,6 +438,28 @@ const getAttachmentOptions =
      * compatibility. That was the bug that could offer
      * weapon-specific bipods to an SMG.
      */
+    const requiredSlot =
+      gunsmithSlotForType[
+        type
+      ]
+
+    if (
+      zoneAttachmentItems.length >
+        0 &&
+      (
+        !requiredSlot ||
+        !(
+          zoneWeapon
+            .attachmentSlots ||
+          []
+        ).includes(
+          requiredSlot,
+        )
+      )
+    ) {
+      return []
+    }
+
     const synced =
       completeAttachmentItems.filter(
         (item) =>
