@@ -1,4 +1,4 @@
-import {
+﻿import {
   useMemo,
   useState,
 } from 'react'
@@ -50,6 +50,11 @@ import {
   zoneEquipmentItems,
   zoneEquipmentMeta,
 } from '../data/wardogsZoneEquipment'
+import {
+  verifiedWeaponCompatibility,
+  verifiedCompatibilityMeta,
+} from '../data/wardogsVerifiedCompatibility'
+
 import BackpackPackingView from '../features/loadouts/components/BackpackPackingView'
 import WardogsItemImage from '../features/loadouts/components/WardogsItemImage'
 
@@ -235,6 +240,73 @@ const backpackCategories = [
 ]
 
 
+
+const verifiedWeaponNameById = {
+  a91: 'A-91',
+  ak74: 'AK74',
+  amp9: 'AMP-9',
+  amr50: 'AMR 50',
+  bmr308: 'BMR-308',
+  bushmaster: 'Bushmaster M17S',
+  compoundbow: 'Compound Bow',
+  deagle: 'Deagle',
+  fal: 'FAL',
+  galil: 'Galil',
+  ggx17: 'GGX 17',
+  ggx18: 'GGX 18',
+  judge: 'Judge',
+  kh2002: 'KH-2002',
+  m4: 'M4',
+  m249: 'M249 SAW',
+  m500: 'M500',
+  m1911: 'M1911',
+  maaws: 'MAAWS',
+  mgl40: 'MGL-40',
+  mk22: 'MK22',
+  mosin: 'Mosin Nagant',
+  mp5: 'MP5',
+  mp43: 'MP43',
+  pkm: 'PKM',
+  pp19: 'PP-19 Vityaz',
+  rpg7: 'RPG-7',
+  scoutrifle: 'Scout Rifle TD',
+  sks: 'SKS',
+  super45: 'Super-45',
+  sv98: 'SV98',
+  svd: 'SVD',
+  t21: 'T-21',
+  verba: '9K333 Verba',
+}
+
+const getVerifiedWeaponName = (weapon) => {
+  if (!weapon) {
+    return null
+  }
+
+  const mapped =
+    verifiedWeaponNameById[
+      weapon.id
+    ]
+
+  if (mapped) {
+    return mapped
+  }
+
+  const direct =
+    Object.keys(
+      verifiedWeaponCompatibility,
+    ).find(
+      (name) =>
+        normaliseDataName(name) ===
+        normaliseDataName(
+          weapon.name,
+        ),
+    )
+
+  return direct || null
+}
+
+
 const magazineNameMatchers = {
   ak74: [/^AK74 /i],
   amp9: [/^AMP-9 /i],
@@ -284,33 +356,105 @@ const traversalOptions =
       )
     : traversalItems
 
+
+const specialistEquipmentSources = [
+  ...zoneEquipmentItems,
+  ...gearItems,
+  ...packableItems,
+  ...medicalItems,
+]
+
 const specialistEquipmentOptions =
-  zoneEquipmentReady
-    ? zoneEquipmentItems
-        .filter(
-          (item) =>
-            item.slot ===
-            'SPECIALIST',
+  Array.from(
+    specialistEquipmentSources.reduce(
+      (map, item) => {
+
+        const slotValue =
+          String(
+            item.slot ??
+            item.equipmentSlot ??
+            item.loadoutSlot ??
+            item.type ??
+            '',
+          )
+            .trim()
+            .toUpperCase()
+
+        if (
+          slotValue !==
+          'SPECIALIST'
+        ) {
+          return map
+        }
+
+        const key =
+          normaliseDataName(
+            item.name,
+          )
+
+        const existing =
+          map.get(key)
+
+        map.set(
+          key,
+          existing
+            ? {
+                ...existing,
+                ...item,
+
+                price:
+                  item.price ??
+                  existing.price ??
+                  null,
+
+                weight:
+                  item.weight ??
+                  existing.weight ??
+                  null,
+
+                image:
+                  item.image ||
+                  existing.image ||
+                  null,
+              }
+            : {
+                ...item,
+              },
         )
-        .map(
-          (item) => ({
-            ...item,
-            slot:
-              'specialist',
-            kind:
-              'specialist_equipment',
-            category:
-              item.category ||
-              'SPECIALIST',
-            calibre:
-              '',
-            damage:
-              null,
-            rpm:
-              null,
-          }),
-        )
-    : []
+
+        return map
+      },
+      new Map(),
+    ).values(),
+  )
+    .map(
+      (item) => ({
+        ...item,
+
+        slot:
+          'specialist',
+
+        kind:
+          'specialist_equipment',
+
+        category:
+          item.category ||
+          item.type ||
+          'SPECIALIST',
+
+        calibre:
+          item.calibre ||
+          '',
+
+        damage:
+          item.damage ??
+          null,
+
+        rpm:
+          item.rpm ??
+          null,
+      }),
+    )
 
 const operatorGearOptions =
   zoneEquipmentReady
@@ -548,6 +692,8 @@ const completeAttachmentItems =
       )
     : attachmentItems
 
+
+
 const getAttachmentOptions =
   (
     weapon,
@@ -558,135 +704,109 @@ const getAttachmentOptions =
       return []
     }
 
-    const zoneSynced =
-      zoneAttachmentItems.length >
-      0
-
-    const zoneWeapon =
-      zoneWeaponData[
-        weapon.id
-      ] || {}
-
-    /*
-     * Compatibility authority:
-     * Wardogs Zone's current item pages are generated
-     * from the game's own weapon-customisation wells.
-     *
-     * Do not union these fits with older broad category
-     * compatibility. That was the bug that could offer
-     * weapon-specific bipods to an SMG.
-     */
-    const requiredSlot =
-      gunsmithSlotForType[
-        type
-      ]
+    const verifiedWeaponName =
+      getVerifiedWeaponName(
+        weapon,
+      )
 
     if (
-      zoneAttachmentItems.length >
-        0 &&
-      (
-        !requiredSlot ||
-        !(
-          zoneWeapon
-            .attachmentSlots ||
-          []
-        ).includes(
-          requiredSlot,
-        )
+      !verifiedWeaponName
+    ) {
+      console.warn(
+        '[LOADOUT] No verified compatibility mapping for weapon:',
+        weapon.id,
+        weapon.name,
       )
+
+      return []
+    }
+
+    const verifiedWeapon =
+      verifiedWeaponCompatibility[
+        verifiedWeaponName
+      ]
+
+    if (!verifiedWeapon) {
+      return []
+    }
+
+    const verifiedEntries =
+      verifiedWeapon
+        .attachments?.[
+          type
+        ] || []
+
+    /*
+     * An empty verified list means EMPTY.
+     *
+     * Do NOT fall back to Zone compatibility.
+     * Do NOT use category matching.
+     * Do NOT infer anything.
+     */
+    if (
+      verifiedEntries.length ===
+      0
     ) {
       return []
     }
 
-    const synced =
-      completeAttachmentItems.filter(
-        (item) =>
-          item.type ===
-            type &&
-          (
-            zoneSynced
-              ? item
-                  .compatibleWeapons
-                  ?.includes(
-                    weapon.id,
-                  )
-              : (
-                  weaponLiveData[
-                    weapon.id
-                  ]
-                    ?.compatibleAttachments ||
-                  []
-                ).includes(
-                  item.name,
-                )
-          ),
-      )
-
-    if (
-      type !==
+    /*
+     * The old feeds are useful for metadata,
+     * but they are forbidden from deciding
+     * which weapon accepts which attachment.
+     */
+    const metadataPool =
+      type ===
       'MAGAZINE'
-    ) {
-      return synced
-    }
+        ? [
+            ...completeAttachmentItems,
+            ...magazineCatalogue,
+          ]
+        : completeAttachmentItems
 
-    const exactMagazineNames =
-      new Set(
-        zoneWeapon
-          .compatibleMagazines ||
-        [],
-      )
-
-    const packable =
-      (
-        exactMagazineNames.size >
-        0
-      )
-        ? magazineCatalogue.filter(
-            (item) =>
-              exactMagazineNames.has(
-                item.name,
-              ),
-          )
-        : getMagazineOptions(
-            weapon,
-          )
-
-    const byName =
+    const metadataByName =
       new Map()
 
-    ;[
-      ...packable,
-      ...synced,
-    ].forEach(
+    metadataPool.forEach(
       (item) => {
 
-        const previous =
-          byName.get(
+        const key =
+          normaliseDataName(
             item.name,
           )
 
-        byName.set(
-          item.name,
+        const previous =
+          metadataByName.get(
+            key,
+          )
+
+        metadataByName.set(
+          key,
           previous
             ? {
                 ...previous,
                 ...item,
+
                 price:
                   item.price ??
                   previous.price ??
                   null,
+
                 weight:
                   item.weight ??
                   previous.weight ??
                   null,
+
                 inventoryWidth:
                   item.inventoryWidth ??
                   previous.inventoryWidth ??
                   null,
+
                 inventoryHeight:
                   item.inventoryHeight ??
                   previous.inventoryHeight ??
                   null,
+
                 image:
                   item.image ||
                   previous.image ||
@@ -697,10 +817,83 @@ const getAttachmentOptions =
       },
     )
 
-    return Array.from(
-      byName.values(),
+    return verifiedEntries.map(
+      (verified) => {
+
+        const metadata =
+          metadataByName.get(
+            normaliseDataName(
+              verified.name,
+            ),
+          ) || {}
+
+        return {
+          ...metadata,
+          ...verified,
+
+          id:
+            metadata.id ||
+            verified.slug ||
+            normaliseDataName(
+              verified.name,
+            ),
+
+          name:
+            verified.name,
+
+          type,
+
+          price:
+            metadata.price ??
+            verified.price ??
+            null,
+
+          weight:
+            metadata.weight ??
+            verified.weight ??
+            null,
+
+          inventoryWidth:
+            metadata.inventoryWidth ??
+            verified.inventoryWidth ??
+            null,
+
+          inventoryHeight:
+            metadata.inventoryHeight ??
+            verified.inventoryHeight ??
+            null,
+
+          image:
+            metadata.image ||
+            verified.image ||
+            null,
+
+          modifiers:
+            metadata.modifiers ||
+            verified.modifiers ||
+            null,
+
+          effects:
+            metadata.effects ||
+            verified.effects ||
+            [],
+
+          sourceUrl:
+            verified.href ||
+            metadata.sourceUrl ||
+            null,
+
+          compatibilitySource:
+            'VERIFIED_WARDOGS_FITS',
+
+          compatibleWeapons: [
+            weapon.id,
+          ],
+        }
+      },
     )
   }
+
 
 function WeaponWorkbench({
   weapon,
@@ -975,7 +1168,7 @@ function WeaponWorkbench({
               </div>
               <div className="mt-2 text-lg font-black text-white">
                 {weapon.weight == null
-                  ? '—'
+                  ? 'â€”'
                   : `${Number(
                       weapon.weight,
                     ).toFixed(
@@ -990,7 +1183,7 @@ function WeaponWorkbench({
               </div>
               <div className="mt-2 text-lg font-black text-amber-400">
                 {weapon.price == null
-                  ? '—'
+                  ? 'â€”'
                   : money(
                       weapon.price,
                     )}
@@ -1028,7 +1221,7 @@ function WeaponWorkbench({
               </div>
               <div className="mt-1 text-sm font-black text-white">
                 {weapon.unlockLevel == null
-                  ? '—'
+                  ? 'â€”'
                   : `${weapon.unlockTrack || 'LEVEL'} ${weapon.unlockLevel}`}
               </div>
             </div>
@@ -1046,18 +1239,18 @@ function WeaponWorkbench({
       'DAMAGE',
       liveStats.damage ??
         weapon.damage ??
-        '—',
+        'â€”',
     ],
     [
       'RPM',
       liveStats.rpm ??
         weapon.rpm ??
-        '—',
+        'â€”',
     ],
     [
       'CALIBRE',
       weapon.calibre ||
-        '—',
+        'â€”',
     ],
     [
       'WEIGHT',
@@ -1086,28 +1279,28 @@ function WeaponWorkbench({
     [
       'ACCURACY',
       liveStats.accuracy == null
-        ? '—'
+        ? 'â€”'
         : `${liveStats.accuracy} MOA`,
     ],
     [
       'MUZZLE VELOCITY',
       liveStats.muzzleVelocity == null
-        ? '—'
+        ? 'â€”'
         : `${liveStats.muzzleVelocity} M/S`,
     ],
     [
       'EFFECTIVE RANGE',
       liveStats.effectiveRange == null
-        ? '—'
+        ? 'â€”'
         : `${liveStats.effectiveRange} M`,
     ],
     [
       'ADS ZOOM',
       selectedZoom
-        ? `${selectedZoom}×`
+        ? `${selectedZoom}Ã—`
         : liveStats.adsZoom == null
-          ? '—'
-          : `${liveStats.adsZoom}×`,
+          ? 'â€”'
+          : `${liveStats.adsZoom}Ã—`,
       selectedZoom
         ? 'CONFIGURED'
         : null,
@@ -1115,7 +1308,7 @@ function WeaponWorkbench({
     [
       'ADS TIME',
       configuredAdsTime == null
-        ? '—'
+        ? 'â€”'
         : `${configuredAdsTime.toFixed(
             3,
           )}S`,
@@ -1194,7 +1387,7 @@ function WeaponWorkbench({
       'MAG CAPACITY',
       magazineCapacity
         ? `${magazineCapacity} RND`
-        : '—',
+        : 'â€”',
       magazine
         ? magazine.name
         : 'NO MAG SELECTED',
@@ -1202,12 +1395,12 @@ function WeaponWorkbench({
     [
       'UNLOCK LEVEL',
       weapon.unlockLevel ??
-        '—',
+        'â€”',
     ],
     [
       'CATEGORY',
       weapon.category ||
-        '—',
+        'â€”',
     ],
   ]
 
@@ -1625,7 +1818,7 @@ function WeaponWorkbench({
                       }
                       className="text-[10px] leading-4 text-stone-300"
                     >
-                      • {effect}
+                      â€¢ {effect}
                     </div>
 
                   ),
@@ -3878,7 +4071,7 @@ const [
                         ]?.damage ??
                         item.damage
                       ) ??
-                        '—'}
+                        'â€”'}
                     </div>
                   </div>
 
@@ -3897,7 +4090,7 @@ const [
                         ]?.rpm ??
                         item.rpm
                       ) ??
-                        '—'}
+                        'â€”'}
                     </div>
                   </div>
 
@@ -3908,7 +4101,7 @@ const [
 
                     <div className="mt-1 text-xs font-black text-white">
                       {item.weight == null
-                        ? '—'
+                        ? 'â€”'
                         : Number(
                             item.weight,
                           ).toFixed(
@@ -3924,7 +4117,7 @@ const [
 
                     <div className="mt-1 text-xs font-black text-white">
                       {item.unlockLevel ??
-                        '—'}
+                        'â€”'}
                     </div>
                   </div>
 
@@ -3938,7 +4131,7 @@ const [
                         item.kind ===
                         'specialist_equipment'
                           ? 'SPECIALIST ITEM'
-                          : '—'
+                          : 'â€”'
                       )}
                   </div>
 
@@ -4047,7 +4240,7 @@ const [
 
                   <div className="mt-1 text-xs font-black text-white">
                     {item.unlockLevel ??
-                      '—'}
+                      'â€”'}
                   </div>
                 </div>
 
@@ -4572,7 +4765,7 @@ const [
             <div className="text-right text-[9px] font-bold tracking-wider text-stone-600">
 
               {zoneAttachmentMeta.syncedAt
-                    ? `${zoneAttachmentMeta.count} ATTACHMENTS • ${zoneEquipmentMeta.count || '—'} EQUIPMENT • ${new Date(
+                    ? `${zoneAttachmentMeta.count} ATTACHMENTS â€¢ ${zoneEquipmentMeta.count || 'â€”'} EQUIPMENT â€¢ ${new Date(
                         zoneAttachmentMeta.syncedAt,
                       ).toLocaleDateString()}`
                     : combatDataMeta.syncedAt
@@ -5089,7 +5282,7 @@ const [
 
                         <div className="flex h-24 items-center justify-center border border-dashed border-white/10 text-stone-700">
                           <span className="text-4xl font-thin">
-                            ↟
+                            â†Ÿ
                           </span>
                         </div>
 
@@ -5199,7 +5392,7 @@ const [
                                   </div>
 
                                   <div className="mt-1 text-[8px] text-stone-600">
-                                    BARE ITEM • NO ATTACHMENTS OR LOADED ROUND
+                                    BARE ITEM â€¢ NO ATTACHMENTS OR LOADED ROUND
                                   </div>
 
                                 </div>
@@ -5303,7 +5496,7 @@ const [
                           ? money(
                               selectedBackpack.price,
                             )
-                          : '—'}
+                          : 'â€”'}
                       </div>
 
                     </div>
@@ -5351,7 +5544,7 @@ const [
                         'WEIGHT',
                         `${knownWeight.toFixed(
                           2,
-                        )} KG • ${weightBand.name}`,
+                        )} KG â€¢ ${weightBand.name}`,
                       ],
                       [
                         'MOVEMENT',
@@ -5438,7 +5631,7 @@ const [
                           </div>
                           <div className="text-sm font-black text-white">
                             {equipped.primary?.damage ??
-                              '—'}
+                              'â€”'}
                           </div>
                         </div>
 
@@ -5448,7 +5641,7 @@ const [
                           </div>
                           <div className="text-sm font-black text-white">
                             {equipped.primary?.rpm ??
-                              '—'}
+                              'â€”'}
                           </div>
                         </div>
 
@@ -5470,7 +5663,7 @@ const [
                           </div>
                           <div className="text-sm font-black text-white">
                             {equipped.sidearm?.damage ??
-                              '—'}
+                              'â€”'}
                           </div>
                         </div>
 
@@ -5480,7 +5673,7 @@ const [
                           </div>
                           <div className="text-sm font-black text-white">
                             {equipped.sidearm?.rpm ??
-                              '—'}
+                              'â€”'}
                           </div>
                         </div>
 
@@ -6870,15 +7063,15 @@ const [
                         </div>
 
                         <div className="mt-1 text-[8px] text-stone-600">
-                          DAMAGE {item.damage ?? '—'}
+                          DAMAGE {item.damage ?? 'â€”'}
                           {' / '}
-                          SPEED {item.speed ?? '—'}
+                          SPEED {item.speed ?? 'â€”'}
                           {' / '}
-                          PEN {item.penetration ?? '—'}
+                          PEN {item.penetration ?? 'â€”'}
                         </div>
 
                         <div className="mt-1 text-[7px] text-stone-700">
-                          MAGAZINE FILLS FIRST • SPARE ROUNDS GO TO BACKPACK
+                          MAGAZINE FILLS FIRST â€¢ SPARE ROUNDS GO TO BACKPACK
                         </div>
 
                       </div>
